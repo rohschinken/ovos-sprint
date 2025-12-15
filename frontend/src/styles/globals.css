@@ -27,10 +27,10 @@
 
     /* Custom colors */
     --weekend: 210 40% 98%;
-    --holiday: 48 96% 95%;
-    --confirmed: 142 76% 95%;
-    --tentative: 48 96% 95%;
-    --overlap: 0 84% 95%;
+    --holiday: 48 96% 89%;
+    --confirmed: 142 70% 85%;
+    --tentative: 48 95% 85%;
+    --overlap: 0 75% 88%;
   }
 
   .dark {
@@ -56,10 +56,10 @@
 
     /* Custom colors - dark mode */
     --weekend: 217.2 32.6% 12%;
-    --holiday: 45 93% 15%;
-    --confirmed: 142 76% 15%;
-    --tentative: 45 93% 15%;
-    --overlap: 0 84% 15%;
+    --holiday: 45 93% 18%;
+    --confirmed: 142 70% 22%;
+    --tentative: 45 93% 20%;
+    --overlap: 0 75% 25%;
   }
 }
 

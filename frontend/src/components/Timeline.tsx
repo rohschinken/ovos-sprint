@@ -219,6 +219,38 @@ export default function Timeline({
     return date >= start && date <= end
   }
 
+  // Check if a member has overlapping assignments on a date (for by-member view)
+  const getMemberAssignmentsOnDate = (memberId: number, date: Date) => {
+    const memberAssignments = projectAssignments.filter(
+      (pa: any) => pa.teamMemberId === memberId
+    )
+
+    return memberAssignments.filter((assignment: any) =>
+      isDayAssigned(assignment.id, date)
+    ).length
+  }
+
+  // Check if a project has overlapping members on a date (for by-project view)
+  const getProjectMembersOnDate = (projectId: number, date: Date) => {
+    const projAssignments = projectAssignments.filter(
+      (pa: any) => pa.projectId === projectId
+    )
+
+    return projAssignments.filter((assignment: any) =>
+      isDayAssigned(assignment.id, date)
+    ).length
+  }
+
+  const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
+    if (settings.showOverlapVisualization === 'false') return false
+
+    const count = mode === 'member'
+      ? getMemberAssignmentsOnDate(id, date)
+      : getProjectMembersOnDate(id, date)
+
+    return count > 1
+  }
+
   if (viewMode === 'by-project') {
     return (
       <div className="overflow-x-auto">
@@ -282,7 +314,8 @@ export default function Timeline({
                       className={cn(
                         'w-24 border-r',
                         isWeekend(date) && 'bg-weekend',
-                        isHoliday(date) && 'bg-holiday'
+                        isHoliday(date) && 'bg-holiday',
+                        hasOverlap(project.id, date, 'project') && 'bg-overlap'
                       )}
                     />
                   ))}
@@ -414,7 +447,8 @@ export default function Timeline({
                     className={cn(
                       'w-24 border-r',
                       isWeekend(date) && 'bg-weekend',
-                      isHoliday(date) && 'bg-holiday'
+                      isHoliday(date) && 'bg-holiday',
+                      hasOverlap(member.id, date, 'member') && 'bg-overlap'
                     )}
                   />
                 ))}
