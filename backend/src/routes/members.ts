@@ -123,7 +123,9 @@ router.post('/:id/avatar', authenticate, requireAdmin, upload.single('avatar'), 
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const avatarUrl = `/avatars/${req.file.filename}`
+    // Construct full URL including backend server
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`
+    const avatarUrl = `${backendUrl}/avatars/${req.file.filename}`
 
     const [updated] = await db
       .update(teamMembers)
