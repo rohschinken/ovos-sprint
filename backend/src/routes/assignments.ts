@@ -9,13 +9,32 @@ const router = Router()
 // Get all project assignments
 router.get('/projects', authenticate, async (req, res) => {
   try {
-    const assignments = await db.query.projectAssignments.findMany({
-      with: {
-        project: true,
-        teamMember: true,
-      },
-    })
-    res.json(assignments)
+    const assignments = await db.select().from(projectAssignments)
+
+    const assignmentsWithDetails = await Promise.all(
+      assignments.map(async (assignment) => {
+        const project = await db.query.projects.findFirst({
+          where: (projects, { eq }) => eq(projects.id, assignment.projectId),
+        })
+
+        const member = await db.query.teamMembers.findFirst({
+          where: (teamMembers, { eq }) => eq(teamMembers.id, assignment.teamMemberId),
+        })
+
+        const days = await db.query.dayAssignments.findMany({
+          where: (dayAssignments, { eq }) => eq(dayAssignments.projectAssignmentId, assignment.id),
+        })
+
+        return {
+          ...assignment,
+          project,
+          teamMember: member,
+          dayAssignments: days,
+        }
+      })
+    )
+
+    res.json(assignmentsWithDetails)
   } catch (error) {
     console.error('Get project assignments error:', error)
     res.status(500).json({ error: 'Server error' })

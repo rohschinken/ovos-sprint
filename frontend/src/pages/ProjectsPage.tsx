@@ -5,6 +5,7 @@ import { Project, ProjectStatus } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import AssignMemberDialog from '@/components/AssignMemberDialog'
 import {
   Card,
   CardContent,
@@ -21,12 +22,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Pencil, Trash2, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [assigningProject, setAssigningProject] = useState<Project | null>(null)
   const [customer, setCustomer] = useState('')
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('tentative')
@@ -152,6 +154,15 @@ export default function ProjectsPage() {
             <CardContent>
               <div className="flex gap-2">
                 <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setAssigningProject(project)}
+                  className="gap-2"
+                >
+                  <Users className="h-3 w-3" />
+                  Assign Members
+                </Button>
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
@@ -242,6 +253,14 @@ export default function ProjectsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {assigningProject && (
+        <AssignMemberDialog
+          project={assigningProject}
+          open={!!assigningProject}
+          onOpenChange={(open) => !open && setAssigningProject(null)}
+        />
+      )}
     </div>
   )
 }
