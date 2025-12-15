@@ -15,6 +15,7 @@ interface TimelineProps {
   prevDays: number
   nextDays: number
   isAdmin: boolean
+  selectedTeamIds: number[]
 }
 
 export default function Timeline({
@@ -22,6 +23,7 @@ export default function Timeline({
   prevDays,
   nextDays,
   isAdmin,
+  selectedTeamIds,
 }: TimelineProps) {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [dragState, setDragState] = useState<{
@@ -91,6 +93,26 @@ export default function Timeline({
       return response.data as Record<string, string>
     },
   })
+
+  const { data: teamMemberRelationships = [] } = useQuery({
+    queryKey: ['teams', 'members', 'relationships'],
+    queryFn: async () => {
+      const response = await api.get('/teams/members/relationships')
+      return response.data as { teamId: number; teamMemberId: number }[]
+    },
+  })
+
+  // Filter members based on selected teams
+  const filteredMembers =
+    selectedTeamIds.length === 0
+      ? members
+      : members.filter((member) =>
+          teamMemberRelationships.some(
+            (rel) =>
+              rel.teamMemberId === member.id &&
+              selectedTeamIds.includes(rel.teamId)
+          )
+        )
 
   const createDayAssignmentMutation = useMutation({
     mutationFn: async (data: {
@@ -414,7 +436,7 @@ export default function Timeline({
         </div>
 
         {/* Members */}
-        {members.map((member) => {
+        {filteredMembers.map((member) => {
           const assignments = projectAssignments.filter(
             (pa: any) => pa.teamMemberId === member.id
           )

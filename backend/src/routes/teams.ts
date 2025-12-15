@@ -19,6 +19,17 @@ router.get('/', authenticate, async (req, res) => {
   }
 })
 
+// Get all team-member relationships
+router.get('/members/relationships', authenticate, async (req, res) => {
+  try {
+    const relationships = await db.select().from(teamTeamMembers)
+    res.json(relationships)
+  } catch (error) {
+    console.error('Get team-member relationships error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 // Get team by ID with members
 router.get('/:id', authenticate, async (req, res) => {
   try {
