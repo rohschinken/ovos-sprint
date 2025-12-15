@@ -114,6 +114,27 @@ export default function Timeline({
           )
         )
 
+  // Filter projects based on selected teams (show only projects with members from selected teams)
+  const filteredProjects =
+    selectedTeamIds.length === 0
+      ? projects
+      : projects.filter((project) => {
+          // Get all assignments for this project
+          const projectAssignmentsForProject = projectAssignments.filter(
+            (pa: any) => pa.projectId === project.id
+          )
+          // Check if any of these assignments have members from the selected teams
+          return projectAssignmentsForProject.some((assignment: any) => {
+            const member = members.find((m) => m.id === assignment.teamMemberId)
+            if (!member) return false
+            return teamMemberRelationships.some(
+              (rel) =>
+                rel.teamMemberId === member.id &&
+                selectedTeamIds.includes(rel.teamId)
+            )
+          })
+        })
+
   const createDayAssignmentMutation = useMutation({
     mutationFn: async (data: {
       projectAssignmentId: number
@@ -344,7 +365,7 @@ export default function Timeline({
           </div>
 
           {/* Projects */}
-          {projects.map((project) => {
+          {filteredProjects.map((project) => {
             const assignments = projectAssignments.filter(
               (pa: any) => pa.projectId === project.id
             )
@@ -557,12 +578,12 @@ export default function Timeline({
                     <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
                       <div
                         className={cn(
-                          'w-64 p-2.5 pl-10 border-r bg-background/50',
+                          'w-64 p-2 pl-10 border-r bg-background/50',
                           project.status === 'tentative' && 'opacity-50'
                         )}
                       >
-                        <div className="text-sm font-medium">{project.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs font-medium text-muted-foreground">{project.name}</div>
+                        <div className="text-xs text-muted-foreground/70">
                           {project.customer}
                         </div>
                       </div>
