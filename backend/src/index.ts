@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 
 import authRoutes from './routes/auth.js'
+import usersRoutes from './routes/users.js'
 import teamsRoutes from './routes/teams.js'
 import membersRoutes from './routes/members.js'
 import projectsRoutes from './routes/projects.js'
@@ -41,6 +42,7 @@ app.use('/avatars', express.static(path.join(__dirname, '../data/avatars')))
 
 // Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/users', usersRoutes)
 app.use('/api/teams', teamsRoutes)
 app.use('/api/members', membersRoutes)
 app.use('/api/projects', projectsRoutes)

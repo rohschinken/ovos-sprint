@@ -8,6 +8,7 @@ import {
   UserCircle,
   Settings,
   LogOut,
+  Mail,
 } from 'lucide-react'
 
 export default function Layout() {
@@ -36,6 +37,15 @@ export default function Layout() {
               </Link>
               {user?.role === 'admin' && (
                 <>
+                  <Link to="/users">
+                    <Button
+                      variant={isActive('/users') ? 'default' : 'ghost'}
+                      className="gap-2"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Users
+                    </Button>
+                  </Link>
                   <Link to="/teams">
                     <Button
                       variant={isActive('/teams') ? 'default' : 'ghost'}

@@ -7,6 +7,7 @@ import { Toaster } from './components/ui/toaster'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
+import UsersPage from './pages/UsersPage'
 import TeamsPage from './pages/TeamsPage'
 import MembersPage from './pages/MembersPage'
 import ProjectsPage from './pages/ProjectsPage'
@@ -58,6 +59,14 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="users"
+            element={
+              <AdminRoute>
+                <UsersPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="teams"
             element={
