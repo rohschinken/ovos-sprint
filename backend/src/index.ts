@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { mkdirSync } from 'fs'
 
 import authRoutes from './routes/auth.js'
 import usersRoutes from './routes/users.js'
@@ -21,6 +22,10 @@ dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// Ensure required directories exist
+const avatarsDir = path.join(__dirname, '../data/avatars')
+mkdirSync(avatarsDir, { recursive: true })
 
 const app = express()
 const httpServer = createServer(app)
