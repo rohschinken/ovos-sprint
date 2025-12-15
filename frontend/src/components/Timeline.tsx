@@ -311,8 +311,8 @@ export default function Timeline({
       <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header */}
-          <div className="flex border-b sticky top-0 bg-background z-10">
-            <div className="w-64 p-3 font-semibold border-r">Project</div>
+          <div className="flex border-b-2 sticky top-0 bg-background z-10 shadow-sm">
+            <div className="w-64 p-3 font-semibold border-r bg-muted/30">Project</div>
             {dates.map((date) => (
               <div
                 key={date.toISOString()}
@@ -320,17 +320,22 @@ export default function Timeline({
                   'w-24 p-2 text-center text-sm border-r',
                   isWeekend(date) && 'bg-weekend',
                   isHoliday(date) && 'bg-holiday',
-                  isSameDay(date, today) && 'border-l-2 border-l-primary'
+                  isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold'
                 )}
               >
-                <div className="font-medium">
+                <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
                   {format(date, 'EEE', { locale: de })}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                   {format(date, 'dd.MM')}
                 </div>
+                {isSameDay(date, today) && (
+                  <div className="text-xs text-primary font-semibold">
+                    HEUTE
+                  </div>
+                )}
                 {isHoliday(date) && (
-                  <div className="text-xs text-yellow-700">
+                  <div className="text-xs text-yellow-700 dark:text-yellow-500">
                     {getHolidayName(date)}
                   </div>
                 )}
@@ -347,22 +352,23 @@ export default function Timeline({
             return (
               <div key={project.id}>
                 <div
-                  className="flex border-b hover:bg-muted/50 cursor-pointer"
+                  className="flex border-b-2 bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
                   onClick={() => toggleExpand(project.id)}
                 >
-                  <div className="w-64 p-3 border-r flex items-center gap-2">
+                  <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
                     {expandedItems.has(project.id) ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 text-primary" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
                     <div
                       className={cn(
+                        'flex-1',
                         project.status === 'tentative' && 'opacity-50'
                       )}
                     >
-                      <div className="font-medium">{project.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="font-semibold text-sm">{project.name}</div>
+                      <div className="text-xs text-muted-foreground">
                         {project.customer}
                       </div>
                     </div>
@@ -374,7 +380,8 @@ export default function Timeline({
                         'w-24 border-r',
                         isWeekend(date) && 'bg-weekend',
                         isHoliday(date) && 'bg-holiday',
-                        hasOverlap(project.id, date, 'project') && 'bg-overlap'
+                        hasOverlap(project.id, date, 'project') && 'bg-overlap',
+                        isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary'
                       )}
                     />
                   ))}
@@ -388,9 +395,9 @@ export default function Timeline({
                     if (!member) return null
 
                     return (
-                      <div key={assignment.id} className="flex border-b">
-                        <div className="w-64 p-3 pl-10 border-r flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
+                      <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
+                        <div className="w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background/50">
+                          <Avatar className="h-6 w-6 ring-1 ring-border/50">
                             <AvatarImage src={member.avatarUrl || undefined} />
                             <AvatarFallback
                               className="text-xs"
@@ -402,7 +409,7 @@ export default function Timeline({
                               {getInitials(member.firstName, member.lastName)}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm">
+                          <span className="text-sm text-muted-foreground">
                             {member.firstName} {member.lastName}
                           </span>
                         </div>
@@ -413,6 +420,7 @@ export default function Timeline({
                               'w-24 border-r p-1',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
+                              isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                               isAdmin && 'cursor-pointer'
                             )}
                             onMouseDown={() =>
@@ -459,8 +467,8 @@ export default function Timeline({
     <div className="overflow-x-auto">
       <div className="min-w-max">
         {/* Header */}
-        <div className="flex border-b sticky top-0 bg-background z-10">
-          <div className="w-64 p-3 font-semibold border-r">Team Member</div>
+        <div className="flex border-b-2 sticky top-0 bg-background z-10 shadow-sm">
+          <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Member</div>
           {dates.map((date) => (
             <div
               key={date.toISOString()}
@@ -468,17 +476,22 @@ export default function Timeline({
                 'w-24 p-2 text-center text-sm border-r',
                 isWeekend(date) && 'bg-weekend',
                 isHoliday(date) && 'bg-holiday',
-                isSameDay(date, today) && 'border-l-2 border-l-primary'
+                isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold'
               )}
             >
-              <div className="font-medium">
+              <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
                 {format(date, 'EEE', { locale: de })}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                 {format(date, 'dd.MM')}
               </div>
+              {isSameDay(date, today) && (
+                <div className="text-xs text-primary font-semibold">
+                  HEUTE
+                </div>
+              )}
               {isHoliday(date) && (
-                <div className="text-xs text-yellow-700">
+                <div className="text-xs text-yellow-700 dark:text-yellow-500">
                   {getHolidayName(date)}
                 </div>
               )}
@@ -495,16 +508,16 @@ export default function Timeline({
           return (
             <div key={member.id}>
               <div
-                className="flex border-b hover:bg-muted/50 cursor-pointer"
+                className="flex border-b-2 bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
                 onClick={() => toggleExpand(member.id)}
               >
-                <div className="w-64 p-3 border-r flex items-center gap-2">
+                <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
                   {expandedItems.has(member.id) ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-4 w-4 text-primary" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 ring-2 ring-border/50">
                     <AvatarImage src={member.avatarUrl || undefined} />
                     <AvatarFallback
                       style={{
@@ -515,7 +528,7 @@ export default function Timeline({
                       {getInitials(member.firstName, member.lastName)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">
+                  <span className="font-semibold text-sm">
                     {member.firstName} {member.lastName}
                   </span>
                 </div>
@@ -526,7 +539,8 @@ export default function Timeline({
                       'w-24 border-r',
                       isWeekend(date) && 'bg-weekend',
                       isHoliday(date) && 'bg-holiday',
-                      hasOverlap(member.id, date, 'member') && 'bg-overlap'
+                      hasOverlap(member.id, date, 'member') && 'bg-overlap',
+                      isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary'
                     )}
                   />
                 ))}
@@ -540,10 +554,10 @@ export default function Timeline({
                   if (!project) return null
 
                   return (
-                    <div key={assignment.id} className="flex border-b">
+                    <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
                       <div
                         className={cn(
-                          'w-64 p-3 pl-10 border-r',
+                          'w-64 p-2.5 pl-10 border-r bg-background/50',
                           project.status === 'tentative' && 'opacity-50'
                         )}
                       >
@@ -559,6 +573,7 @@ export default function Timeline({
                             'w-24 border-r p-1',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
+                            isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                             isAdmin && 'cursor-pointer'
                           )}
                           onMouseDown={() =>
