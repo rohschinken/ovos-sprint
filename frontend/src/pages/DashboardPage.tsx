@@ -7,6 +7,7 @@ import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
 import { LayoutGrid, List } from 'lucide-react'
 import { TimelineViewMode } from '@/types'
+import { motion } from 'framer-motion'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
@@ -32,8 +33,18 @@ export default function DashboardPage() {
   }, [settings])
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex justify-between items-center"
+      >
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
@@ -41,33 +52,43 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'by-project' ? 'default' : 'outline'}
-            onClick={() => setViewMode('by-project')}
-            className="gap-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            By Project
-          </Button>
-          <Button
-            variant={viewMode === 'by-member' ? 'default' : 'outline'}
-            onClick={() => setViewMode('by-member')}
-            className="gap-2"
-          >
-            <List className="h-4 w-4" />
-            By Member
-          </Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={viewMode === 'by-project' ? 'default' : 'outline'}
+              onClick={() => setViewMode('by-project')}
+              className="gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              By Project
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={viewMode === 'by-member' ? 'default' : 'outline'}
+              onClick={() => setViewMode('by-member')}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              By Member
+            </Button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      <Card className="p-4">
-        <Timeline
-          viewMode={viewMode}
-          prevDays={prevDays}
-          nextDays={nextDays}
-          isAdmin={user?.role === 'admin'}
-        />
-      </Card>
-    </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+      >
+        <Card className="p-4">
+          <Timeline
+            viewMode={viewMode}
+            prevDays={prevDays}
+            nextDays={nextDays}
+            isAdmin={user?.role === 'admin'}
+          />
+        </Card>
+      </motion.div>
+    </motion.div>
   )
 }

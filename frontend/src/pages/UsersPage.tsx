@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { UserPlus, Copy, CheckCircle2, Clock, Mail } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface Invitation {
   id: number
@@ -93,20 +94,37 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex justify-between items-center"
+      >
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Invite and manage users</p>
         </div>
-        <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Invite User
-        </Button>
-      </div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Invite User
+          </Button>
+        </motion.div>
+      </motion.div>
 
       {/* Existing Users */}
-      <Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+      >
+        <Card>
         <CardHeader>
           <CardTitle>Registered Users</CardTitle>
           <CardDescription>
@@ -120,9 +138,13 @@ export default function UsersPage() {
             </p>
           ) : (
             <div className="space-y-2">
-              {users.map((user) => (
-                <div
+              {users.map((user, index) => (
+                <motion.div
                   key={user.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.3 }}
+                  whileHover={{ scale: 1.01, x: 4 }}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>
@@ -141,12 +163,13 @@ export default function UsersPage() {
                   >
                     {user.role}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </motion.div>
 
       {/* Invite Dialog */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
@@ -205,14 +228,16 @@ export default function UsersPage() {
                         {invitationLink}
                       </code>
                     </div>
-                    <Button
-                      onClick={() => copyToClipboard(invitationLink)}
-                      className="gap-2"
-                      size="sm"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy Link
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={() => copyToClipboard(invitationLink)}
+                        className="gap-2"
+                        size="sm"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Link
+                      </Button>
+                    </motion.div>
                   </div>
                 </div>
               </div>
@@ -240,6 +265,6 @@ export default function UsersPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   )
 }

@@ -15,6 +15,7 @@
     "react-router-dom": "^6.22.3",
     "@tanstack/react-query": "^5.28.4",
     "zustand": "^4.5.2",
+    "zustand-persist": "^0.4.0",
     "socket.io-client": "^4.7.2",
     "date-fns": "^3.3.1",
     "react-day-picker": "^8.10.0",

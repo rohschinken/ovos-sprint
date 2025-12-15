@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function TeamsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -85,21 +86,40 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex justify-between items-center"
+      >
         <div>
           <h1 className="text-3xl font-bold">Teams</h1>
           <p className="text-muted-foreground">Manage your teams</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Team
-        </Button>
-      </div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Team
+          </Button>
+        </motion.div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {teams.map((team) => (
-          <Card key={team.id}>
+        {teams.map((team, index) => (
+          <motion.div
+            key={team.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.3 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <Card>
             <CardHeader>
               <CardTitle>{team.name}</CardTitle>
               <CardDescription>
@@ -108,30 +128,35 @@ export default function TeamsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingTeam(team)
-                    setTeamName(team.name)
-                  }}
-                  className="gap-2"
-                >
-                  <Pencil className="h-3 w-3" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => deleteMutation.mutate(team.id)}
-                  className="gap-2"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingTeam(team)
+                      setTeamName(team.name)
+                    }}
+                    className="gap-2"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate(team.id)}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </Button>
+                </motion.div>
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
@@ -176,6 +201,6 @@ export default function TeamsPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   )
 }

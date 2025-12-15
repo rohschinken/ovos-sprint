@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth'
 import { Toaster } from './components/ui/toaster'
+import { useInitializeTheme } from './hooks/use-theme'
 
 // Pages
 import LoginPage from './pages/LoginPage'
@@ -36,6 +37,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { token, fetchUser } = useAuthStore()
+  useInitializeTheme()
 
   useEffect(() => {
     if (token) {
