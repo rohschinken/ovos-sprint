@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ovos Sprint - Workload Management Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header .tagline {
+            font-size: 1.5rem;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .badges {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .content {
+            padding: 3rem 2rem;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin: 3rem 0 1.5rem;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            color: #764ba2;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .tech-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s ease;
+        }
+
+        .tech-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .code-block code {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            border-left: 5px solid #fdcb6e;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fab1a0 0%, #e17055 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .footer {
+            background: #2d3436;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .screenshot-placeholder {
+            background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+            height: 300px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2rem 0;
+            font-size: 1.2rem;
+            color: #636e72;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        tr:hover {
+            background: #f5f7fa;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .header .tagline {
+                font-size: 1.2rem;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+
+            h3 {
+                font-size: 1.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toc {
+            background: #f5f7fa;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 2rem 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 0.5rem 0;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ovos Sprint</h1>
+            <p class="tagline">Professional Workload Management & Resource Planning</p>
+            <div class="badges">
+                <span class="badge">Version 1.0.0</span>
+                <span class="badge">TypeScript</span>
+                <span class="badge">React + Express</span>
+                <span class="badge">SQLite</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>📣 What is ovos Sprint?</strong><br>
+                ovos Sprint is a modern, real-time web application designed to help IT project managers visualize and manage team workloads efficiently. Built with cutting-edge technologies, it offers an intuitive timeline-based interface for resource allocation and project planning.
+            </div>
+
+            <h2>✨ Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>🔐 Role-Based Access</h3>
+                    <p><strong>Admin</strong>: Full CRUD permissions<br>
+                    <strong>User</strong>: Read-only access<br>
+                    Invitation-based secure registration</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>👥 Team Management</h3>
+                    <p>Create and manage teams, add members with custom or auto-generated avatars, organize resources efficiently</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📊 Project Planning</h3>
+                    <p>Track confirmed and tentative projects, assign team members, visualize project status at a glance</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📅 Interactive Timeline</h3>
+                    <p>View by Project or Team Member, drag-to-assign functionality, holiday and weekend detection</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🔄 Real-Time Updates</h3>
+                    <p>WebSocket-based synchronization, multiple users working simultaneously, no page refresh needed</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>⚙️ Configurable Settings</h3>
+                    <p>Customize timeline ranges, toggle warnings, adjust overlap visualization, per-user preferences</p>
+                </div>
+            </div>
+
+            <h2>🛠️ Technology Stack</h2>
+            <div class="tech-stack">
+                <span class="tech-badge">React 18</span>
+                <span class="tech-badge">TypeScript</span>
+                <span class="tech-badge">Vite</span>
+                <span class="tech-badge">Tailwind CSS</span>
+                <span class="tech-badge">shadcn/ui</span>
+                <span class="tech-badge">Express.js</span>
+                <span class="tech-badge">SQLite</span>
+                <span class="tech-badge">Drizzle ORM</span>
+                <span class="tech-badge">Socket.IO</span>
+                <span class="tech-badge">Docker</span>
+                <span class="tech-badge">Caddy</span>
+            </div>
+
+            <h2>🚀 Quick Start</h2>
+
+            <h3>1. Clone the Repository</h3>
+            <div class="code-block">
+                <code>git clone https://github.com/rohschinken/ovos-sprint.git
+cd ovos-sprint</code>
+            </div>
+
+            <h3>2. Install Dependencies</h3>
+            <div class="code-block">
+                <code># Backend
+cd backend
+npm install
+
+# Frontend
+cd ../frontend
+npm install</code>
+            </div>
+
+            <h3>3. Initialize Database</h3>
+            <div class="code-block">
+                <code>cd backend
+npm run db:generate
+npm run db:migrate
+npm run db:seed</code>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> The seed command will output admin credentials. Save these securely!
+            </div>
+
+            <h3>4. Start with Docker Compose</h3>
+            <div class="code-block">
+                <code>docker-compose up --build</code>
+            </div>
+
+            <div class="highlight-box">
+                <strong>🎉 Application Ready!</strong><br>
+                Frontend: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a><br>
+                Backend API: <a href="http://localhost:3001" target="_blank">http://localhost:3001</a>
+            </div>
+
+            <h2>👤 Default Admin Account</h2>
+            <p>After seeding the database, log in with:</p>
+            <ul>
+                <li><strong>Email:</strong> af@ovos.at</li>
+                <li><strong>Password:</strong> <em>(check console output from seed command)</em></li>
+            </ul>
+
+            <h2>📚 Features in Detail</h2>
+
+            <h3>Timeline View Modes</h3>
+            <p><strong>By Project Mode:</strong> View all team members assigned to each project. Expand projects to see individual member assignments.</p>
+            <p><strong>By Team Member Mode:</strong> View all projects assigned to each team member. Expand members to see their project commitments.</p>
+
+            <h3>Drag-to-Assign</h3>
+            <p>Admins can click and drag across days to create assignments. The system will:</p>
+            <ul>
+                <li>Warn about weekend/holiday assignments (if enabled)</li>
+                <li>Show visual feedback during dragging</li>
+                <li>Create assignments for all selected days</li>
+                <li>Color-code based on project status (confirmed/tentative)</li>
+            </ul>
+
+            <h3>Austrian Holidays</h3>
+            <p>The system automatically detects and highlights all Austrian federal holidays:</p>
+            <ul>
+                <li>Fixed holidays (New Year, Labour Day, National Day, Christmas, etc.)</li>
+                <li>Easter-dependent holidays (Easter Monday, Ascension Day, Whit Monday, Corpus Christi)</li>
+            </ul>
+
+            <h2>🔐 Security Features</h2>
+            <ul>
+                <li>JWT-based authentication with secure token management</li>
+                <li>Bcrypt password hashing (10 rounds)</li>
+                <li>Role-based access control (RBAC)</li>
+                <li>CORS protection</li>
+                <li>Helmet security headers</li>
+                <li>SQL injection prevention via Drizzle ORM</li>
+                <li>Invitation-based user registration</li>
+            </ul>
+
+            <h2>📂 Project Structure</h2>
+            <div class="code-block">
+                <code>ovos-sprint/
+├── frontend/              # React frontend application
+│   ├── src/
+│   │   ├── components/   # React components & shadcn/ui
+│   │   ├── pages/        # Page components
+│   │   ├── store/        # Zustand stores
+│   │   └── types/        # TypeScript definitions
+├── backend/               # Express backend application
+│   ├── src/
+│   │   ├── db/           # Database schema & migrations
+│   │   ├── routes/       # API route handlers
+│   │   ├── websocket/    # WebSocket setup
+│   │   └── index.ts      # Entry point
+├── data/                  # SQLite database & uploads
+├── docker-compose.yml     # Docker Compose config
+└── README.md             # Documentation</code>
+            </div>
+
+            <h2>🤝 Contributing</h2>
+            <p>Contributions are welcome! Please follow these steps:</p>
+            <ol>
+                <li>Fork the repository</li>
+                <li>Create a feature branch</li>
+                <li>Commit your changes</li>
+                <li>Push to the branch</li>
+                <li>Open a Pull Request</li>
+            </ol>
+
+            <h2>📝 License</h2>
+            <p>This project is licensed under the MIT License - see the LICENSE file for details.</p>
+
+            <div class="info-box">
+                <h3>📞 Support</h3>
+                <p>For issues, questions, or suggestions:</p>
+                <p><strong>Email:</strong> support@ovos.at<br>
+                <strong>GitHub:</strong> <a href="https://github.com/rohschinken/ovos-sprint/issues" style="color: white; text-decoration: underline;">Report an Issue</a></p>
+            </div>
+
+            <div style="text-align: center; margin: 3rem 0;">
+                <a href="https://github.com/rohschinken/ovos-sprint" class="btn">View on GitHub</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Made with ❤️ by ovos</p>
+            <p>Last Updated: December 2025</p>
+        </div>
+    </div>
+</body>
+</html>

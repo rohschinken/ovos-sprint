@@ -1,0 +1,117 @@
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const teams = sqliteTable('teams', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const teamMembers = sqliteTable('team_members', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  avatarUrl: text('avatar_url'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const projects = sqliteTable('projects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  customer: text('customer').notNull(),
+  name: text('name').notNull(),
+  status: text('status', { enum: ['confirmed', 'tentative'] }).notNull().default('tentative'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const teamTeamMembers = sqliteTable('team_team_members', {
+  teamId: integer('team_id')
+    .notNull()
+    .references(() => teams.id, { onDelete: 'cascade' }),
+  teamMemberId: integer('team_member_id')
+    .notNull()
+    .references(() => teamMembers.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.teamId, table.teamMemberId] }),
+}))
+
+export const projectAssignments = sqliteTable('project_assignments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  teamMemberId: integer('team_member_id')
+    .notNull()
+    .references(() => teamMembers.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const dayAssignments = sqliteTable('day_assignments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectAssignmentId: integer('project_assignment_id')
+    .notNull()
+    .references(() => projectAssignments.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // ISO date string (YYYY-MM-DD)
+  comment: text('comment'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const invitations = sqliteTable('invitations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: text('expires_at').notNull(),
+  usedAt: text('used_at'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const settings = sqliteTable('settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  key: text('key').notNull(),
+  value: text('value').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+// Types
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+export type Team = typeof teams.$inferSelect
+export type NewTeam = typeof teams.$inferInsert
+export type TeamMember = typeof teamMembers.$inferSelect
+export type NewTeamMember = typeof teamMembers.$inferInsert
+export type Project = typeof projects.$inferSelect
+export type NewProject = typeof projects.$inferInsert
+export type ProjectAssignment = typeof projectAssignments.$inferSelect
+export type NewProjectAssignment = typeof projectAssignments.$inferInsert
+export type DayAssignment = typeof dayAssignments.$inferSelect
+export type NewDayAssignment = typeof dayAssignments.$inferInsert
+export type Invitation = typeof invitations.$inferSelect
+export type NewInvitation = typeof invitations.$inferInsert
+export type Settings = typeof settings.$inferSelect
+export type NewSettings = typeof settings.$inferInsert

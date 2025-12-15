@@ -1,0 +1,7 @@
+:3000 {
+    reverse_proxy frontend:5173
+}
+
+:3001 {
+    reverse_proxy backend:3001
+}
