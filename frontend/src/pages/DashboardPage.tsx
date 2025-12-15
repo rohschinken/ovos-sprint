@@ -18,7 +18,7 @@ import { motion } from 'framer-motion'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
-  const [viewMode, setViewMode] = useState<TimelineViewMode>('by-project')
+  const [viewMode, setViewMode] = useState<TimelineViewMode>('by-member')
   const [prevDays, setPrevDays] = useState(1)
   const [nextDays, setNextDays] = useState(30)
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])

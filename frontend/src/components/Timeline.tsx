@@ -127,6 +127,16 @@ export default function Timeline({
     },
   })
 
+  const deleteDayAssignmentMutation = useMutation({
+    mutationFn: async (dayAssignmentId: number) => {
+      await api.delete(`/assignments/days/${dayAssignmentId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
+      toast({ title: 'Assignment deleted' })
+    },
+  })
+
   const toggleExpand = (id: number) => {
     const newExpanded = new Set(expandedItems)
     if (newExpanded.has(id)) {
@@ -218,6 +228,29 @@ export default function Timeline({
         da.projectAssignment?.id === assignmentId &&
         isSameDay(new Date(da.date), date)
     )
+  }
+
+  const getDayAssignmentId = (assignmentId: number, date: Date) => {
+    const dayAssignment = dayAssignments.find(
+      (da: any) =>
+        da.projectAssignment?.id === assignmentId &&
+        isSameDay(new Date(da.date), date)
+    )
+    return dayAssignment?.id
+  }
+
+  const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
+    if (!isAdmin) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const dayAssignmentId = getDayAssignmentId(assignmentId, date)
+    if (!dayAssignmentId) return
+
+    if (confirm('Delete this day assignment?')) {
+      deleteDayAssignmentMutation.mutate(dayAssignmentId)
+    }
   }
 
   const isDayInDragRange = (assignmentId: number, date: Date) => {
@@ -323,7 +356,11 @@ export default function Timeline({
                     ) : (
                       <ChevronRight className="h-4 w-4" />
                     )}
-                    <div>
+                    <div
+                      className={cn(
+                        project.status === 'tentative' && 'opacity-50'
+                      )}
+                    >
                       <div className="font-medium">{project.name}</div>
                       <div className="text-sm text-muted-foreground">
                         {project.customer}
@@ -388,6 +425,14 @@ export default function Timeline({
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
                                 )}
+                                onContextMenu={(e) =>
+                                  handleDeleteDayAssignment(assignment.id, date, e)
+                                }
+                                onClick={(e) => {
+                                  if (e.ctrlKey || e.metaKey) {
+                                    handleDeleteDayAssignment(assignment.id, date, e)
+                                  }
+                                }}
                               />
                             )}
                           </div>
@@ -485,7 +530,12 @@ export default function Timeline({
 
                   return (
                     <div key={assignment.id} className="flex border-b">
-                      <div className="w-64 p-3 pl-10 border-r">
+                      <div
+                        className={cn(
+                          'w-64 p-3 pl-10 border-r',
+                          project.status === 'tentative' && 'opacity-50'
+                        )}
+                      >
                         <div className="text-sm font-medium">{project.name}</div>
                         <div className="text-xs text-muted-foreground">
                           {project.customer}
@@ -516,6 +566,14 @@ export default function Timeline({
                                 isDayInDragRange(assignment.id, date) &&
                                   'opacity-50'
                               )}
+                              onContextMenu={(e) =>
+                                handleDeleteDayAssignment(assignment.id, date, e)
+                              }
+                              onClick={(e) => {
+                                if (e.ctrlKey || e.metaKey) {
+                                  handleDeleteDayAssignment(assignment.id, date, e)
+                                }
+                              }}
                             />
                           )}
                         </div>
