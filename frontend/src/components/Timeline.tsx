@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { TimelineViewMode, Project, TeamMember, DayAssignment } from '@/types'
 import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
-import { cn, getInitials } from '@/lib/utils'
+import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay } from 'date-fns'
@@ -392,7 +392,13 @@ export default function Timeline({
                         <div className="w-64 p-3 pl-10 border-r flex items-center gap-2">
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={member.avatarUrl || undefined} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback
+                              className="text-xs"
+                              style={{
+                                backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                                color: getAvatarColor(member.firstName, member.lastName).text,
+                              }}
+                            >
                               {getInitials(member.firstName, member.lastName)}
                             </AvatarFallback>
                           </Avatar>
@@ -500,7 +506,12 @@ export default function Timeline({
                   )}
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={member.avatarUrl || undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback
+                      style={{
+                        backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                        color: getAvatarColor(member.firstName, member.lastName).text,
+                      }}
+                    >
                       {getInitials(member.firstName, member.lastName)}
                     </AvatarFallback>
                   </Avatar>

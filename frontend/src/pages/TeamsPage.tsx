@@ -32,7 +32,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2, Users, X } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { getInitials } from '@/lib/utils'
+import { getInitials, getAvatarColor } from '@/lib/utils'
 
 export default function TeamsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -320,7 +320,12 @@ export default function TeamsPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={member.avatarUrl || undefined} />
-                            <AvatarFallback>
+                            <AvatarFallback
+                              style={{
+                                backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                                color: getAvatarColor(member.firstName, member.lastName).text,
+                              }}
+                            >
                               {getInitials(member.firstName, member.lastName)}
                             </AvatarFallback>
                           </Avatar>
@@ -365,7 +370,13 @@ export default function TeamsPage() {
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
                               <AvatarImage src={member.avatarUrl || undefined} />
-                              <AvatarFallback className="text-xs">
+                              <AvatarFallback
+                                className="text-xs"
+                                style={{
+                                  backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                                  color: getAvatarColor(member.firstName, member.lastName).text,
+                                }}
+                              >
                                 {getInitials(member.firstName, member.lastName)}
                               </AvatarFallback>
                             </Avatar>
