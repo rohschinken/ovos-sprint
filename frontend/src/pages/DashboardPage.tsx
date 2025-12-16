@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
   const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (narrow)
   const [expandedItems, setExpandedItems] = useState<number[]>([])
+  const [hideTentative, setHideTentative] = useState(true) // default: hidden
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -55,6 +56,7 @@ export default function DashboardPage() {
         if (prefs.selectedTeamIds) setSelectedTeamIds(prefs.selectedTeamIds)
         if (prefs.zoomLevel) setZoomLevel(prefs.zoomLevel)
         if (prefs.expandedItems !== undefined) setExpandedItems(prefs.expandedItems)
+        if (prefs.hideTentative !== undefined) setHideTentative(prefs.hideTentative)
       } catch (error) {
         console.error('Failed to load dashboard preferences:', error)
       }
@@ -71,9 +73,10 @@ export default function DashboardPage() {
       selectedTeamIds,
       zoomLevel,
       expandedItems,
+      hideTentative,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems])
+  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, hideTentative])
 
   useEffect(() => {
     if (settings.timelinePrevDays) {
@@ -203,6 +206,24 @@ export default function DashboardPage() {
               </div>
             </PopoverContent>
           </Popover>
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background"
+          >
+            <Checkbox
+              id="hide-tentative"
+              checked={hideTentative}
+              onCheckedChange={(checked) => setHideTentative(!!checked)}
+            />
+            <Label
+              htmlFor="hide-tentative"
+              className="text-sm font-medium cursor-pointer"
+            >
+              Hide Tentative
+            </Label>
+          </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant={viewMode === 'by-project' ? 'default' : 'outline'}
@@ -241,6 +262,7 @@ export default function DashboardPage() {
             zoomLevel={zoomLevel}
             expandedItems={expandedItems}
             onExpandedItemsChange={setExpandedItems}
+            hideTentative={hideTentative}
           />
         </Card>
       </motion.div>

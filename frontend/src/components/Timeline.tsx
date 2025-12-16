@@ -7,7 +7,7 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface TimelineProps {
@@ -19,6 +19,7 @@ interface TimelineProps {
   zoomLevel: number
   expandedItems: number[]
   onExpandedItemsChange: (items: number[]) => void
+  hideTentative: boolean
 }
 
 export default function Timeline({
@@ -30,6 +31,7 @@ export default function Timeline({
   zoomLevel,
   expandedItems: expandedItemsProp,
   onExpandedItemsChange,
+  hideTentative,
 }: TimelineProps) {
   const [dragState, setDragState] = useState<{
     assignmentId: number | null
@@ -67,7 +69,7 @@ export default function Timeline({
   let currentFirstDate: Date | null = null
 
   dates.forEach((date) => {
-    const monthKey = format(date, 'MMMM yyyy', { locale: de })
+    const monthKey = format(date, 'MMMM yyyy', { locale: enUS })
     if (monthKey !== currentMonth) {
       if (currentMonth) {
         monthGroups.push({ month: currentMonth, count: currentCount, firstDate: currentFirstDate! })
@@ -144,13 +146,13 @@ export default function Timeline({
 
   // Initialize all items as expanded by default (when no saved preferences)
   useEffect(() => {
-    if (expandedItemsProp.length === 0 && (projects.length > 0 || members.length > 0)) {
+    if (expandedItemsProp.length === 0 && (filteredProjects.length > 0 || filteredMembersWithProjects.length > 0)) {
       const allIds = viewMode === 'by-project'
-        ? projects.map((p) => p.id)
-        : members.map((m) => m.id)
+        ? filteredProjects.map((p) => p.id)
+        : filteredMembersWithProjects.map((m) => m.id)
       onExpandedItemsChange(allIds)
     }
-  }, [projects, members, viewMode]) // Only run when data loads or view mode changes
+  }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
 
   // Filter members based on selected teams
   const filteredMembers =
@@ -165,7 +167,7 @@ export default function Timeline({
         )
 
   // Filter projects based on selected teams (show only projects with members from selected teams)
-  const filteredProjects =
+  const filteredProjectsWithTeam =
     selectedTeamIds.length === 0
       ? projects
       : projects.filter((project) => {
@@ -184,6 +186,27 @@ export default function Timeline({
             )
           })
         })
+
+  // Filter out projects without members
+  const filteredProjectsWithMembers = filteredProjectsWithTeam.filter((project) => {
+    const assignments = projectAssignments.filter(
+      (pa: any) => pa.projectId === project.id
+    )
+    return assignments.length > 0
+  })
+
+  // Filter out tentative projects if hideTentative is true
+  const filteredProjects = hideTentative
+    ? filteredProjectsWithMembers.filter((project) => project.status === 'confirmed')
+    : filteredProjectsWithMembers
+
+  // Filter out members without projects
+  const filteredMembersWithProjects = filteredMembers.filter((member) => {
+    const assignments = projectAssignments.filter(
+      (pa: any) => pa.teamMemberId === member.id
+    )
+    return assignments.length > 0
+  })
 
   const createDayAssignmentMutation = useMutation({
     mutationFn: async (data: {
@@ -275,8 +298,6 @@ export default function Timeline({
           date: format(date, 'yyyy-MM-dd'),
         })
       }
-
-      toast({ title: 'Assignment created' })
     }
 
     setDragState({ assignmentId: null, startDate: null, endDate: null })
@@ -375,6 +396,19 @@ export default function Timeline({
     return getMemberAssignmentsOnDate(memberId, date) > 0
   }
 
+  // Check if a member has any confirmed assignments on a date
+  const memberHasConfirmedAssignmentOnDate = (memberId: number, date: Date) => {
+    const memberAssignments = projectAssignments.filter(
+      (pa: any) => pa.teamMemberId === memberId
+    )
+
+    return memberAssignments.some((assignment: any) => {
+      if (!isDayAssigned(assignment.id, date)) return false
+      const project = projects.find((p) => p.id === assignment.projectId)
+      return project && project.status === 'confirmed'
+    })
+  }
+
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
     if (settings.showOverlapVisualization === 'false') return false
 
@@ -429,18 +463,18 @@ export default function Timeline({
                 )}
               >
                 <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                  {format(date, 'EEE', { locale: de })}
+                  {format(date, 'EEE', { locale: enUS })}
                 </div>
                 <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                   {format(date, 'dd.MM')}
                 </div>
                 {isSameDay(date, today) && (
                   <div className="text-xs text-primary font-semibold">
-                    HEUTE
+                    TODAY
                   </div>
                 )}
                 {isHoliday(date) && (
-                  <div className="text-xs text-purple-700 dark:text-purple-400 font-medium">
+                  <div className="text-xs text-purple-700 dark:text-purple-400 font-medium truncate px-1">
                     {getHolidayName(date)}
                   </div>
                 )}
@@ -494,7 +528,12 @@ export default function Timeline({
                         <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
                       )}
                       {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
-                        <div className="w-2 h-2 rounded-full bg-primary/70" />
+                        <div className={cn(
+                          'w-2 h-2 rounded-full',
+                          project.status === 'confirmed'
+                            ? 'bg-emerald-500 dark:bg-emerald-400'
+                            : 'bg-amber-500 dark:bg-amber-400'
+                        )} />
                       )}
                     </div>
                   ))}
@@ -544,7 +583,7 @@ export default function Timeline({
                           >
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                               <span className="text-xs text-muted-foreground/40 font-medium">
-                                {format(date, 'EEE', { locale: de })}
+                                {format(date, 'EEE', { locale: enUS })}
                               </span>
                             </div>
                             {(isDayAssigned(assignment.id, date) ||
@@ -625,7 +664,7 @@ export default function Timeline({
               )}
             >
               <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                {format(date, 'EEE', { locale: de })}
+                {format(date, 'EEE', { locale: enUS })}
               </div>
               <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                 {format(date, 'dd.MM')}
@@ -646,7 +685,7 @@ export default function Timeline({
         </div>
 
         {/* Members */}
-        {filteredMembers.map((member) => {
+        {filteredMembersWithProjects.map((member) => {
           const assignments = projectAssignments.filter(
             (pa: any) => pa.teamMemberId === member.id
           )
@@ -693,7 +732,12 @@ export default function Timeline({
                       <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
                     )}
                     {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
-                      <div className="w-2 h-2 rounded-full bg-primary/70" />
+                      <div className={cn(
+                        'w-2 h-2 rounded-full',
+                        memberHasConfirmedAssignmentOnDate(member.id, date)
+                          ? 'bg-emerald-500 dark:bg-emerald-400'
+                          : 'bg-amber-500 dark:bg-amber-400'
+                      )} />
                     )}
                   </div>
                 ))}
@@ -737,7 +781,7 @@ export default function Timeline({
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <span className="text-xs text-muted-foreground/40 font-medium">
-                              {format(date, 'EEE', { locale: de })}
+                              {format(date, 'EEE', { locale: enUS })}
                             </span>
                           </div>
                           {(isDayAssigned(assignment.id, date) ||
