@@ -473,7 +473,7 @@ export default function Timeline({
                 </div>
                 {isSameDay(date, today) && (
                   <div className="text-xs text-primary font-semibold">
-                    TODAY
+                    {zoomLevel <= 2 ? 'TDY' : 'TODAY'}
                   </div>
                 )}
                 {isHoliday(date) && (
