@@ -17,6 +17,8 @@ interface TimelineProps {
   isAdmin: boolean
   selectedTeamIds: number[]
   zoomLevel: number
+  expandedItems: number[]
+  onExpandedItemsChange: (items: number[]) => void
 }
 
 export default function Timeline({
@@ -26,8 +28,9 @@ export default function Timeline({
   isAdmin,
   selectedTeamIds,
   zoomLevel,
+  expandedItems: expandedItemsProp,
+  onExpandedItemsChange,
 }: TimelineProps) {
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [dragState, setDragState] = useState<{
     assignmentId: number | null
     startDate: Date | null
@@ -37,14 +40,17 @@ export default function Timeline({
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  // Column width based on zoom level (1=tiny, 2=small, 3=medium, 4=large)
+  // Convert expandedItems array to Set for easier manipulation
+  const expandedItemsSet = new Set(expandedItemsProp)
+
+  // Column width based on zoom level (1=compact, 2=narrow, 3=normal, 4=wide)
   const columnWidths = {
-    1: 'w-16', // 64px - Tiny
-    2: 'w-20', // 80px - Small
-    3: 'w-24', // 96px - Medium (current)
-    4: 'w-32', // 128px - Large
+    1: 'w-12', // 48px - Compact
+    2: 'w-16', // 64px - Narrow
+    3: 'w-20', // 80px - Normal
+    4: 'w-24', // 96px - Wide
   }
-  const columnWidth = columnWidths[zoomLevel as keyof typeof columnWidths] || 'w-24'
+  const columnWidth = columnWidths[zoomLevel as keyof typeof columnWidths] || 'w-16'
 
   // Generate dates
   const today = startOfDay(new Date())
@@ -136,6 +142,16 @@ export default function Timeline({
     },
   })
 
+  // Initialize all items as expanded by default (when no saved preferences)
+  useEffect(() => {
+    if (expandedItemsProp.length === 0 && (projects.length > 0 || members.length > 0)) {
+      const allIds = viewMode === 'by-project'
+        ? projects.map((p) => p.id)
+        : members.map((m) => m.id)
+      onExpandedItemsChange(allIds)
+    }
+  }, [projects, members, viewMode]) // Only run when data loads or view mode changes
+
   // Filter members based on selected teams
   const filteredMembers =
     selectedTeamIds.length === 0
@@ -193,13 +209,13 @@ export default function Timeline({
   })
 
   const toggleExpand = (id: number) => {
-    const newExpanded = new Set(expandedItems)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
+    const newExpandedSet = new Set(expandedItemsProp)
+    if (newExpandedSet.has(id)) {
+      newExpandedSet.delete(id)
     } else {
-      newExpanded.add(id)
+      newExpandedSet.add(id)
     }
-    setExpandedItems(newExpanded)
+    onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
   const handleMouseDown = (assignmentId: number, date: Date) => {
@@ -303,9 +319,7 @@ export default function Timeline({
     const dayAssignmentId = getDayAssignmentId(assignmentId, date)
     if (!dayAssignmentId) return
 
-    if (confirm('Delete this day assignment?')) {
-      deleteDayAssignmentMutation.mutate(dayAssignmentId)
-    }
+    deleteDayAssignmentMutation.mutate(dayAssignmentId)
   }
 
   const isDayInDragRange = (assignmentId: number, date: Date) => {
@@ -382,8 +396,8 @@ export default function Timeline({
               <div className="w-64 border-r bg-muted/30"></div>
               {monthGroups.map((group, idx) => {
                 // Calculate width based on column count and zoom level
-                const pixelWidths = { 1: 64, 2: 80, 3: 96, 4: 128 }
-                const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 96
+                const pixelWidths = { 1: 48, 2: 64, 3: 80, 4: 96 }
+                const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
                 const totalWidth = group.count * pixelWidth
 
                 return (
@@ -448,7 +462,7 @@ export default function Timeline({
                   onClick={() => toggleExpand(project.id)}
                 >
                   <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
-                    {expandedItems.has(project.id) ? (
+                    {expandedItemsSet.has(project.id) ? (
                       <ChevronDown className="h-4 w-4 text-primary" />
                     ) : (
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -479,14 +493,14 @@ export default function Timeline({
                       {hasOverlap(project.id, date, 'project') && (
                         <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
                       )}
-                      {!expandedItems.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
+                      {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
                         <div className="w-2 h-2 rounded-full bg-primary/70" />
                       )}
                     </div>
                   ))}
                 </div>
 
-                {expandedItems.has(project.id) &&
+                {expandedItemsSet.has(project.id) &&
                   assignments.map((assignment: any) => {
                     const member = members.find(
                       (m) => m.id === assignment.teamMemberId
@@ -516,7 +530,7 @@ export default function Timeline({
                           <div
                             key={date.toISOString()}
                             className={cn(
-                              columnWidth, 'border-r p-1',
+                              columnWidth, 'border-r p-1 group relative',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -528,6 +542,11 @@ export default function Timeline({
                             }
                             onMouseEnter={() => handleMouseEnter(date)}
                           >
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              <span className="text-xs text-muted-foreground/40 font-medium">
+                                {format(date, 'EEE', { locale: de })}
+                              </span>
+                            </div>
                             {(isDayAssigned(assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
                               <div
@@ -639,7 +658,7 @@ export default function Timeline({
                 onClick={() => toggleExpand(member.id)}
               >
                 <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
-                  {expandedItems.has(member.id) ? (
+                  {expandedItemsSet.has(member.id) ? (
                     <ChevronDown className="h-4 w-4 text-primary" />
                   ) : (
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -671,16 +690,16 @@ export default function Timeline({
                     )}
                   >
                     {hasOverlap(member.id, date, 'member') && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-destructive rounded-t-sm" />
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
                     )}
-                    {!expandedItems.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
+                    {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
                       <div className="w-2 h-2 rounded-full bg-primary/70" />
                     )}
                   </div>
                 ))}
               </div>
 
-              {expandedItems.has(member.id) &&
+              {expandedItemsSet.has(member.id) &&
                 assignments.map((assignment: any) => {
                   const project = projects.find(
                     (p) => p.id === assignment.projectId
@@ -704,7 +723,7 @@ export default function Timeline({
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            columnWidth, 'border-r p-1',
+                            columnWidth, 'border-r p-1 group relative',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -716,6 +735,11 @@ export default function Timeline({
                           }
                           onMouseEnter={() => handleMouseEnter(date)}
                         >
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <span className="text-xs text-muted-foreground/40 font-medium">
+                              {format(date, 'EEE', { locale: de })}
+                            </span>
+                          </div>
                           {(isDayAssigned(assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
                             <div

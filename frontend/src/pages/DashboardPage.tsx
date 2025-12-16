@@ -23,7 +23,8 @@ export default function DashboardPage() {
   const [prevDays, setPrevDays] = useState(1)
   const [nextDays, setNextDays] = useState(30)
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
-  const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (medium)
+  const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (narrow)
+  const [expandedItems, setExpandedItems] = useState<number[]>([])
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -52,6 +53,8 @@ export default function DashboardPage() {
         const prefs = JSON.parse(savedPrefs)
         if (prefs.viewMode) setViewMode(prefs.viewMode)
         if (prefs.selectedTeamIds) setSelectedTeamIds(prefs.selectedTeamIds)
+        if (prefs.zoomLevel) setZoomLevel(prefs.zoomLevel)
+        if (prefs.expandedItems !== undefined) setExpandedItems(prefs.expandedItems)
       } catch (error) {
         console.error('Failed to load dashboard preferences:', error)
       }
@@ -66,9 +69,11 @@ export default function DashboardPage() {
     const prefs = {
       viewMode,
       selectedTeamIds,
+      zoomLevel,
+      expandedItems,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, viewMode, selectedTeamIds])
+  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems])
 
   useEffect(() => {
     if (settings.timelinePrevDays) {
@@ -131,8 +136,8 @@ export default function DashboardPage() {
               step={1}
               className="w-32"
             />
-            <span className="text-xs font-medium text-muted-foreground w-12">
-              {['Tiny', 'Small', 'Medium', 'Large'][zoomLevel - 1]}
+            <span className="text-xs font-medium text-muted-foreground w-16">
+              {['Compact', 'Narrow', 'Normal', 'Wide'][zoomLevel - 1]}
             </span>
           </motion.div>
 
@@ -234,6 +239,8 @@ export default function DashboardPage() {
             isAdmin={user?.role === 'admin'}
             selectedTeamIds={selectedTeamIds}
             zoomLevel={zoomLevel}
+            expandedItems={expandedItems}
+            onExpandedItemsChange={setExpandedItems}
           />
         </Card>
       </motion.div>
