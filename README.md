@@ -39,20 +39,27 @@ Two powerful view modes:
 
 Timeline features:
 
-- Configurable date range (previous X days, next X days)
-- Day-by-day workload visualization
-- Weekend highlighting (Saturday & Sunday)
-- Austrian federal holiday detection with names
-- Current day indicator
-- Expandable/collapsible project and member rows
+- **Configurable zoom levels**: Compact (48px), Narrow (64px), Normal (80px), Wide (96px)
+- **Smart TODAY indicator**: Shows "TDY" in compact views, "TODAY" in wider views
+- **Weekday hover tooltips**: Hover over any cell to see the day of the week
+- **Configurable date range**: Previous X days, next X days
+- **Day-by-day workload visualization** with color-coded assignments
+- **Weekend highlighting** (Saturday & Sunday)
+- **Austrian federal holiday detection** with English names (auto-truncated in narrow cells)
+- **Expandable/collapsible rows** with persisted user preferences
+- **Hide tentative toggle**: Filter out tentative projects with one click (default: hidden)
+- **Color-matched indicators**: Collapsed row indicators match assignment status (emerald for confirmed, amber for tentative)
+- **User preference persistence**: Zoom level, collapsed state, and filter preferences saved per user
 
 ### 🎯 **Drag-to-Assign Functionality** (Admin Only)
 
-- Intuitive click-and-drag interface for day assignments
-- Multi-day selection support
-- Weekend/holiday assignment warnings (configurable)
-- Visual feedback during drag operations
-- Optional comments on assignments
+- **Intuitive click-and-drag** interface for day assignments
+- **Multi-day selection** support
+- **Quick deletion**: Right-click or CTRL+click to delete (no confirmation needed)
+- **Weekend/holiday assignment warnings** (configurable)
+- **Visual feedback** during drag operations
+- **Optional comments** on assignments
+- **Silent creation**: No toast notifications for smoother workflow
 
 ### ⚙️ **Customizable Settings**
 
@@ -69,11 +76,12 @@ Timeline features:
 
 ### 🎨 **Modern UI/UX**
 
-- Clean, professional design
-- Smooth micro-animations
-- Responsive layout
-- Accessible color scheme
-- Intuitive navigation
+- **Clean, professional design** with attention to detail
+- **Dark mode support** with system preference detection
+- **Smooth micro-animations** using Framer Motion
+- **Responsive layout** for all screen sizes
+- **Accessible color scheme** (emerald/amber status indicators)
+- **Intuitive navigation** with keyboard shortcuts support
 
 ---
 
@@ -126,57 +134,24 @@ Timeline features:
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Option 1: Development Mode (Recommended for Development)
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/rohschinken/ovos-sprint.git
 cd ovos-sprint
+
+# 2. Install all dependencies (root, backend, and frontend)
+npm run install:all
+
+# 3. Set up database (first time only)
+npm run db:setup
+
+# 4. Run both frontend and backend
+npm run dev
 ```
 
-### 2. Install Dependencies
-
-**Backend:**
-
-```bash
-cd backend
-npm install
-```
-
-**Frontend:**
-
-```bash
-cd ../frontend
-npm install
-```
-
-### 3. Environment Setup
-
-Create a `.env` file in the `backend` directory:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env` with your configuration:
-
-```env
-NODE_ENV=development
-PORT=3001
-DATABASE_URL=./data/ovos-sprint.db
-JWT_SECRET=your-secure-secret-key-here
-FRONTEND_URL=http://localhost:3000
-```
-
-### 4. Initialize Database
-
-```bash
-cd backend
-npm run db:generate  # Generate migration files
-npm run db:migrate   # Run migrations
-npm run db:seed      # Seed admin account
-```
-
-**⚠️ Important**: The seed command will output admin credentials. **Save these securely!**
+**⚠️ Important**: The database setup will output admin credentials. **Save these securely!**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -185,9 +160,20 @@ npm run db:seed      # Seed admin account
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 5. Start with Docker Compose
+The application will be available at:
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3000
+- **WebSocket**: ws://localhost:3000
+
+### Option 2: Docker Compose (For Production-Like Environment)
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/rohschinken/ovos-sprint.git
+cd ovos-sprint
+
+# 2. Start with Docker Compose
 docker-compose up --build
 ```
 
@@ -197,22 +183,22 @@ The application will be available at:
 - **Backend API**: http://localhost:3001
 - **WebSocket**: ws://localhost:3001
 
-### 6. Development Mode (Optional)
+### Environment Configuration (Optional)
 
-If you prefer running without Docker:
-
-**Backend:**
+If you need custom configuration, create a `.env` file in the `backend` directory:
 
 ```bash
-cd backend
-npm run dev
+cp backend/.env.example backend/.env
 ```
 
-**Frontend:**
+Edit `backend/.env` with your configuration:
 
-```bash
-cd frontend
-npm run dev
+```env
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=./data/ovos-sprint.db
+JWT_SECRET=your-secure-secret-key-here
+FRONTEND_URL=http://localhost:5173
 ```
 
 ---
@@ -302,22 +288,22 @@ Configure in **Settings** page:
 
 The following Austrian federal holidays are automatically detected and highlighted:
 
-- **January 1**: Neujahr (New Year's Day)
-- **January 6**: Heilige Drei Könige (Epiphany)
-- **May 1**: Staatsfeiertag (Labour Day)
-- **August 15**: Mariä Himmelfahrt (Assumption Day)
-- **October 26**: Nationalfeiertag (National Day)
-- **November 1**: Allerheiligen (All Saints' Day)
-- **December 8**: Mariä Empfängnis (Immaculate Conception)
-- **December 25**: Weihnachten (Christmas Day)
-- **December 26**: Stefanitag (St. Stephen's Day)
+- **January 1**: New Year
+- **January 6**: Epiphany
+- **May 1**: Labour Day
+- **August 15**: Assumption
+- **October 26**: National Day
+- **November 1**: All Saints
+- **December 8**: Immaculate Conception
+- **December 25**: Christmas
+- **December 26**: St. Stephen
 
 Plus Easter-dependent holidays:
 
-- **Ostermontag** (Easter Monday)
-- **Christi Himmelfahrt** (Ascension Day)
-- **Pfingstmontag** (Whit Monday)
-- **Fronleichnam** (Corpus Christi)
+- **Easter Monday**
+- **Ascension**
+- **Whit Monday**
+- **Corpus Christi**
 
 ---
 
@@ -493,6 +479,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Email invitations currently only output to console (SMTP integration pending)
 - Avatar upload requires manual implementation on admin pages
 
+### Recently Completed ✅
+
+- ✅ **Dark mode** - Full dark mode support with system preference detection
+- ✅ **Zoom controls** - Four zoom levels (Compact, Narrow, Normal, Wide)
+- ✅ **User preferences** - Persistent settings per user (zoom, collapsed state, filters)
+- ✅ **English localization** - Full UI translation from German to English
+- ✅ **Quick deletion** - CTRL+click and right-click deletion without confirmation
+- ✅ **Smart filtering** - Hide tentative projects, auto-hide empty members/projects
+
 ### Roadmap
 
 - [ ] Email integration (SparkPost SMTP)
@@ -501,8 +496,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Capacity planning features
 - [ ] Custom working hours per team member
 - [ ] Multi-language support
-- [ ] Dark mode
 - [ ] Mobile app
+- [ ] Bulk assignment operations
+- [ ] Assignment templates
+- [ ] Resource utilization reports
 
 ---
 
