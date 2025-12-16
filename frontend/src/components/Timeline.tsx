@@ -225,8 +225,11 @@ export default function Timeline({
     mutationFn: async (dayAssignmentId: number) => {
       await api.delete(`/assignments/days/${dayAssignmentId}`)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['assignments', 'days'],
+        refetchType: 'all'
+      })
       toast({ title: 'Assignment deleted' })
     },
   })

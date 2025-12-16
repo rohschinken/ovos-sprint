@@ -66,15 +66,15 @@ export function getHolidayName(date: Date): string | null {
 
   const dateKey = `${month}-${day}`
   const fixedHolidays: Record<string, string> = {
-    '0-1': 'Neujahr',
-    '0-6': 'Heilige Drei Könige',
-    '4-1': 'Staatsfeiertag',
-    '7-15': 'Mariä Himmelfahrt',
-    '9-26': 'Nationalfeiertag',
-    '10-1': 'Allerheiligen',
-    '11-8': 'Mariä Empfängnis',
-    '11-25': 'Weihnachten',
-    '11-26': 'Stefanitag',
+    '0-1': 'New Year',
+    '0-6': 'Epiphany',
+    '4-1': 'Labour Day',
+    '7-15': 'Assumption',
+    '9-26': 'National Day',
+    '10-1': 'All Saints',
+    '11-8': 'Immaculate Conception',
+    '11-25': 'Christmas',
+    '11-26': 'St. Stephen',
   }
 
   if (fixedHolidays[dateKey]) {
@@ -87,10 +87,10 @@ export function getHolidayName(date: Date): string | null {
   const diff = Math.floor((currentDate.getTime() - easter.getTime()) / (24 * 60 * 60 * 1000))
 
   const easterHolidays: Record<number, string> = {
-    1: 'Ostermontag',
-    39: 'Christi Himmelfahrt',
-    50: 'Pfingstmontag',
-    60: 'Fronleichnam',
+    1: 'Easter Monday',
+    39: 'Ascension',
+    50: 'Whit Monday',
+    60: 'Corpus Christi',
   }
 
   return easterHolidays[diff] || null
