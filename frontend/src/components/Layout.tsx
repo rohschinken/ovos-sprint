@@ -22,8 +22,8 @@ export default function Layout() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              ovos Sprint
+            <h1 className="text-2xl font-bold text-gradient-primary">
+              🏃‍♂️‍➡️ ovos Sprint
             </h1>
             <nav className="flex space-x-1">
               <Link to="/dashboard">

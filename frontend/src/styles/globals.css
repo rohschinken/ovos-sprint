@@ -31,6 +31,15 @@
     --confirmed: 142 70% 85%;
     --tentative: 48 95% 85%;
     --overlap: 0 75% 88%;
+
+    /* Gradient colors */
+    --gradient-from: 221.2 83.2% 53.3%;
+    --gradient-via: 280 100% 70%;
+    --gradient-to: 340 82% 52%;
+    --gradient-accent-from: 142 76% 36%;
+    --gradient-accent-to: 158 64% 52%;
+    --gradient-warm-from: 24 95% 53%;
+    --gradient-warm-to: 45 93% 47%;
   }
 
   .dark {
@@ -60,6 +69,15 @@
     --confirmed: 142 70% 22%;
     --tentative: 45 93% 20%;
     --overlap: 0 75% 25%;
+
+    /* Gradient colors - dark mode */
+    --gradient-from: 217.2 91.2% 59.8%;
+    --gradient-via: 280 100% 65%;
+    --gradient-to: 340 82% 48%;
+    --gradient-accent-from: 142 76% 28%;
+    --gradient-accent-to: 158 64% 42%;
+    --gradient-warm-from: 24 95% 43%;
+    --gradient-warm-to: 45 93% 38%;
   }
 }
 
@@ -95,4 +113,63 @@
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+@layer utilities {
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+  }
+
+  .bg-gradient-primary-via {
+    background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-via)) 50%, hsl(var(--gradient-to)) 100%);
+  }
+
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--gradient-accent-from)) 0%, hsl(var(--gradient-accent-to)) 100%);
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--gradient-warm-from)) 0%, hsl(var(--gradient-warm-to)) 100%);
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-to)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--gradient-accent-from)) 0%, hsl(var(--gradient-accent-to)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Gradient borders */
+  .border-gradient-primary {
+    border: 2px solid transparent;
+    background-image: linear-gradient(hsl(var(--background)), hsl(var(--background))),
+                      linear-gradient(135deg, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  /* Subtle gradient overlays for cards */
+  .card-gradient-subtle {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-gradient-subtle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-via)) 50%, hsl(var(--gradient-to)) 100%);
+  }
 }

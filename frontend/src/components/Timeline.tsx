@@ -6,7 +6,7 @@ import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
-import { format, addDays, startOfDay, isSameDay } from 'date-fns'
+import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -16,6 +16,7 @@ interface TimelineProps {
   nextDays: number
   isAdmin: boolean
   selectedTeamIds: number[]
+  zoomLevel: number
 }
 
 export default function Timeline({
@@ -24,6 +25,7 @@ export default function Timeline({
   nextDays,
   isAdmin,
   selectedTeamIds,
+  zoomLevel,
 }: TimelineProps) {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [dragState, setDragState] = useState<{
@@ -35,12 +37,44 @@ export default function Timeline({
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Column width based on zoom level (1=tiny, 2=small, 3=medium, 4=large)
+  const columnWidths = {
+    1: 'w-16', // 64px - Tiny
+    2: 'w-20', // 80px - Small
+    3: 'w-24', // 96px - Medium (current)
+    4: 'w-32', // 128px - Large
+  }
+  const columnWidth = columnWidths[zoomLevel as keyof typeof columnWidths] || 'w-24'
+
   // Generate dates
   const today = startOfDay(new Date())
   const startDate = addDays(today, -prevDays)
   const dates: Date[] = []
   for (let i = 0; i <= prevDays + nextDays; i++) {
     dates.push(addDays(startDate, i))
+  }
+
+  // Group dates by month for month labels
+  const monthGroups: { month: string; count: number; firstDate: Date }[] = []
+  let currentMonth = ''
+  let currentCount = 0
+  let currentFirstDate: Date | null = null
+
+  dates.forEach((date) => {
+    const monthKey = format(date, 'MMMM yyyy', { locale: de })
+    if (monthKey !== currentMonth) {
+      if (currentMonth) {
+        monthGroups.push({ month: currentMonth, count: currentCount, firstDate: currentFirstDate! })
+      }
+      currentMonth = monthKey
+      currentCount = 1
+      currentFirstDate = date
+    } else {
+      currentCount++
+    }
+  })
+  if (currentMonth) {
+    monthGroups.push({ month: currentMonth, count: currentCount, firstDate: currentFirstDate! })
   }
 
   // Fetch data
@@ -332,16 +366,42 @@ export default function Timeline({
       <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header */}
-          <div className="flex border-b-2 sticky top-0 bg-background z-10 shadow-sm">
+          <div className="sticky top-0 bg-background z-10 shadow-sm">
+            {/* Month labels row */}
+            <div className="flex border-b">
+              <div className="w-64 border-r bg-muted/30"></div>
+              {monthGroups.map((group, idx) => {
+                // Calculate width based on column count and zoom level
+                const pixelWidths = { 1: 64, 2: 80, 3: 96, 4: 128 }
+                const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 96
+                const totalWidth = group.count * pixelWidth
+
+                return (
+                  <div
+                    key={idx}
+                    style={{ width: `${totalWidth}px` }}
+                    className={cn(
+                      'p-2 text-center font-semibold text-sm bg-muted/50 border-r',
+                      isFirstDayOfMonth(group.firstDate) && 'border-l-4 border-l-border'
+                    )}
+                  >
+                    {group.month}
+                  </div>
+                )
+              })}
+            </div>
+            {/* Date row */}
+            <div className="flex border-b-2">
             <div className="w-64 p-3 font-semibold border-r bg-muted/30">Project</div>
             {dates.map((date) => (
               <div
                 key={date.toISOString()}
                 className={cn(
-                  'w-24 p-2 text-center text-sm border-r',
+                  columnWidth, 'p-2 text-center text-sm border-r',
                   isWeekend(date) && 'bg-weekend',
                   isHoliday(date) && 'bg-holiday',
-                  isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold'
+                  isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
+                  isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
                 )}
               >
                 <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
@@ -362,6 +422,7 @@ export default function Timeline({
                 )}
               </div>
             ))}
+            </div>
           </div>
 
           {/* Projects */}
@@ -398,13 +459,17 @@ export default function Timeline({
                     <div
                       key={date.toISOString()}
                       className={cn(
-                        'w-24 border-r',
+                        columnWidth, 'border-r relative',
                         isWeekend(date) && 'bg-weekend',
                         isHoliday(date) && 'bg-holiday',
-                        hasOverlap(project.id, date, 'project') && 'bg-overlap',
-                        isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary'
+                        isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+                        isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
                       )}
-                    />
+                    >
+                      {hasOverlap(project.id, date, 'project') && (
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-destructive rounded-t-sm" />
+                      )}
+                    </div>
                   ))}
                 </div>
 
@@ -438,11 +503,12 @@ export default function Timeline({
                           <div
                             key={date.toISOString()}
                             className={cn(
-                              'w-24 border-r p-1',
+                              columnWidth, 'border-r p-1',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                              isAdmin && 'cursor-pointer'
+                              isAdmin && 'cursor-pointer',
+                              isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
                             )}
                             onMouseDown={() =>
                               handleMouseDown(assignment.id, date)
@@ -488,16 +554,42 @@ export default function Timeline({
     <div className="overflow-x-auto">
       <div className="min-w-max">
         {/* Header */}
-        <div className="flex border-b-2 sticky top-0 bg-background z-10 shadow-sm">
+        <div className="sticky top-0 bg-background z-10 shadow-sm">
+          {/* Month labels row */}
+          <div className="flex border-b">
+            <div className="w-64 border-r bg-muted/30"></div>
+            {monthGroups.map((group, idx) => {
+              // Calculate width based on column count and zoom level
+              const pixelWidths = { 1: 64, 2: 80, 3: 96, 4: 128 }
+              const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 96
+              const totalWidth = group.count * pixelWidth
+
+              return (
+                <div
+                  key={idx}
+                  style={{ width: `${totalWidth}px` }}
+                  className={cn(
+                    'p-2 text-center font-semibold text-sm bg-muted/50 border-r',
+                    isFirstDayOfMonth(group.firstDate) && 'border-l-4 border-l-border'
+                  )}
+                >
+                  {group.month}
+                </div>
+              )
+            })}
+          </div>
+          {/* Date row */}
+          <div className="flex border-b-2">
           <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Member</div>
           {dates.map((date) => (
             <div
               key={date.toISOString()}
               className={cn(
-                'w-24 p-2 text-center text-sm border-r',
+                columnWidth, 'p-2 text-center text-sm border-r',
                 isWeekend(date) && 'bg-weekend',
                 isHoliday(date) && 'bg-holiday',
-                isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold'
+                isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
+                isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
               )}
             >
               <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
@@ -518,6 +610,7 @@ export default function Timeline({
               )}
             </div>
           ))}
+          </div>
         </div>
 
         {/* Members */}
@@ -557,13 +650,17 @@ export default function Timeline({
                   <div
                     key={date.toISOString()}
                     className={cn(
-                      'w-24 border-r',
+                      columnWidth, 'border-r relative',
                       isWeekend(date) && 'bg-weekend',
                       isHoliday(date) && 'bg-holiday',
-                      hasOverlap(member.id, date, 'member') && 'bg-overlap',
-                      isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary'
+                      isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+                      isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
                     )}
-                  />
+                  >
+                    {hasOverlap(member.id, date, 'member') && (
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-destructive rounded-t-sm" />
+                    )}
+                  </div>
                 ))}
               </div>
 
@@ -591,11 +688,12 @@ export default function Timeline({
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            'w-24 border-r p-1',
+                            columnWidth, 'border-r p-1',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                            isAdmin && 'cursor-pointer'
+                            isAdmin && 'cursor-pointer',
+                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
                           )}
                           onMouseDown={() =>
                             handleMouseDown(assignment.id, date)

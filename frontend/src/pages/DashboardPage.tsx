@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import api from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Slider } from '@/components/ui/slider'
 import {
   Popover,
   PopoverContent,
@@ -12,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const [prevDays, setPrevDays] = useState(1)
   const [nextDays, setNextDays] = useState(30)
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
+  const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (medium)
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -112,7 +114,28 @@ export default function DashboardPage() {
             Workload management timeline
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
+          {/* Zoom Slider */}
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-3 px-4 py-2 rounded-md border bg-background"
+          >
+            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+            <Slider
+              value={[zoomLevel]}
+              onValueChange={([value]) => setZoomLevel(value)}
+              min={1}
+              max={4}
+              step={1}
+              className="w-32"
+            />
+            <span className="text-xs font-medium text-muted-foreground w-12">
+              {['Tiny', 'Small', 'Medium', 'Large'][zoomLevel - 1]}
+            </span>
+          </motion.div>
+
           <Popover>
             <PopoverTrigger asChild>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -203,13 +226,14 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
       >
-        <Card className="p-4">
+        <Card className="p-4 card-gradient-subtle">
           <Timeline
             viewMode={viewMode}
             prevDays={prevDays}
             nextDays={nextDays}
             isAdmin={user?.role === 'admin'}
             selectedTeamIds={selectedTeamIds}
+            zoomLevel={zoomLevel}
           />
         </Card>
       </motion.div>
