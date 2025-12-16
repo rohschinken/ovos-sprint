@@ -1,4 +1,4 @@
-# ovos Sprint 🚀
+# ovos Sprint 🏃‍♂️‍➡️
 
 **Professional Workload Management & Resource Planning Tool for IT Project Managers**
 
@@ -12,27 +12,33 @@ ovos Sprint is a modern, real-time web application designed to help IT project m
 ## ✨ Features
 
 ### 🔐 **Role-Based Access Control**
+
 - **Admin Role**: Full CRUD permissions for all entities
 - **User Role**: Read-only access to view workload and assignments
 - **Invitation-Based Registration**: Secure user onboarding via email invitations
 
 ### 👥 **Team & Resource Management**
+
 - Create and manage multiple teams
 - Add team members with customizable avatars (upload or auto-generated)
 - Organize resources efficiently across projects
 
 ### 📊 **Project Management**
+
 - Create projects with customer information
 - Two status types: **Confirmed** and **Tentative**
 - Visual status indicators throughout the interface
 - Many-to-many relationships between team members and projects
 
 ### 📅 **Interactive Timeline View**
+
 Two powerful view modes:
+
 - **By Project**: View all team members assigned to each project
 - **By Team Member**: View all projects assigned to each team member
 
 Timeline features:
+
 - Configurable date range (previous X days, next X days)
 - Day-by-day workload visualization
 - Weekend highlighting (Saturday & Sunday)
@@ -41,6 +47,7 @@ Timeline features:
 - Expandable/collapsible project and member rows
 
 ### 🎯 **Drag-to-Assign Functionality** (Admin Only)
+
 - Intuitive click-and-drag interface for day assignments
 - Multi-day selection support
 - Weekend/holiday assignment warnings (configurable)
@@ -48,17 +55,20 @@ Timeline features:
 - Optional comments on assignments
 
 ### ⚙️ **Customizable Settings**
+
 - Toggle weekend/holiday assignment warnings
 - Configure overlap visualization
 - Adjust timeline date ranges
 - Per-user preferences
 
 ### 🔄 **Real-Time Updates**
+
 - WebSocket-based live synchronization
 - Instant updates when multiple users work simultaneously
 - No page refresh required
 
 ### 🎨 **Modern UI/UX**
+
 - Clean, professional design
 - Smooth micro-animations
 - Responsive layout
@@ -70,6 +80,7 @@ Timeline features:
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
@@ -83,6 +94,7 @@ Timeline features:
 - **Animations**: Framer Motion
 
 ### Backend
+
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
 - **Database**: SQLite
@@ -95,6 +107,7 @@ Timeline features:
 - **Security**: Helmet, CORS
 
 ### DevOps & Infrastructure
+
 - **Containerization**: Docker
 - **Reverse Proxy**: Caddy
 - **Orchestration**: Docker Compose
@@ -123,12 +136,14 @@ cd ovos-sprint
 ### 2. Install Dependencies
 
 **Backend:**
+
 ```bash
 cd backend
 npm install
 ```
 
 **Frontend:**
+
 ```bash
 cd ../frontend
 npm install
@@ -143,6 +158,7 @@ cp backend/.env.example backend/.env
 ```
 
 Edit `backend/.env` with your configuration:
+
 ```env
 NODE_ENV=development
 PORT=3001
@@ -176,6 +192,7 @@ docker-compose up --build
 ```
 
 The application will be available at:
+
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
 - **WebSocket**: ws://localhost:3001
@@ -185,12 +202,14 @@ The application will be available at:
 If you prefer running without Docker:
 
 **Backend:**
+
 ```bash
 cd backend
 npm run dev
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm run dev
@@ -212,36 +231,42 @@ After seeding the database, log in with:
 ### For Admins
 
 #### **Inviting Users**
+
 1. Navigate to the admin dashboard
 2. Use the invite function to send invitation links
 3. Invitation links are displayed in the console (email integration pending)
 4. Share the link with the user
 
 #### **Creating Teams**
+
 1. Go to **Teams** page
 2. Click **Create Team**
 3. Enter team name
 4. Add members to the team
 
 #### **Managing Team Members**
+
 1. Go to **Team Members** page
 2. Click **Add Member**
 3. Enter first name and last name
 4. Avatar will be auto-generated (custom upload available)
 
 #### **Creating Projects**
+
 1. Go to **Projects** page
 2. Click **Create Project**
 3. Enter customer name and project name
 4. Select status (Confirmed/Tentative)
 
 #### **Assigning Team Members to Projects**
+
 1. In the timeline view, expand a project (By Project mode)
 2. You'll see all team members assigned to that project
 3. First, create a general assignment between member and project
 4. Then drag across days to create day-specific assignments
 
 #### **Day-by-Day Assignment**
+
 1. Click and hold on a day cell
 2. Drag across multiple days if needed
 3. Release to create the assignment
@@ -262,6 +287,7 @@ After seeding the database, log in with:
 ### Timeline Settings
 
 Configure in **Settings** page:
+
 - **Previous Days**: How many days before today to show (default: 1)
 - **Next Days**: How many days after today to show (default: 30)
 
@@ -287,6 +313,7 @@ The following Austrian federal holidays are automatically detected and highlight
 - **December 26**: Stefanitag (St. Stephen's Day)
 
 Plus Easter-dependent holidays:
+
 - **Ostermontag** (Easter Monday)
 - **Christi Himmelfahrt** (Ascension Day)
 - **Pfingstmontag** (Whit Monday)
@@ -346,12 +373,14 @@ ovos-sprint/
 ## 🔧 API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login` - User login
 - `POST /api/auth/register` - Complete invitation registration
 - `POST /api/auth/invite` - Invite new user (admin only)
 - `GET /api/auth/me` - Get current user
 
 ### Teams
+
 - `GET /api/teams` - List all teams
 - `GET /api/teams/:id` - Get team details
 - `POST /api/teams` - Create team (admin only)
@@ -359,6 +388,7 @@ ovos-sprint/
 - `DELETE /api/teams/:id` - Delete team (admin only)
 
 ### Team Members
+
 - `GET /api/members` - List all members
 - `GET /api/members/:id` - Get member details
 - `POST /api/members` - Create member (admin only)
@@ -367,6 +397,7 @@ ovos-sprint/
 - `POST /api/members/:id/avatar` - Upload avatar (admin only)
 
 ### Projects
+
 - `GET /api/projects` - List all projects
 - `GET /api/projects/:id` - Get project details
 - `POST /api/projects` - Create project (admin only)
@@ -374,6 +405,7 @@ ovos-sprint/
 - `DELETE /api/projects/:id` - Delete project (admin only)
 
 ### Assignments
+
 - `GET /api/assignments/projects` - List project assignments
 - `GET /api/assignments/projects/:projectId` - Get assignments for project
 - `GET /api/assignments/members/:memberId` - Get assignments for member
@@ -385,6 +417,7 @@ ovos-sprint/
 - `DELETE /api/assignments/days/:id` - Delete day assignment (admin only)
 
 ### Settings
+
 - `GET /api/settings` - Get user settings
 - `GET /api/settings/:key` - Get specific setting
 - `PUT /api/settings/:key` - Update setting
@@ -409,18 +442,21 @@ npm test
 ## 📦 Building for Production
 
 ### Build Frontend
+
 ```bash
 cd frontend
 npm run build
 ```
 
 ### Build Backend
+
 ```bash
 cd backend
 npm run build
 ```
 
 ### Run Production Build
+
 ```bash
 # Backend
 cd backend
@@ -453,10 +489,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🐛 Known Issues & Roadmap
 
 ### Known Issues
+
 - Email invitations currently only output to console (SMTP integration pending)
 - Avatar upload requires manual implementation on admin pages
 
 ### Roadmap
+
 - [ ] Email integration (SparkPost SMTP)
 - [ ] Export functionality (PDF, Excel)
 - [ ] Advanced filtering and search
@@ -471,6 +509,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For issues, questions, or suggestions:
+
 - **Email**: support@ovos.at
 - **GitHub Issues**: [https://github.com/rohschinken/ovos-sprint/issues](https://github.com/rohschinken/ovos-sprint/issues)
 
@@ -490,4 +529,4 @@ For issues, questions, or suggestions:
 
 ---
 
-*Last Updated: December 2025*
+_Last Updated: December 2025_

@@ -23,7 +23,7 @@ export default function Layout() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <h1 className="text-2xl font-bold text-gradient-primary">
-              🏃‍♂️‍➡️ ovos Sprint
+              ovos Sprint 🏃‍♂️‍➡️
             </h1>
             <nav className="flex space-x-1">
               <Link to="/dashboard">

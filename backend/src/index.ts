@@ -72,7 +72,7 @@ const PORT = process.env.PORT || 3001
 
 httpServer.listen(PORT, () => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('🚀 ovos Sprint Backend Server')
+  console.log('🚀 ovos Sprint 🏃‍♂️‍➡️ Backend Server')
   console.log(`📡 Server running on port ${PORT}`)
   console.log(`🔌 WebSocket server ready`)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')

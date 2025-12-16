@@ -70,7 +70,7 @@ export default function RegisterPage() {
             Complete Registration
           </CardTitle>
           <CardDescription>
-            Create your account to join ovos Sprint
+            Create your account to join ovos Sprint 🏃‍♂️‍➡️
           </CardDescription>
         </CardHeader>
         <CardContent>
