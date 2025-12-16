@@ -351,6 +351,16 @@ export default function Timeline({
     ).length
   }
 
+  // Check if a project has ANY assignments on a date (for collapsed view)
+  const projectHasAssignmentOnDate = (projectId: number, date: Date) => {
+    return getProjectMembersOnDate(projectId, date) > 0
+  }
+
+  // Check if a member has ANY assignments on a date (for collapsed view)
+  const memberHasAssignmentOnDate = (memberId: number, date: Date) => {
+    return getMemberAssignmentsOnDate(memberId, date) > 0
+  }
+
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
     if (settings.showOverlapVisualization === 'false') return false
 
@@ -416,7 +426,7 @@ export default function Timeline({
                   </div>
                 )}
                 {isHoliday(date) && (
-                  <div className="text-xs text-yellow-700 dark:text-yellow-500">
+                  <div className="text-xs text-purple-700 dark:text-purple-400 font-medium">
                     {getHolidayName(date)}
                   </div>
                 )}
@@ -459,7 +469,7 @@ export default function Timeline({
                     <div
                       key={date.toISOString()}
                       className={cn(
-                        columnWidth, 'border-r relative',
+                        columnWidth, 'border-r relative flex items-center justify-center',
                         isWeekend(date) && 'bg-weekend',
                         isHoliday(date) && 'bg-holiday',
                         isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -467,7 +477,10 @@ export default function Timeline({
                       )}
                     >
                       {hasOverlap(project.id, date, 'project') && (
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-destructive rounded-t-sm" />
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
+                      )}
+                      {!expandedItems.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
+                        <div className="w-2 h-2 rounded-full bg-primary/70" />
                       )}
                     </div>
                   ))}
@@ -519,10 +532,10 @@ export default function Timeline({
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
-                                  'h-6 rounded',
+                                  'h-6 rounded shadow-sm border',
                                   project.status === 'confirmed'
-                                    ? 'bg-confirmed'
-                                    : 'bg-tentative',
+                                    ? 'bg-confirmed border-emerald-300 dark:border-emerald-700'
+                                    : 'bg-tentative border-amber-300 dark:border-amber-700',
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
                                 )}
@@ -650,7 +663,7 @@ export default function Timeline({
                   <div
                     key={date.toISOString()}
                     className={cn(
-                      columnWidth, 'border-r relative',
+                      columnWidth, 'border-r relative flex items-center justify-center',
                       isWeekend(date) && 'bg-weekend',
                       isHoliday(date) && 'bg-holiday',
                       isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -659,6 +672,9 @@ export default function Timeline({
                   >
                     {hasOverlap(member.id, date, 'member') && (
                       <div className="absolute top-0 left-0 right-0 h-1 bg-destructive rounded-t-sm" />
+                    )}
+                    {!expandedItems.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
+                      <div className="w-2 h-2 rounded-full bg-primary/70" />
                     )}
                   </div>
                 ))}
@@ -704,10 +720,10 @@ export default function Timeline({
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
-                                'h-6 rounded',
+                                'h-6 rounded shadow-sm border',
                                 project.status === 'confirmed'
-                                  ? 'bg-confirmed'
-                                  : 'bg-tentative',
+                                  ? 'bg-confirmed border-emerald-300 dark:border-emerald-700'
+                                  : 'bg-tentative border-amber-300 dark:border-amber-700',
                                 isDayInDragRange(assignment.id, date) &&
                                   'opacity-50'
                               )}

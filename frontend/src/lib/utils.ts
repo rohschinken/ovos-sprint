@@ -29,17 +29,20 @@ export function formatDateTime(date: Date | string): string {
   })
 }
 
-// Color palette from https://coolors.co/757780-a4a291-d2cca1-85a291-387780-8aa6aa-dbd4d3-e28392-e83151
+// Modern, professional avatar color palette with excellent contrast
 const AVATAR_COLORS = [
-  { bg: '#757780', text: '#FFFFFF' }, // gray
-  { bg: '#A4A291', text: '#000000' }, // beige-gray
-  { bg: '#D2CCA1', text: '#000000' }, // light beige
-  { bg: '#85A291', text: '#FFFFFF' }, // sage green
-  { bg: '#387780', text: '#FFFFFF' }, // teal
-  { bg: '#8AA6AA', text: '#FFFFFF' }, // light blue-gray
-  { bg: '#DBD4D3', text: '#000000' }, // light gray
-  { bg: '#E28392', text: '#FFFFFF' }, // pink
-  { bg: '#E83151', text: '#FFFFFF' }, // red-pink
+  { bg: '#6366F1', text: '#FFFFFF' }, // indigo
+  { bg: '#8B5CF6', text: '#FFFFFF' }, // violet
+  { bg: '#EC4899', text: '#FFFFFF' }, // pink
+  { bg: '#F43F5E', text: '#FFFFFF' }, // rose
+  { bg: '#F97316', text: '#FFFFFF' }, // orange
+  { bg: '#EAB308', text: '#000000' }, // yellow
+  { bg: '#10B981', text: '#FFFFFF' }, // emerald
+  { bg: '#14B8A6', text: '#FFFFFF' }, // teal
+  { bg: '#0EA5E9', text: '#FFFFFF' }, // sky
+  { bg: '#3B82F6', text: '#FFFFFF' }, // blue
+  { bg: '#6D28D9', text: '#FFFFFF' }, // purple
+  { bg: '#DB2777', text: '#FFFFFF' }, // fuchsia
 ]
 
 // Hash function to consistently select a color based on a string
