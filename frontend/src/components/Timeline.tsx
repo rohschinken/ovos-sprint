@@ -144,16 +144,6 @@ export default function Timeline({
     },
   })
 
-  // Initialize all items as expanded by default (when no saved preferences)
-  useEffect(() => {
-    if (expandedItemsProp.length === 0 && (filteredProjects.length > 0 || filteredMembersWithProjects.length > 0)) {
-      const allIds = viewMode === 'by-project'
-        ? filteredProjects.map((p) => p.id)
-        : filteredMembersWithProjects.map((m) => m.id)
-      onExpandedItemsChange(allIds)
-    }
-  }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
-
   // Filter members based on selected teams
   const filteredMembers =
     selectedTeamIds.length === 0
@@ -207,6 +197,16 @@ export default function Timeline({
     )
     return assignments.length > 0
   })
+
+  // Initialize all items as expanded by default (when no saved preferences)
+  useEffect(() => {
+    if (expandedItemsProp.length === 0 && (filteredProjects.length > 0 || filteredMembersWithProjects.length > 0)) {
+      const allIds = viewMode === 'by-project'
+        ? filteredProjects.map((p) => p.id)
+        : filteredMembersWithProjects.map((m) => m.id)
+      onExpandedItemsChange(allIds)
+    }
+  }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
 
   const createDayAssignmentMutation = useMutation({
     mutationFn: async (data: {
@@ -631,8 +631,8 @@ export default function Timeline({
             <div className="w-64 border-r bg-muted/30"></div>
             {monthGroups.map((group, idx) => {
               // Calculate width based on column count and zoom level
-              const pixelWidths = { 1: 64, 2: 80, 3: 96, 4: 128 }
-              const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 96
+              const pixelWidths = { 1: 48, 2: 64, 3: 80, 4: 96 }
+              const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
               const totalWidth = group.count * pixelWidth
 
               return (
@@ -671,11 +671,11 @@ export default function Timeline({
               </div>
               {isSameDay(date, today) && (
                 <div className="text-xs text-primary font-semibold">
-                  HEUTE
+                  TODAY
                 </div>
               )}
               {isHoliday(date) && (
-                <div className="text-xs text-yellow-700 dark:text-yellow-500">
+                <div className="text-xs text-purple-700 dark:text-purple-400 font-medium truncate px-1">
                   {getHolidayName(date)}
                 </div>
               )}
