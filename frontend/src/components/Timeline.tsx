@@ -654,9 +654,6 @@ export default function Timeline({
                       onClick={(e) => handleProjectCellClick(project.id, date, e)}
                       onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
                     >
-                      {hasOverlap(project.id, date, 'project') && (
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-t-sm shadow-sm" />
-                      )}
                       {hasMilestone(project.id, date) && (
                         <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
                       )}
@@ -950,9 +947,6 @@ export default function Timeline({
                           </div>
                           {hasMilestone(project.id, date) && (
                             <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
-                          )}
-                          {hasOverlap(project.id, date, 'project') && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm" />
                           )}
                           {(isDayAssigned(assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
