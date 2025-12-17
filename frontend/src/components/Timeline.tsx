@@ -302,8 +302,13 @@ export default function Timeline({
     onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
-  const handleMouseDown = (assignmentId: number, date: Date) => {
+  const handleMouseDown = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!isAdmin) return
+
+    // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
+    if (event.button === 2 || event.ctrlKey || event.metaKey) {
+      return
+    }
 
     const warnWeekend = settings.warnWeekendAssignments !== 'false'
     if (warnWeekend && (isWeekend(date) || isHoliday(date))) {
@@ -705,8 +710,8 @@ export default function Timeline({
                               isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                               isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                             )}
-                            onMouseDown={() =>
-                              handleMouseDown(assignment.id, date)
+                            onMouseDown={(e) =>
+                              handleMouseDown(assignment.id, date, e)
                             }
                             onMouseEnter={() => handleMouseEnter(date)}
                           >
@@ -715,6 +720,9 @@ export default function Timeline({
                                 {format(date, 'EEE', { locale: enUS })}
                               </span>
                             </div>
+                            {hasOverlap(member.id, date, 'member') && (
+                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm" />
+                            )}
                             {(isDayAssigned(assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
                               <div
@@ -727,9 +735,8 @@ export default function Timeline({
                                     'opacity-50'
                                 )}
                                 onMouseDown={(e) => {
-                                  // Stop propagation and clear drag state to prevent recreation
+                                  // Stop propagation to prevent parent cell from starting drag
                                   e.stopPropagation()
-                                  setDragState({ assignmentId: null, startDate: null, endDate: null })
                                 }}
                                 onContextMenu={(e) =>
                                   handleDeleteDayAssignment(assignment.id, date, e)
@@ -738,6 +745,10 @@ export default function Timeline({
                                   if (e.ctrlKey || e.metaKey) {
                                     handleDeleteDayAssignment(assignment.id, date, e)
                                   }
+                                }}
+                                onMouseUp={(e) => {
+                                  // Stop propagation to prevent global mouseup from recreating assignment
+                                  e.stopPropagation()
                                 }}
                               />
                             )}
@@ -914,8 +925,8 @@ export default function Timeline({
                             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                             isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                           )}
-                          onMouseDown={() =>
-                            handleMouseDown(assignment.id, date)
+                          onMouseDown={(e) =>
+                            handleMouseDown(assignment.id, date, e)
                           }
                           onMouseEnter={() => handleMouseEnter(date)}
                         >
@@ -926,6 +937,9 @@ export default function Timeline({
                           </div>
                           {hasMilestone(project.id, date) && (
                             <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
+                          )}
+                          {hasOverlap(project.id, date, 'project') && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm" />
                           )}
                           {(isDayAssigned(assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
@@ -939,9 +953,8 @@ export default function Timeline({
                                   'opacity-50'
                               )}
                               onMouseDown={(e) => {
-                                // Stop propagation and clear drag state to prevent recreation
+                                // Stop propagation to prevent parent cell from starting drag
                                 e.stopPropagation()
-                                setDragState({ assignmentId: null, startDate: null, endDate: null })
                               }}
                               onContextMenu={(e) =>
                                 handleDeleteDayAssignment(assignment.id, date, e)
@@ -950,6 +963,10 @@ export default function Timeline({
                                 if (e.ctrlKey || e.metaKey) {
                                   handleDeleteDayAssignment(assignment.id, date, e)
                                 }
+                              }}
+                              onMouseUp={(e) => {
+                                // Stop propagation to prevent global mouseup from recreating assignment
+                                e.stopPropagation()
                               }}
                             />
                           )}
