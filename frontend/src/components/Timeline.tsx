@@ -195,6 +195,14 @@ export default function Timeline({
     const assignments = projectAssignments.filter(
       (pa: any) => pa.teamMemberId === member.id
     )
+    // If hideTentative is true, only count confirmed project assignments
+    if (hideTentative) {
+      const confirmedAssignments = assignments.filter((pa: any) => {
+        const project = projects.find((p) => p.id === pa.projectId)
+        return project && project.status === 'confirmed'
+      })
+      return confirmedAssignments.length > 0
+    }
     return assignments.length > 0
   })
 
@@ -226,9 +234,10 @@ export default function Timeline({
       await api.delete(`/assignments/days/${dayAssignmentId}`)
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
+      // Force immediate refetch of day assignments
+      await queryClient.refetchQueries({
         queryKey: ['assignments', 'days'],
-        refetchType: 'all'
+        type: 'all'
       })
       toast({ title: 'Assignment deleted' })
     },
@@ -752,6 +761,9 @@ export default function Timeline({
                     (p) => p.id === assignment.projectId
                   )
                   if (!project) return null
+
+                  // Hide tentative projects if hideTentative is enabled
+                  if (hideTentative && project.status === 'tentative') return null
 
                   return (
                     <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
