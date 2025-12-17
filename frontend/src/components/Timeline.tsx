@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { TimelineViewMode, Project, TeamMember, DayAssignment } from '@/types'
+import { TimelineViewMode, Project, TeamMember, DayAssignment, Milestone } from '@/types'
 import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth } from 'date-fns'
 import { enUS } from 'date-fns/locale'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
 
 interface TimelineProps {
   viewMode: TimelineViewMode
@@ -128,6 +128,23 @@ export default function Timeline({
     },
   })
 
+  const { data: milestones = [] } = useQuery({
+    queryKey: [
+      'milestones',
+      format(startDate, 'yyyy-MM-dd'),
+      format(dates[dates.length - 1], 'yyyy-MM-dd'),
+    ],
+    queryFn: async () => {
+      const response = await api.get('/milestones', {
+        params: {
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
+        },
+      })
+      return response.data as Milestone[]
+    },
+  })
+
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
@@ -243,6 +260,33 @@ export default function Timeline({
     },
   })
 
+  const createMilestoneMutation = useMutation({
+    mutationFn: async (data: { projectId: number; date: string }) => {
+      const response = await api.post('/milestones', data)
+      return response.data
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['milestones'],
+        type: 'all'
+      })
+      toast({ title: 'Milestone created' })
+    },
+  })
+
+  const deleteMilestoneMutation = useMutation({
+    mutationFn: async (milestoneId: number) => {
+      await api.delete(`/milestones/${milestoneId}`)
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['milestones'],
+        type: 'all'
+      })
+      toast({ title: 'Milestone deleted' })
+    },
+  })
+
   const toggleExpand = (id: number) => {
     const newExpandedSet = new Set(expandedItemsProp)
     if (newExpandedSet.has(id)) {
@@ -353,6 +397,48 @@ export default function Timeline({
     if (!dayAssignmentId) return
 
     deleteDayAssignmentMutation.mutate(dayAssignmentId)
+  }
+
+  // Milestone helper functions
+  const hasMilestone = (projectId: number, date: Date) => {
+    return milestones.some(
+      (m: Milestone) =>
+        m.projectId === projectId &&
+        isSameDay(new Date(m.date), date)
+    )
+  }
+
+  const getMilestoneId = (projectId: number, date: Date) => {
+    const milestone = milestones.find(
+      (m: Milestone) =>
+        m.projectId === projectId &&
+        isSameDay(new Date(m.date), date)
+    )
+    return milestone?.id
+  }
+
+  const handleProjectCellClick = (projectId: number, date: Date, event: React.MouseEvent) => {
+    if (!isAdmin || viewMode !== 'by-project') return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    // Check if there's already a milestone
+    const milestoneId = getMilestoneId(projectId, date)
+    if (milestoneId) {
+      // Delete existing milestone if CTRL/CMD+click or right-click
+      if (event.ctrlKey || event.metaKey || event.button === 2) {
+        deleteMilestoneMutation.mutate(milestoneId)
+      }
+    } else {
+      // Create new milestone on normal click
+      if (!event.ctrlKey && !event.metaKey && event.button === 0) {
+        createMilestoneMutation.mutate({
+          projectId,
+          date: format(date, 'yyyy-MM-dd'),
+        })
+      }
+    }
   }
 
   const isDayInDragRange = (assignmentId: number, date: Date) => {
@@ -533,11 +619,17 @@ export default function Timeline({
                         isWeekend(date) && 'bg-weekend',
                         isHoliday(date) && 'bg-holiday',
                         isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                        isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                        isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                        isAdmin && 'cursor-pointer hover:bg-muted/30'
                       )}
+                      onClick={(e) => handleProjectCellClick(project.id, date, e)}
+                      onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
                     >
                       {hasOverlap(project.id, date, 'project') && (
                         <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-t-sm shadow-sm" />
+                      )}
+                      {hasMilestone(project.id, date) && (
+                        <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
                       )}
                       {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
                         <div className={cn(
@@ -803,6 +895,9 @@ export default function Timeline({
                               {format(date, 'EEE', { locale: enUS })}
                             </span>
                           </div>
+                          {hasMilestone(project.id, date) && (
+                            <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
+                          )}
                           {(isDayAssigned(assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
                             <div
