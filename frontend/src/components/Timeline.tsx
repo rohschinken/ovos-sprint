@@ -714,6 +714,16 @@ export default function Timeline({
                               handleMouseDown(assignment.id, date, e)
                             }
                             onMouseEnter={() => handleMouseEnter(date)}
+                            onClick={(e) => {
+                              if ((e.ctrlKey || e.metaKey) && isDayAssigned(assignment.id, date)) {
+                                handleDeleteDayAssignment(assignment.id, date, e)
+                              }
+                            }}
+                            onContextMenu={(e) => {
+                              if (isDayAssigned(assignment.id, date)) {
+                                handleDeleteDayAssignment(assignment.id, date, e)
+                              }
+                            }}
                           >
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                               <span className="text-xs text-muted-foreground/40 font-medium">
@@ -721,13 +731,13 @@ export default function Timeline({
                               </span>
                             </div>
                             {hasOverlap(member.id, date, 'member') && (
-                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm" />
+                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm pointer-events-none z-10" />
                             )}
                             {(isDayAssigned(assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
-                                  'h-6 rounded shadow-sm border-2',
+                                  'h-6 rounded shadow-sm border-2 relative z-20',
                                   project.status === 'confirmed'
                                     ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
                                     : 'bg-tentative border-amber-400 dark:border-amber-500',
@@ -738,18 +748,11 @@ export default function Timeline({
                                   // Stop propagation to prevent parent cell from starting drag
                                   e.stopPropagation()
                                 }}
-                                onContextMenu={(e) =>
-                                  handleDeleteDayAssignment(assignment.id, date, e)
-                                }
-                                onClick={(e) => {
-                                  if (e.ctrlKey || e.metaKey) {
-                                    handleDeleteDayAssignment(assignment.id, date, e)
-                                  }
-                                }}
                                 onMouseUp={(e) => {
                                   // Stop propagation to prevent global mouseup from recreating assignment
                                   e.stopPropagation()
                                 }}
+                                style={{ pointerEvents: 'auto' }}
                               />
                             )}
                           </div>
@@ -929,6 +932,16 @@ export default function Timeline({
                             handleMouseDown(assignment.id, date, e)
                           }
                           onMouseEnter={() => handleMouseEnter(date)}
+                          onClick={(e) => {
+                            if ((e.ctrlKey || e.metaKey) && isDayAssigned(assignment.id, date)) {
+                              handleDeleteDayAssignment(assignment.id, date, e)
+                            }
+                          }}
+                          onContextMenu={(e) => {
+                            if (isDayAssigned(assignment.id, date)) {
+                              handleDeleteDayAssignment(assignment.id, date, e)
+                            }
+                          }}
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <span className="text-xs text-muted-foreground/40 font-medium">
@@ -956,18 +969,11 @@ export default function Timeline({
                                 // Stop propagation to prevent parent cell from starting drag
                                 e.stopPropagation()
                               }}
-                              onContextMenu={(e) =>
-                                handleDeleteDayAssignment(assignment.id, date, e)
-                              }
-                              onClick={(e) => {
-                                if (e.ctrlKey || e.metaKey) {
-                                  handleDeleteDayAssignment(assignment.id, date, e)
-                                }
-                              }}
                               onMouseUp={(e) => {
                                 // Stop propagation to prevent global mouseup from recreating assignment
                                 e.stopPropagation()
                               }}
+                              style={{ pointerEvents: 'auto' }}
                             />
                           )}
                         </div>
