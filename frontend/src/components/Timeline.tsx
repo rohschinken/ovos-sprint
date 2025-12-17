@@ -537,14 +537,14 @@ export default function Timeline({
                       )}
                     >
                       {hasOverlap(project.id, date, 'project') && (
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-t-sm shadow-sm" />
                       )}
                       {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
                         <div className={cn(
                           'w-2 h-2 rounded-full',
                           project.status === 'confirmed'
                             ? 'bg-emerald-500 dark:bg-emerald-400'
-                            : 'bg-amber-500 dark:bg-amber-400'
+                            : 'bg-orange-500 dark:bg-orange-400'
                         )} />
                       )}
                     </div>
@@ -581,7 +581,7 @@ export default function Timeline({
                           <div
                             key={date.toISOString()}
                             className={cn(
-                              columnWidth, 'border-r p-1 group relative',
+                              columnWidth, 'border-r p-1 group relative flex items-center justify-center',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -602,13 +602,17 @@ export default function Timeline({
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
-                                  'h-6 rounded shadow-sm border',
+                                  'h-6 rounded shadow-sm border-2',
                                   project.status === 'confirmed'
-                                    ? 'bg-confirmed border-emerald-300 dark:border-emerald-700'
-                                    : 'bg-tentative border-amber-300 dark:border-amber-700',
+                                    ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
+                                    : 'bg-tentative border-amber-400 dark:border-amber-500',
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
                                 )}
+                                onMouseDown={(e) => {
+                                  // Stop propagation to prevent drag from starting
+                                  e.stopPropagation()
+                                }}
                                 onContextMenu={(e) =>
                                   handleDeleteDayAssignment(assignment.id, date, e)
                                 }
@@ -683,7 +687,7 @@ export default function Timeline({
               </div>
               {isSameDay(date, today) && (
                 <div className="text-xs text-primary font-semibold">
-                  TODAY
+                  {zoomLevel <= 2 ? 'TDY' : 'TODAY'}
                 </div>
               )}
               {isHoliday(date) && (
@@ -741,14 +745,14 @@ export default function Timeline({
                     )}
                   >
                     {hasOverlap(member.id, date, 'member') && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400 rounded-t-sm shadow-sm" />
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-t-sm shadow-sm" />
                     )}
                     {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
                       <div className={cn(
                         'w-2 h-2 rounded-full',
                         memberHasConfirmedAssignmentOnDate(member.id, date)
                           ? 'bg-emerald-500 dark:bg-emerald-400'
-                          : 'bg-amber-500 dark:bg-amber-400'
+                          : 'bg-orange-500 dark:bg-orange-400'
                       )} />
                     )}
                   </div>
@@ -782,7 +786,7 @@ export default function Timeline({
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            columnWidth, 'border-r p-1 group relative',
+                            columnWidth, 'border-r p-1 group relative flex items-center justify-center',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -803,13 +807,17 @@ export default function Timeline({
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
-                                'h-6 rounded shadow-sm border',
+                                'h-6 rounded shadow-sm border-2',
                                 project.status === 'confirmed'
-                                  ? 'bg-confirmed border-emerald-300 dark:border-emerald-700'
-                                  : 'bg-tentative border-amber-300 dark:border-amber-700',
+                                  ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
+                                  : 'bg-tentative border-amber-400 dark:border-amber-500',
                                 isDayInDragRange(assignment.id, date) &&
                                   'opacity-50'
                               )}
+                              onMouseDown={(e) => {
+                                // Stop propagation to prevent drag from starting
+                                e.stopPropagation()
+                              }}
                               onContextMenu={(e) =>
                                 handleDeleteDayAssignment(assignment.id, date, e)
                               }

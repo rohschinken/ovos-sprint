@@ -63,12 +63,12 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
 
-    /* Custom colors - dark mode - refined modern palette */
+    /* Custom colors - dark mode - sleek modern palette */
     --weekend: 220 14% 14%;
-    --holiday: 250 80% 20%;
-    --confirmed: 158 50% 25%;
-    --tentative: 35 70% 25%;
-    --overlap: 12 70% 30%;
+    --holiday: 250 80% 22%;
+    --confirmed: 160 60% 35%;
+    --tentative: 38 90% 40%;
+    --overlap: 12 90% 45%;
 
     /* Gradient colors - dark mode */
     --gradient-from: 217.2 91.2% 59.8%;

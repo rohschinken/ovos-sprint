@@ -98,6 +98,18 @@ export const settings = sqliteTable('settings', {
     .default(sql`(CURRENT_TIMESTAMP)`),
 })
 
+export const milestones = sqliteTable('milestones', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // ISO date string (YYYY-MM-DD)
+  name: text('name'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 // Types
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
@@ -115,3 +127,5 @@ export type Invitation = typeof invitations.$inferSelect
 export type NewInvitation = typeof invitations.$inferInsert
 export type Settings = typeof settings.$inferSelect
 export type NewSettings = typeof settings.$inferInsert
+export type Milestone = typeof milestones.$inferSelect
+export type NewMilestone = typeof milestones.$inferInsert
