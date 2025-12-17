@@ -67,6 +67,14 @@ export interface Settings {
   value: string
 }
 
+export interface Milestone {
+  id: number
+  projectId: number
+  date: string
+  name: string | null
+  createdAt: string
+}
+
 // Extended types with relations
 export interface TeamWithMembers extends Team {
   members: TeamMember[]

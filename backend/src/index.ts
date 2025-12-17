@@ -15,6 +15,7 @@ import membersRoutes from './routes/members.js'
 import projectsRoutes from './routes/projects.js'
 import assignmentsRoutes from './routes/assignments.js'
 import settingsRoutes from './routes/settings.js'
+import milestonesRoutes from './routes/milestones.js'
 import { setupWebSocket } from './websocket/index.js'
 
 // Load environment variables
@@ -55,6 +56,7 @@ app.use('/api/members', membersRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/assignments', assignmentsRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/milestones', milestonesRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
