@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (narrow)
   const [expandedItems, setExpandedItems] = useState<number[]>([])
   const [hideTentative, setHideTentative] = useState(true) // default: hidden
+  const [hideWeekends, setHideWeekends] = useState(true) // default: hidden
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -57,6 +58,7 @@ export default function DashboardPage() {
         if (prefs.zoomLevel) setZoomLevel(prefs.zoomLevel)
         if (prefs.expandedItems !== undefined) setExpandedItems(prefs.expandedItems)
         if (prefs.hideTentative !== undefined) setHideTentative(prefs.hideTentative)
+        if (prefs.hideWeekends !== undefined) setHideWeekends(prefs.hideWeekends)
       } catch (error) {
         console.error('Failed to load dashboard preferences:', error)
       }
@@ -74,9 +76,10 @@ export default function DashboardPage() {
       zoomLevel,
       expandedItems,
       hideTentative,
+      hideWeekends,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, hideTentative])
+  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, hideTentative, hideWeekends])
 
   useEffect(() => {
     if (settings.timelinePrevDays) {
@@ -224,6 +227,24 @@ export default function DashboardPage() {
               Hide Tentative
             </Label>
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background"
+          >
+            <Checkbox
+              id="hide-weekends"
+              checked={hideWeekends}
+              onCheckedChange={(checked) => setHideWeekends(!!checked)}
+            />
+            <Label
+              htmlFor="hide-weekends"
+              className="text-sm font-medium cursor-pointer"
+            >
+              Hide Weekends
+            </Label>
+          </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant={viewMode === 'by-project' ? 'default' : 'outline'}
@@ -263,6 +284,7 @@ export default function DashboardPage() {
             expandedItems={expandedItems}
             onExpandedItemsChange={setExpandedItems}
             hideTentative={hideTentative}
+            hideWeekends={hideWeekends}
           />
         </Card>
       </motion.div>

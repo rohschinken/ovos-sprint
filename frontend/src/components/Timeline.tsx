@@ -6,7 +6,7 @@ import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
-import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth } from 'date-fns'
+import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
 
@@ -20,6 +20,7 @@ interface TimelineProps {
   expandedItems: number[]
   onExpandedItemsChange: (items: number[]) => void
   hideTentative: boolean
+  hideWeekends: boolean
 }
 
 export default function Timeline({
@@ -32,6 +33,7 @@ export default function Timeline({
   expandedItems: expandedItemsProp,
   onExpandedItemsChange,
   hideTentative,
+  hideWeekends,
 }: TimelineProps) {
   const [dragState, setDragState] = useState<{
     assignmentId: number | null
@@ -57,10 +59,13 @@ export default function Timeline({
   // Generate dates
   const today = startOfDay(new Date())
   const startDate = addDays(today, -prevDays)
-  const dates: Date[] = []
+  const allDates: Date[] = []
   for (let i = 0; i <= prevDays + nextDays; i++) {
-    dates.push(addDays(startDate, i))
+    allDates.push(addDays(startDate, i))
   }
+
+  // Filter out weekends if hideWeekends is enabled
+  const dates = hideWeekends ? allDates.filter(date => !isWeekend(date)) : allDates
 
   // Group dates by month for month labels
   const monthGroups: { month: string; count: number; firstDate: Date }[] = []
@@ -441,6 +446,23 @@ export default function Timeline({
     }
   }
 
+  // Week separator helper - checks if a date should show a week boundary
+  const isWeekStart = (date: Date, index: number) => {
+    // First visible date always gets a separator
+    if (index === 0) return true
+
+    // Monday (getDay returns 1 for Monday) gets a separator
+    if (getDay(date) === 1) return true
+
+    // If previous visible date is from a different week (important when weekends are hidden)
+    if (index > 0) {
+      const prevDate = dates[index - 1]
+      if (getISOWeek(prevDate) !== getISOWeek(date)) return true
+    }
+
+    return false
+  }
+
   const isDayInDragRange = (assignmentId: number, date: Date) => {
     if (
       dragState.assignmentId !== assignmentId ||
@@ -549,7 +571,7 @@ export default function Timeline({
             {/* Date row */}
             <div className="flex border-b-2">
             <div className="w-64 p-3 font-semibold border-r bg-muted/30">Project</div>
-            {dates.map((date) => (
+            {dates.map((date, dateIndex) => (
               <div
                 key={date.toISOString()}
                 className={cn(
@@ -557,7 +579,8 @@ export default function Timeline({
                   isWeekend(date) && 'bg-weekend',
                   isHoliday(date) && 'bg-holiday',
                   isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
-                  isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                  isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                  isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                 )}
               >
                 <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
@@ -611,7 +634,7 @@ export default function Timeline({
                       </div>
                     </div>
                   </div>
-                  {dates.map((date) => (
+                  {dates.map((date, dateIndex) => (
                     <div
                       key={date.toISOString()}
                       className={cn(
@@ -620,6 +643,7 @@ export default function Timeline({
                         isHoliday(date) && 'bg-holiday',
                         isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                         isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                        isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
                         isAdmin && 'cursor-pointer hover:bg-muted/30'
                       )}
                       onClick={(e) => handleProjectCellClick(project.id, date, e)}
@@ -669,7 +693,7 @@ export default function Timeline({
                             {member.firstName} {member.lastName}
                           </span>
                         </div>
-                        {dates.map((date) => (
+                        {dates.map((date, dateIndex) => (
                           <div
                             key={date.toISOString()}
                             className={cn(
@@ -678,7 +702,8 @@ export default function Timeline({
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                               isAdmin && 'cursor-pointer',
-                              isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                              isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                              isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                             )}
                             onMouseDown={() =>
                               handleMouseDown(assignment.id, date)
@@ -702,8 +727,9 @@ export default function Timeline({
                                     'opacity-50'
                                 )}
                                 onMouseDown={(e) => {
-                                  // Stop propagation to prevent drag from starting
+                                  // Stop propagation and clear drag state to prevent recreation
                                   e.stopPropagation()
+                                  setDragState({ assignmentId: null, startDate: null, endDate: null })
                                 }}
                                 onContextMenu={(e) =>
                                   handleDeleteDayAssignment(assignment.id, date, e)
@@ -760,7 +786,7 @@ export default function Timeline({
           {/* Date row */}
           <div className="flex border-b-2">
           <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Member</div>
-          {dates.map((date) => (
+          {dates.map((date, dateIndex) => (
             <div
               key={date.toISOString()}
               className={cn(
@@ -768,7 +794,8 @@ export default function Timeline({
                 isWeekend(date) && 'bg-weekend',
                 isHoliday(date) && 'bg-holiday',
                 isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
-                isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
               )}
             >
               <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
@@ -825,7 +852,7 @@ export default function Timeline({
                     {member.firstName} {member.lastName}
                   </span>
                 </div>
-                {dates.map((date) => (
+                {dates.map((date, dateIndex) => (
                   <div
                     key={date.toISOString()}
                     className={cn(
@@ -833,7 +860,8 @@ export default function Timeline({
                       isWeekend(date) && 'bg-weekend',
                       isHoliday(date) && 'bg-holiday',
                       isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                      isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                      isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                      isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                     )}
                   >
                     {hasOverlap(member.id, date, 'member') && (
@@ -874,7 +902,7 @@ export default function Timeline({
                           {project.customer}
                         </div>
                       </div>
-                      {dates.map((date) => (
+                      {dates.map((date, dateIndex) => (
                         <div
                           key={date.toISOString()}
                           className={cn(
@@ -883,7 +911,8 @@ export default function Timeline({
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                             isAdmin && 'cursor-pointer',
-                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border'
+                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                            isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                           )}
                           onMouseDown={() =>
                             handleMouseDown(assignment.id, date)
@@ -910,8 +939,9 @@ export default function Timeline({
                                   'opacity-50'
                               )}
                               onMouseDown={(e) => {
-                                // Stop propagation to prevent drag from starting
+                                // Stop propagation and clear drag state to prevent recreation
                                 e.stopPropagation()
+                                setDragState({ assignmentId: null, startDate: null, endDate: null })
                               }}
                               onContextMenu={(e) =>
                                 handleDeleteDayAssignment(assignment.id, date, e)
