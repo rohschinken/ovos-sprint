@@ -40,6 +40,10 @@
     --gradient-accent-to: 158 64% 52%;
     --gradient-warm-from: 24 95% 53%;
     --gradient-warm-to: 45 93% 47%;
+
+    /* Mode colors - use gradient colors for visual consistency */
+    --mode-member: 221.2 83.2% 53.3%; /* Blue - gradient start */
+    --mode-project: 340 82% 52%; /* Purple - gradient end */
   }
 
   .dark {
@@ -78,6 +82,10 @@
     --gradient-accent-to: 158 64% 42%;
     --gradient-warm-from: 24 95% 43%;
     --gradient-warm-to: 45 93% 38%;
+
+    /* Mode colors - dark mode */
+    --mode-member: 217.2 91.2% 59.8%; /* Blue - gradient start */
+    --mode-project: 340 82% 48%; /* Purple - gradient end */
   }
 }
 
@@ -171,5 +179,22 @@
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, hsl(var(--gradient-from)) 0%, hsl(var(--gradient-via)) 50%, hsl(var(--gradient-to)) 100%);
+  }
+
+  /* Mode-specific colors */
+  .bg-mode-member {
+    background-color: hsl(var(--mode-member) / 0.15);
+  }
+
+  .bg-mode-project {
+    background-color: hsl(var(--mode-project) / 0.15);
+  }
+
+  .border-mode-member {
+    border-color: hsl(var(--mode-member) / 0.4);
+  }
+
+  .border-mode-project {
+    border-color: hsl(var(--mode-project) / 0.4);
   }
 }

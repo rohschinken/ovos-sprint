@@ -186,7 +186,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
+            className={cn(
+              "flex items-center gap-3 px-4 h-12 rounded-md border",
+              viewMode === 'by-member' ? 'bg-mode-member' : 'bg-mode-project'
+            )}
           >
             <span className="text-xs font-medium text-muted-foreground">
               By Member
@@ -410,7 +413,10 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
       >
-        <Card className="p-4 card-gradient-subtle">
+        <Card className={cn(
+          "p-4 card-gradient-subtle border-2",
+          viewMode === 'by-member' ? 'border-mode-member' : 'border-mode-project'
+        )}>
           <Timeline
             viewMode={viewMode}
             prevDays={prevDays}
