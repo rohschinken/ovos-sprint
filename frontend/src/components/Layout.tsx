@@ -92,6 +92,7 @@ export default function Layout() {
           </div>
         </div>
       </header>
+      <div className="h-0.5 bg-gradient-primary-via" />
       <main className="p-4">
         <Outlet />
       </main>

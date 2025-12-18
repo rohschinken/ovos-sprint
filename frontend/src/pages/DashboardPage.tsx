@@ -186,10 +186,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className={cn(
-              "flex items-center gap-3 px-4 h-12 rounded-md border",
-              viewMode === 'by-member' ? 'bg-mode-member' : 'bg-mode-project'
-            )}
+            className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
           >
             <span className="text-xs font-medium text-muted-foreground">
               By Member
@@ -198,11 +195,14 @@ export default function DashboardPage() {
               <Switch
                 checked={viewMode === 'by-project'}
                 onCheckedChange={(checked) => setViewMode(checked ? 'by-project' : 'by-member')}
-                className="h-7 w-14 [&>span]:hidden"
+                className={cn(
+                  "h-7 w-14 [&>span]:hidden",
+                  viewMode === 'by-member' ? 'bg-mode-member' : 'bg-mode-project'
+                )}
               />
               <div className="absolute inset-0 flex items-center pointer-events-none">
                 <div className={cn(
-                  "h-7 w-7 flex items-center justify-center transition-transform duration-200",
+                  "h-7 w-7 rounded-full bg-background shadow-sm flex items-center justify-center transition-transform duration-200",
                   viewMode === 'by-project' ? 'translate-x-[28px]' : 'translate-x-0'
                 )}>
                   {viewMode === 'by-project' ? (
@@ -414,7 +414,7 @@ export default function DashboardPage() {
         transition={{ delay: 0.1, duration: 0.4 }}
       >
         <Card className={cn(
-          "p-4 card-gradient-subtle border-2",
+          "p-4 border-2",
           viewMode === 'by-member' ? 'border-mode-member' : 'border-mode-project'
         )}>
           <Timeline
