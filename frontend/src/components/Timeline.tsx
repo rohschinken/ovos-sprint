@@ -564,7 +564,48 @@ export default function Timeline({
     return getMemberAssignmentsOnDate(memberId, date) > 0
   }
 
-  // Check if a member has any confirmed assignments on a date
+  // Helper functions for collapsed row assignment bar connections
+  const projectHasAssignmentOnPrevDay = (projectId: number, date: Date) => {
+    const prevDate = addDays(date, -1)
+    return projectHasAssignmentOnDate(projectId, prevDate)
+  }
+
+  const projectHasAssignmentOnNextDay = (projectId: number, date: Date) => {
+    const nextDate = addDays(date, 1)
+    return projectHasAssignmentOnDate(projectId, nextDate)
+  }
+
+  const memberHasAssignmentOnPrevDay = (memberId: number, date: Date) => {
+    const prevDate = addDays(date, -1)
+    return memberHasAssignmentOnDate(memberId, prevDate)
+  }
+
+  const memberHasAssignmentOnNextDay = (memberId: number, date: Date) => {
+    const nextDate = addDays(date, 1)
+    return memberHasAssignmentOnDate(memberId, nextDate)
+  }
+
+  const getCollapsedBarRoundedClass = (hasPrev: boolean, hasNext: boolean) => {
+    if (!hasPrev && !hasNext) return 'rounded' // Single day
+    if (!hasPrev && hasNext) return 'rounded-l' // First day
+    if (hasPrev && hasNext) return 'rounded-none' // Middle day
+    if (hasPrev && !hasNext) return 'rounded-r' // Last day
+    return 'rounded'
+  }
+
+  const getCollapsedBarBorderClass = (hasPrev: boolean, hasNext: boolean) => {
+    const classes = ['border-t-2', 'border-b-2']
+    if (!hasPrev) classes.push('border-l-2')
+    if (!hasNext) classes.push('border-r-2')
+    return classes.join(' ')
+  }
+
+  const getCollapsedBarWidthClass = (hasNext: boolean) => {
+    if (hasNext) return 'w-[calc(100%+1px)]'
+    return 'w-full'
+  }
+
+  // Check if a member has ANY assignments on a date (for collapsed view)
   const memberHasConfirmedAssignmentOnDate = (memberId: number, date: Date) => {
     const memberAssignments = projectAssignments.filter(
       (pa: any) => pa.teamMemberId === memberId
@@ -701,12 +742,25 @@ export default function Timeline({
                         <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
                       )}
                       {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
-                        <div className={cn(
-                          'w-2 h-2 rounded-full',
-                          project.status === 'confirmed'
-                            ? 'bg-emerald-500 dark:bg-emerald-400'
-                            : 'bg-orange-500 dark:bg-orange-400'
-                        )} />
+                        <div
+                          className={cn(
+                            'h-3 shadow-sm',
+                            getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(project.id, date)),
+                            getCollapsedBarRoundedClass(
+                              projectHasAssignmentOnPrevDay(project.id, date),
+                              projectHasAssignmentOnNextDay(project.id, date)
+                            ),
+                            getCollapsedBarBorderClass(
+                              projectHasAssignmentOnPrevDay(project.id, date),
+                              projectHasAssignmentOnNextDay(project.id, date)
+                            ),
+                            // Color orange if overlap, otherwise green (with opacity for tentative)
+                            hasOverlap(project.id, date, 'member')
+                              ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
+                              : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                            project.status === 'tentative' && !hasOverlap(project.id, date, 'member') && 'opacity-60'
+                          )}
+                        />
                       )}
                     </div>
                   ))}
@@ -782,9 +836,8 @@ export default function Timeline({
                                   getAssignmentWidthClass(assignment.id, date),
                                   getAssignmentRoundedClass(assignment.id, date),
                                   getAssignmentBorderClass(assignment.id, date),
-                                  project.status === 'confirmed'
-                                    ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
-                                    : 'bg-tentative border-amber-400 dark:border-amber-500',
+                                  'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                  project.status === 'tentative' && 'opacity-60',
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
                                 )}
@@ -922,16 +975,27 @@ export default function Timeline({
                       isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                     )}
                   >
-                    {hasOverlap(member.id, date, 'member') && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-t-sm shadow-sm" />
-                    )}
                     {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
-                      <div className={cn(
-                        'w-2 h-2 rounded-full',
-                        memberHasConfirmedAssignmentOnDate(member.id, date)
-                          ? 'bg-emerald-500 dark:bg-emerald-400'
-                          : 'bg-orange-500 dark:bg-orange-400'
-                      )} />
+                      <div
+                        className={cn(
+                          'h-3 shadow-sm',
+                          getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(member.id, date)),
+                          getCollapsedBarRoundedClass(
+                            memberHasAssignmentOnPrevDay(member.id, date),
+                            memberHasAssignmentOnNextDay(member.id, date)
+                          ),
+                          getCollapsedBarBorderClass(
+                            memberHasAssignmentOnPrevDay(member.id, date),
+                            memberHasAssignmentOnNextDay(member.id, date)
+                          ),
+                          // Color orange if overlap, otherwise green (with opacity for tentative)
+                          hasOverlap(member.id, date, 'member')
+                            ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
+                            : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                          // Reduce opacity for tentative (when not all assignments are confirmed)
+                          !hasOverlap(member.id, date, 'member') && !memberHasConfirmedAssignmentOnDate(member.id, date) && 'opacity-60'
+                        )}
+                      />
                     )}
                   </div>
                 ))}
@@ -1004,9 +1068,8 @@ export default function Timeline({
                                 getAssignmentWidthClass(assignment.id, date),
                                 getAssignmentRoundedClass(assignment.id, date),
                                 getAssignmentBorderClass(assignment.id, date),
-                                project.status === 'confirmed'
-                                  ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
-                                  : 'bg-tentative border-amber-400 dark:border-amber-500',
+                                'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                project.status === 'tentative' && 'opacity-60',
                                 isDayInDragRange(assignment.id, date) &&
                                   'opacity-50'
                               )}
