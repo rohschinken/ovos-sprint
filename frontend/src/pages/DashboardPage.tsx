@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn, Settings } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 
@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [expandedItems, setExpandedItems] = useState<number[]>([])
   const [hideTentative, setHideTentative] = useState(true) // default: hidden
   const [hideWeekends, setHideWeekends] = useState(true) // default: hidden
+  const [showOverlaps, setShowOverlaps] = useState(true) // default: shown
+  const [warnWeekends, setWarnWeekends] = useState(true) // default: warn
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -88,7 +90,23 @@ export default function DashboardPage() {
     if (settings.timelineNextDays) {
       setNextDays(parseInt(settings.timelineNextDays))
     }
+    if (settings.showOverlapVisualization !== undefined) {
+      setShowOverlaps(settings.showOverlapVisualization !== 'false')
+    }
+    if (settings.warnWeekendAssignments !== undefined) {
+      setWarnWeekends(settings.warnWeekendAssignments !== 'false')
+    }
   }, [settings])
+
+  const updateSettingMutation = useMutation({
+    mutationFn: async (data: { key: string; value: string }) => {
+      await api.put(`/settings/${data.key}`, { value: data.value })
+    },
+  })
+
+  const handleSettingChange = (key: string, value: boolean) => {
+    updateSettingMutation.mutate({ key, value: value.toString() })
+  }
 
   const toggleTeam = (teamId: number) => {
     setSelectedTeamIds((prev) =>
@@ -209,42 +227,82 @@ export default function DashboardPage() {
               </div>
             </PopoverContent>
           </Popover>
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background"
-          >
-            <Checkbox
-              id="hide-tentative"
-              checked={hideTentative}
-              onCheckedChange={(checked) => setHideTentative(!!checked)}
-            />
-            <Label
-              htmlFor="hide-tentative"
-              className="text-sm font-medium cursor-pointer"
-            >
-              Hide Tentative
-            </Label>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background"
-          >
-            <Checkbox
-              id="hide-weekends"
-              checked={hideWeekends}
-              onCheckedChange={(checked) => setHideWeekends(!!checked)}
-            />
-            <Label
-              htmlFor="hide-weekends"
-              className="text-sm font-medium cursor-pointer"
-            >
-              Hide Weekends
-            </Label>
-          </motion.div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  Display
+                </Button>
+              </motion.div>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="end">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Display Settings</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hide-tentative"
+                      checked={hideTentative}
+                      onCheckedChange={(checked) => setHideTentative(!!checked)}
+                    />
+                    <Label
+                      htmlFor="hide-tentative"
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      Hide Tentative Projects
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hide-weekends"
+                      checked={hideWeekends}
+                      onCheckedChange={(checked) => setHideWeekends(!!checked)}
+                    />
+                    <Label
+                      htmlFor="hide-weekends"
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      Hide Weekends
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="show-overlaps"
+                      checked={showOverlaps}
+                      onCheckedChange={(checked) => {
+                        setShowOverlaps(!!checked)
+                        handleSettingChange('showOverlapVisualization', !!checked)
+                      }}
+                    />
+                    <Label
+                      htmlFor="show-overlaps"
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      Show Overlap Indicators
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="warn-weekends"
+                      checked={warnWeekends}
+                      onCheckedChange={(checked) => {
+                        setWarnWeekends(!!checked)
+                        handleSettingChange('warnWeekendAssignments', !!checked)
+                      }}
+                    />
+                    <Label
+                      htmlFor="warn-weekends"
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      Warn Weekend Assignments
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant={viewMode === 'by-project' ? 'default' : 'outline'}

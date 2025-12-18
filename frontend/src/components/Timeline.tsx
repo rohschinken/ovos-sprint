@@ -845,10 +845,6 @@ export default function Timeline({
                                   // Stop propagation to prevent parent cell from starting drag
                                   e.stopPropagation()
                                 }}
-                                onMouseUp={(e) => {
-                                  // Stop propagation to prevent global mouseup from recreating assignment
-                                  e.stopPropagation()
-                                }}
                                 style={{ pointerEvents: 'auto' }}
                               />
                             )}
@@ -1075,10 +1071,6 @@ export default function Timeline({
                               )}
                               onMouseDown={(e) => {
                                 // Stop propagation to prevent parent cell from starting drag
-                                e.stopPropagation()
-                              }}
-                              onMouseUp={(e) => {
-                                // Stop propagation to prevent global mouseup from recreating assignment
                                 e.stopPropagation()
                               }}
                               style={{ pointerEvents: 'auto' }}
