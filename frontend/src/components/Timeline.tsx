@@ -712,10 +712,10 @@ export default function Timeline({
             return (
               <div key={project.id}>
                 <div
-                  className="flex border-b-2 bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
+                  className="flex border-b-4 border-border bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
                   onClick={() => toggleExpand(project.id)}
                 >
-                  <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
+                  <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
                     {expandedItemsSet.has(project.id) ? (
                       <ChevronDown className="h-4 w-4 text-primary" />
                     ) : (
@@ -764,11 +764,9 @@ export default function Timeline({
                               projectHasAssignmentOnPrevDay(project.id, date),
                               projectHasAssignmentOnNextDay(project.id, date)
                             ),
-                            // Color orange if overlap, otherwise green (with opacity for tentative)
-                            hasOverlap(project.id, date, 'member')
-                              ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
-                              : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
-                            project.status === 'tentative' && !hasOverlap(project.id, date, 'member') && 'opacity-60'
+                            // Always green for collapsed projects (with opacity for tentative)
+                            'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                            project.status === 'tentative' && 'opacity-60'
                           )}
                         />
                       )}
@@ -945,10 +943,10 @@ export default function Timeline({
           return (
             <div key={member.id}>
               <div
-                className="flex border-b-2 bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
+                className="flex border-b-4 border-border bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
                 onClick={() => toggleExpand(member.id)}
               >
-                <div className="w-64 p-3 border-r bg-background/50 flex items-center gap-2">
+                <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
                   {expandedItemsSet.has(member.id) ? (
                     <ChevronDown className="h-4 w-4 text-primary" />
                   ) : (
