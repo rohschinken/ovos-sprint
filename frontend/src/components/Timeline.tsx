@@ -712,7 +712,7 @@ export default function Timeline({
             return (
               <div key={project.id}>
                 <div
-                  className="flex border-b-4 border-border bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
+                  className="flex border-b-4 border-border bg-muted/70 hover:bg-muted/90 cursor-pointer transition-colors"
                   onClick={() => toggleExpand(project.id)}
                 >
                   <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
@@ -804,7 +804,7 @@ export default function Timeline({
                           <div
                             key={date.toISOString()}
                             className={cn(
-                              columnWidth, 'border-r p-1 group relative flex items-center justify-center select-none',
+                              columnWidth, 'border-r group relative flex items-center justify-center select-none',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -833,9 +833,6 @@ export default function Timeline({
                                 {format(date, 'EEE', { locale: enUS })}
                               </span>
                             </div>
-                            {hasOverlap(member.id, date, 'member') && (
-                              <div className="absolute bottom-0 left-0 right-0 h-2 bg-orange-500 border-t-2 border-orange-400 dark:bg-orange-400 dark:border-orange-500 shadow-sm pointer-events-none z-10" />
-                            )}
                             {(isDayAssigned(assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
                               <div
@@ -844,8 +841,11 @@ export default function Timeline({
                                   getAssignmentWidthClass(assignment.id, date),
                                   getAssignmentRoundedClass(assignment.id, date),
                                   getAssignmentBorderClass(assignment.id, date),
-                                  'bg-confirmed border-emerald-400 dark:border-emerald-500',
-                                  project.status === 'tentative' && 'opacity-60',
+                                  // Color orange if overlap, otherwise green
+                                  hasOverlap(member.id, date, 'member')
+                                    ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
+                                    : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                  project.status === 'tentative' && !hasOverlap(member.id, date, 'member') && 'opacity-60',
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
                                 )}
@@ -943,7 +943,7 @@ export default function Timeline({
           return (
             <div key={member.id}>
               <div
-                className="flex border-b-4 border-border bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
+                className="flex border-b-4 border-border bg-muted/70 hover:bg-muted/90 cursor-pointer transition-colors"
                 onClick={() => toggleExpand(member.id)}
               >
                 <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
@@ -1032,7 +1032,7 @@ export default function Timeline({
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            columnWidth, 'border-r p-1 group relative flex items-center justify-center select-none',
+                            columnWidth, 'border-r group relative flex items-center justify-center select-none',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
