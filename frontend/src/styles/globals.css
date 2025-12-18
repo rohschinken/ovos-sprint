@@ -183,18 +183,26 @@
 
   /* Mode-specific colors */
   .bg-mode-member {
-    background-color: hsl(var(--mode-member) / 0.15);
+    background-color: hsl(var(--mode-member) / 0.5) !important;
   }
 
   .bg-mode-project {
-    background-color: hsl(var(--mode-project) / 0.15);
+    background-color: hsl(var(--mode-project) / 0.3) !important;
+  }
+
+  .font-color-mode-member {
+    color: hsl(var(--mode-member) / 0.8);
+  }
+
+  .font-color-mode-project {
+    color: hsl(var(--mode-project) / 0.6);
   }
 
   .border-mode-member {
-    border-color: hsl(var(--mode-member) / 0.4);
+    border-color: hsl(var(--mode-member) / 0.8);
   }
 
   .border-mode-project {
-    border-color: hsl(var(--mode-project) / 0.4);
+    border-color: hsl(var(--mode-project) / 0.6);
   }
 }

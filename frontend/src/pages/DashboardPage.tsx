@@ -186,9 +186,9 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
+            className={cn("flex items-center gap-3 px-4 h-12 rounded-md border bg-background", viewMode === 'by-project' ? 'border-mode-project' : 'border-mode-member')}
           >
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-medium">
               By Member
             </span>
             <div className="relative">
@@ -200,20 +200,20 @@ export default function DashboardPage() {
                   viewMode === 'by-member' ? 'bg-mode-member' : 'bg-mode-project'
                 )}
               />
-              <div className="absolute inset-0 flex items-center pointer-events-none">
+              <div className="absolute top-[2px] left-0 flex items-center pointer-events-none">
                 <div className={cn(
-                  "h-7 w-7 rounded-full bg-background shadow-sm flex items-center justify-center transition-transform duration-200",
-                  viewMode === 'by-project' ? 'translate-x-[28px]' : 'translate-x-0'
+                  "h-6 w-6 rounded-full bg-background shadow-sm flex items-center justify-center transition-transform duration-200",
+                  viewMode === 'by-project' ? 'translate-x-[30px]' : 'translate-x-[2px]'
                 )}>
                   {viewMode === 'by-project' ? (
-                    <Briefcase className="h-4 w-4 text-primary" />
+                    <Briefcase className="h-4 w-4 font-color-mode-project" />
                   ) : (
-                    <UserCircle className="h-4 w-4 text-primary" />
+                    <UserCircle className="h-4 w-4 font-color-mode-member" />
                   )}
                 </div>
               </div>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-medium">
               By Project
             </span>
           </motion.div>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   onClick={toggleExpandAll}
-                  className="gap-2 h-12"
+                  className="gap-2 h-12 min-w-[130px]"
                 >
                   {allExpanded ? <FoldVertical className="h-4 w-4" /> : <UnfoldVertical className="h-4 w-4" />}
                   {allExpanded ? 'Collapse All' : 'Expand All'}
@@ -252,7 +252,7 @@ export default function DashboardPage() {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
           >
-            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+            <ZoomIn className="h-4 w-4" />
             <Slider
               value={[zoomLevel]}
               onValueChange={([value]) => setZoomLevel(value)}
@@ -261,7 +261,7 @@ export default function DashboardPage() {
               step={1}
               className="w-32"
             />
-            <span className="text-xs font-medium text-muted-foreground w-16">
+            <span className="text-sm font-medium w-16">
               {['Extra Narrow', 'Compact', 'Narrow', 'Normal'][zoomLevel - 1]}
             </span>
           </motion.div>
