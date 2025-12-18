@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
 import { LayoutGrid, List, Filter, ZoomIn, Settings, UnfoldVertical, FoldVertical } from 'lucide-react'
@@ -172,6 +173,54 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          {/* Mode Toggle Slider */}
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center gap-3 px-4 py-2 rounded-md border bg-background"
+          >
+            {viewMode === 'by-project' ? (
+              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <List className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-xs font-medium text-muted-foreground min-w-[70px]">
+              {viewMode === 'by-project' ? 'By Project' : 'By Member'}
+            </span>
+            <Switch
+              checked={viewMode === 'by-member'}
+              onCheckedChange={(checked) => setViewMode(checked ? 'by-member' : 'by-project')}
+            />
+          </motion.div>
+
+          {/* Expand/Collapse All */}
+          {(() => {
+            const allIds = viewMode === 'by-project'
+              ? projects.map((p) => p.id)
+              : members.map((m) => m.id)
+            const allExpanded = allIds.length > 0 && allIds.every((id) => expandedItems.includes(id))
+
+            return (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
+                  onClick={toggleExpandAll}
+                  className="gap-2"
+                >
+                  {allExpanded ? <FoldVertical className="h-4 w-4" /> : <UnfoldVertical className="h-4 w-4" />}
+                  {allExpanded ? 'Collapse All' : 'Expand All'}
+                </Button>
+              </motion.div>
+            )
+          })()}
+
           {/* Zoom Slider */}
           <motion.div
             initial={{ opacity: 0, x: -10 }}
@@ -331,46 +380,6 @@ export default function DashboardPage() {
               </div>
             </PopoverContent>
           </Popover>
-
-          {(() => {
-            const allIds = viewMode === 'by-project'
-              ? projects.map((p) => p.id)
-              : members.map((m) => m.id)
-            const allExpanded = allIds.length > 0 && allIds.every((id) => expandedItems.includes(id))
-
-            return (
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  onClick={toggleExpandAll}
-                  className="gap-2"
-                >
-                  {allExpanded ? <FoldVertical className="h-4 w-4" /> : <UnfoldVertical className="h-4 w-4" />}
-                  {allExpanded ? 'Collapse All' : 'Expand All'}
-                </Button>
-              </motion.div>
-            )
-          })()}
-
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="default"
-              onClick={() => setViewMode(viewMode === 'by-project' ? 'by-member' : 'by-project')}
-              className="gap-2"
-            >
-              {viewMode === 'by-project' ? (
-                <>
-                  <LayoutGrid className="h-4 w-4" />
-                  By Project
-                </>
-              ) : (
-                <>
-                  <List className="h-4 w-4" />
-                  By Member
-                </>
-              )}
-            </Button>
-          </motion.div>
         </div>
       </motion.div>
       </div>

@@ -649,7 +649,7 @@ export default function Timeline({
               <div className="w-64 border-r bg-muted/30"></div>
               {monthGroups.map((group, idx) => {
                 // Calculate width based on column count and zoom level
-                const pixelWidths = { 1: 48, 2: 64, 3: 80, 4: 96 }
+                const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
                 const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
                 const totalWidth = group.count * pixelWidth
 
@@ -882,7 +882,7 @@ export default function Timeline({
             <div className="w-64 border-r bg-muted/30"></div>
             {monthGroups.map((group, idx) => {
               // Calculate width based on column count and zoom level
-              const pixelWidths = { 1: 48, 2: 64, 3: 80, 4: 96 }
+              const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
               const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
               const totalWidth = group.count * pixelWidth
 
