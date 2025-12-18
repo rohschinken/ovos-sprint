@@ -388,6 +388,41 @@ export default function Timeline({
     )
   }
 
+  // Helper functions to determine position in consecutive assignment range
+  const isPrevDayAssigned = (assignmentId: number, date: Date) => {
+    const prevDate = addDays(date, -1)
+    return isDayAssigned(assignmentId, prevDate)
+  }
+
+  const isNextDayAssigned = (assignmentId: number, date: Date) => {
+    const nextDate = addDays(date, 1)
+    return isDayAssigned(assignmentId, nextDate)
+  }
+
+  const getAssignmentRoundedClass = (assignmentId: number, date: Date) => {
+    const hasPrev = isPrevDayAssigned(assignmentId, date)
+    const hasNext = isNextDayAssigned(assignmentId, date)
+
+    if (!hasPrev && !hasNext) return 'rounded' // Single day
+    if (!hasPrev && hasNext) return 'rounded-l' // First day
+    if (hasPrev && hasNext) return 'rounded-none' // Middle day
+    if (hasPrev && !hasNext) return 'rounded-r' // Last day
+    return 'rounded'
+  }
+
+  const getAssignmentBorderClass = (assignmentId: number, date: Date) => {
+    const hasPrev = isPrevDayAssigned(assignmentId, date)
+    const hasNext = isNextDayAssigned(assignmentId, date)
+
+    // For connected assignments, remove borders between consecutive days
+    const classes = ['border-t-2', 'border-b-2']
+
+    if (!hasPrev) classes.push('border-l-2') // Show left border if first day
+    if (!hasNext) classes.push('border-r-2') // Show right border if last day
+
+    return classes.join(' ')
+  }
+
   const getDayAssignmentId = (assignmentId: number, date: Date) => {
     const dayAssignment = dayAssignments.find(
       (da: any) =>
@@ -734,7 +769,9 @@ export default function Timeline({
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
-                                  'h-6 rounded shadow-sm border-2 relative z-20',
+                                  'h-6 shadow-sm relative z-20',
+                                  getAssignmentRoundedClass(assignment.id, date),
+                                  getAssignmentBorderClass(assignment.id, date),
                                   project.status === 'confirmed'
                                     ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
                                     : 'bg-tentative border-amber-400 dark:border-amber-500',
@@ -952,7 +989,9 @@ export default function Timeline({
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
-                                'h-6 rounded shadow-sm border-2',
+                                'h-6 shadow-sm',
+                                getAssignmentRoundedClass(assignment.id, date),
+                                getAssignmentBorderClass(assignment.id, date),
                                 project.status === 'confirmed'
                                   ? 'bg-confirmed border-emerald-400 dark:border-emerald-500'
                                   : 'bg-tentative border-amber-400 dark:border-amber-500',
