@@ -423,6 +423,14 @@ export default function Timeline({
     return classes.join(' ')
   }
 
+  const getAssignmentWidthClass = (assignmentId: number, date: Date) => {
+    const hasNext = isNextDayAssigned(assignmentId, date)
+
+    // Extend width slightly to overlap with next cell border for seamless connection
+    if (hasNext) return 'w-[calc(100%+1px)]' // Extend 1px to overlap
+    return 'w-full'
+  }
+
   const getDayAssignmentId = (assignmentId: number, date: Date) => {
     const dayAssignment = dayAssignments.find(
       (da: any) =>
@@ -734,7 +742,7 @@ export default function Timeline({
                           <div
                             key={date.toISOString()}
                             className={cn(
-                              columnWidth, 'border-r p-1 group relative flex items-center justify-center',
+                              columnWidth, 'border-r p-1 group relative flex items-center justify-center select-none',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -752,6 +760,7 @@ export default function Timeline({
                               }
                             }}
                             onContextMenu={(e) => {
+                              e.preventDefault() // Prevent browser context menu
                               if (isDayAssigned(assignment.id, date)) {
                                 handleDeleteDayAssignment(assignment.id, date, e)
                               }
@@ -770,6 +779,7 @@ export default function Timeline({
                               <div
                                 className={cn(
                                   'h-6 shadow-sm relative z-20',
+                                  getAssignmentWidthClass(assignment.id, date),
                                   getAssignmentRoundedClass(assignment.id, date),
                                   getAssignmentBorderClass(assignment.id, date),
                                   project.status === 'confirmed'
@@ -954,7 +964,7 @@ export default function Timeline({
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            columnWidth, 'border-r p-1 group relative flex items-center justify-center',
+                            columnWidth, 'border-r p-1 group relative flex items-center justify-center select-none',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
@@ -972,6 +982,7 @@ export default function Timeline({
                             }
                           }}
                           onContextMenu={(e) => {
+                            e.preventDefault() // Prevent browser context menu
                             if (isDayAssigned(assignment.id, date)) {
                               handleDeleteDayAssignment(assignment.id, date, e)
                             }
@@ -990,6 +1001,7 @@ export default function Timeline({
                             <div
                               className={cn(
                                 'h-6 shadow-sm',
+                                getAssignmentWidthClass(assignment.id, date),
                                 getAssignmentRoundedClass(assignment.id, date),
                                 getAssignmentBorderClass(assignment.id, date),
                                 project.status === 'confirmed'
