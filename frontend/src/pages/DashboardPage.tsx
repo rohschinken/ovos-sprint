@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn, Settings } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn, Settings, Unfold, Fold } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 
@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [expandedItems, setExpandedItems] = useState<number[]>([])
   const [hideTentative, setHideTentative] = useState(true) // default: hidden
   const [hideWeekends, setHideWeekends] = useState(true) // default: hidden
-  const [showOverlaps, setShowOverlaps] = useState(true) // default: shown
+  const [hideOverlaps, setHideOverlaps] = useState(false) // default: shown (not hidden)
   const [warnWeekends, setWarnWeekends] = useState(true) // default: warn
 
   const { data: settings = {} } = useQuery({
@@ -43,6 +43,22 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/teams')
       return response.data as Team[]
+    },
+  })
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const response = await api.get('/projects')
+      return response.data as any[]
+    },
+  })
+
+  const { data: members = [] } = useQuery({
+    queryKey: ['members'],
+    queryFn: async () => {
+      const response = await api.get('/members')
+      return response.data as any[]
     },
   })
 
@@ -91,7 +107,7 @@ export default function DashboardPage() {
       setNextDays(parseInt(settings.timelineNextDays))
     }
     if (settings.showOverlapVisualization !== undefined) {
-      setShowOverlaps(settings.showOverlapVisualization !== 'false')
+      setHideOverlaps(settings.showOverlapVisualization === 'false')
     }
     if (settings.warnWeekendAssignments !== undefined) {
       setWarnWeekends(settings.warnWeekendAssignments !== 'false')
@@ -122,6 +138,17 @@ export default function DashboardPage() {
 
   const selectAllTeams = () => {
     setSelectedTeamIds(teams.map((t) => t.id))
+  }
+
+  const toggleExpandAll = () => {
+    // Get all IDs based on current view mode
+    const allIds = viewMode === 'by-project'
+      ? projects.map((p) => p.id)
+      : members.map((m) => m.id)
+
+    // If all are expanded, collapse all. Otherwise expand all.
+    const allExpanded = allIds.length > 0 && allIds.every((id) => expandedItems.includes(id))
+    setExpandedItems(allExpanded ? [] : allIds)
   }
 
   return (
@@ -161,7 +188,7 @@ export default function DashboardPage() {
               className="w-32"
             />
             <span className="text-xs font-medium text-muted-foreground w-16">
-              {['Compact', 'Narrow', 'Normal', 'Wide'][zoomLevel - 1]}
+              {['Extra Narrow', 'Compact', 'Narrow', 'Normal'][zoomLevel - 1]}
             </span>
           </motion.div>
 
@@ -269,18 +296,18 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="show-overlaps"
-                      checked={showOverlaps}
+                      id="hide-overlaps"
+                      checked={hideOverlaps}
                       onCheckedChange={(checked) => {
-                        setShowOverlaps(!!checked)
-                        handleSettingChange('showOverlapVisualization', !!checked)
+                        setHideOverlaps(!!checked)
+                        handleSettingChange('showOverlapVisualization', !checked)
                       }}
                     />
                     <Label
-                      htmlFor="show-overlaps"
+                      htmlFor="hide-overlaps"
                       className="text-sm font-normal cursor-pointer flex-1"
                     >
-                      Show Overlap Indicators
+                      Hide Overlap Indicators
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -303,24 +330,44 @@ export default function DashboardPage() {
               </div>
             </PopoverContent>
           </Popover>
+
+          {(() => {
+            const allIds = viewMode === 'by-project'
+              ? projects.map((p) => p.id)
+              : members.map((m) => m.id)
+            const allExpanded = allIds.length > 0 && allIds.every((id) => expandedItems.includes(id))
+
+            return (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  onClick={toggleExpandAll}
+                  className="gap-2"
+                >
+                  {allExpanded ? <Fold className="h-4 w-4" /> : <Unfold className="h-4 w-4" />}
+                  {allExpanded ? 'Collapse All' : 'Expand All'}
+                </Button>
+              </motion.div>
+            )
+          })()}
+
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
-              variant={viewMode === 'by-project' ? 'default' : 'outline'}
-              onClick={() => setViewMode('by-project')}
+              variant="default"
+              onClick={() => setViewMode(viewMode === 'by-project' ? 'by-member' : 'by-project')}
               className="gap-2"
             >
-              <LayoutGrid className="h-4 w-4" />
-              By Project
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant={viewMode === 'by-member' ? 'default' : 'outline'}
-              onClick={() => setViewMode('by-member')}
-              className="gap-2"
-            >
-              <List className="h-4 w-4" />
-              By Member
+              {viewMode === 'by-project' ? (
+                <>
+                  <LayoutGrid className="h-4 w-4" />
+                  By Project
+                </>
+              ) : (
+                <>
+                  <List className="h-4 w-4" />
+                  By Member
+                </>
+              )}
             </Button>
           </motion.div>
         </div>

@@ -41,18 +41,21 @@ export default function Timeline({
     endDate: Date | null
   }>({ assignmentId: null, startDate: null, endDate: null })
 
+  // Track if initial expansion has been done to prevent re-expanding when user collapses all
+  const hasInitializedExpansion = useRef(false)
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
   // Convert expandedItems array to Set for easier manipulation
   const expandedItemsSet = new Set(expandedItemsProp)
 
-  // Column width based on zoom level (1=compact, 2=narrow, 3=normal, 4=wide)
+  // Column width based on zoom level (1=extra narrow, 2=compact, 3=narrow, 4=normal)
   const columnWidths = {
-    1: 'w-12', // 48px - Compact
-    2: 'w-16', // 64px - Narrow
-    3: 'w-20', // 80px - Normal
-    4: 'w-24', // 96px - Wide
+    1: 'w-10', // 40px - Extra Narrow
+    2: 'w-12', // 48px - Compact
+    3: 'w-16', // 64px - Narrow
+    4: 'w-20', // 80px - Normal
   }
   const columnWidth = columnWidths[zoomLevel as keyof typeof columnWidths] || 'w-16'
 
@@ -228,13 +231,20 @@ export default function Timeline({
     return assignments.length > 0
   })
 
+  // Reset initialization flag when view mode changes
+  useEffect(() => {
+    hasInitializedExpansion.current = false
+  }, [viewMode])
+
   // Initialize all items as expanded by default (when no saved preferences)
   useEffect(() => {
-    if (expandedItemsProp.length === 0 && (filteredProjects.length > 0 || filteredMembersWithProjects.length > 0)) {
+    // Only run once per view mode, and only if there are no saved preferences
+    if (!hasInitializedExpansion.current && expandedItemsProp.length === 0 && (filteredProjects.length > 0 || filteredMembersWithProjects.length > 0)) {
       const allIds = viewMode === 'by-project'
         ? filteredProjects.map((p) => p.id)
         : filteredMembersWithProjects.map((m) => m.id)
       onExpandedItemsChange(allIds)
+      hasInitializedExpansion.current = true
     }
   }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
 
