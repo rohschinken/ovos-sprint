@@ -74,6 +74,7 @@ export default function SettingsPage() {
   }
 
   return (
+    <div className="container mx-auto">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -244,5 +245,6 @@ export default function SettingsPage() {
         <Button onClick={handleSave}>Save Settings</Button>
       </motion.div>
     </motion.div>
+    </div>
   )
 }

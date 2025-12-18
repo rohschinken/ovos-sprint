@@ -160,6 +160,7 @@ export default function TeamsPage() {
   )
 
   return (
+    <div className="container mx-auto">
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -407,5 +408,6 @@ export default function TeamsPage() {
         </DialogContent>
       </Dialog>
     </motion.div>
+    </div>
   )
 }

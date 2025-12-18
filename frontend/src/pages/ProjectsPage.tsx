@@ -114,6 +114,7 @@ export default function ProjectsPage() {
   }
 
   return (
+    <div className="container mx-auto">
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -289,5 +290,6 @@ export default function ProjectsPage() {
         />
       )}
     </motion.div>
+    </div>
   )
 }
