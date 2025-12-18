@@ -92,7 +92,7 @@ export default function Layout() {
           </div>
         </div>
       </header>
-      <main className="container mx-auto p-4">
+      <main className="p-4">
         <Outlet />
       </main>
     </div>

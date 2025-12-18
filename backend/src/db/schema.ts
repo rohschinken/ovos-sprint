@@ -78,6 +78,7 @@ export const dayAssignments = sqliteTable('day_assignments', {
 export const invitations = sqliteTable('invitations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull(),
+  role: text('role').notNull().default('user'),
   token: text('token').notNull().unique(),
   expiresAt: text('expires_at').notNull(),
   usedAt: text('used_at'),

@@ -158,12 +158,13 @@ export default function DashboardPage() {
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex justify-between items-center"
-      >
+      <div className="container mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex justify-between items-center"
+        >
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
@@ -372,6 +373,7 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </motion.div>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

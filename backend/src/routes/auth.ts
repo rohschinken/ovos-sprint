@@ -81,12 +81,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' })
     }
 
-    // Create user
+    // Create user with role from invitation
     const passwordHash = await bcrypt.hash(password, 10)
     const [newUser] = await db.insert(users).values({
       email,
       passwordHash,
-      role: 'user',
+      role: invitation.role || 'user',
     }).returning()
 
     // Mark invitation as used
@@ -118,7 +118,7 @@ router.post('/register', async (req, res) => {
 // Invite user (admin only)
 router.post('/invite', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
-    const { email } = inviteSchema.parse(req.body)
+    const { email, role } = inviteSchema.parse(req.body)
 
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({
@@ -136,6 +136,7 @@ router.post('/invite', authenticate, requireAdmin, async (req: AuthRequest, res)
 
     const [invitation] = await db.insert(invitations).values({
       email,
+      role,
       token,
       expiresAt: expiresAt.toISOString(),
     }).returning()

@@ -1,17 +1,40 @@
 import { db, users } from './index.js'
 import bcrypt from 'bcryptjs'
+import * as readline from 'readline'
+
+async function promptForEmail(): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  return new Promise((resolve) => {
+    rl.question('Enter admin email address: ', (email) => {
+      rl.close()
+      resolve(email.trim())
+    })
+  })
+}
 
 async function main() {
   console.log('Seeding database...')
 
-  // Check if admin already exists
-  const existingAdmin = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.email, 'af@ovos.at'),
+  // Check if any admin user already exists
+  const existingAdmins = await db.query.users.findMany({
+    where: (users, { eq }) => eq(users.role, 'admin'),
   })
 
-  if (existingAdmin) {
-    console.log('Admin user already exists!')
+  if (existingAdmins.length > 0) {
+    console.log('Admin user(s) already exist!')
     return
+  }
+
+  // Prompt for admin email
+  const adminEmail = await promptForEmail()
+
+  if (!adminEmail || !adminEmail.includes('@')) {
+    console.error('❌ Invalid email address!')
+    process.exit(1)
   }
 
   // Generate a secure password
@@ -20,14 +43,14 @@ async function main() {
 
   // Create admin user
   await db.insert(users).values({
-    email: 'af@ovos.at',
+    email: adminEmail,
     passwordHash,
     role: 'admin',
   })
 
   console.log('✅ Admin user created successfully!')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('📧 Email: af@ovos.at')
+  console.log(`📧 Email: ${adminEmail}`)
   console.log(`🔑 Password: ${password}`)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('⚠️  Please save this password securely!')

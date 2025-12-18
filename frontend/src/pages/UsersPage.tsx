@@ -4,6 +4,7 @@ import api from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Card,
   CardContent,
@@ -20,7 +21,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { UserPlus, Copy, CheckCircle2, Clock, Mail } from 'lucide-react'
+import { useAuthStore } from '@/store/auth'
+import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Invitation {
@@ -42,10 +44,12 @@ interface User {
 export default function UsersPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [email, setEmail] = useState('')
+  const [role, setRole] = useState<'user' | 'admin'>('user')
   const [invitationLink, setInvitationLink] = useState<string | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { user: currentUser } = useAuthStore()
 
   // Fetch users - we'll need to add this endpoint
   const { data: users = [] } = useQuery({
@@ -61,8 +65,8 @@ export default function UsersPage() {
   })
 
   const inviteMutation = useMutation({
-    mutationFn: async (email: string) => {
-      const response = await api.post('/auth/invite', { email })
+    mutationFn: async (data: { email: string; role: 'user' | 'admin' }) => {
+      const response = await api.post('/auth/invite', data)
       return response.data
     },
     onSuccess: (data) => {
@@ -73,6 +77,7 @@ export default function UsersPage() {
         description: 'The invitation link has been generated. Copy it and send it to the user.',
       })
       setEmail('')
+      setRole('user')
     },
     onError: (error: any) => {
       toast({
@@ -83,9 +88,35 @@ export default function UsersPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      await api.delete(`/users/${userId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast({
+        title: 'User deleted',
+        description: 'The user has been removed successfully.',
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to delete user',
+        description: error.response?.data?.error || 'Something went wrong',
+        variant: 'destructive',
+      })
+    },
+  })
+
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault()
-    inviteMutation.mutate(email)
+    inviteMutation.mutate({ email, role })
+  }
+
+  const handleDeleteUser = (user: User) => {
+    if (window.confirm(`Are you sure you want to delete ${user.email}?`)) {
+      deleteMutation.mutate(user.id)
+    }
   }
 
   const copyToClipboard = (text: string) => {
@@ -154,14 +185,27 @@ export default function UsersPage() {
                       {new Date(user.createdAt).toLocaleDateString('de-AT')}
                     </div>
                   </div>
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'admin'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {user.role}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        user.role === 'admin'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                      }`}
+                    >
+                      {user.role}
+                    </div>
+                    {currentUser?.id !== user.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={deleteMutation.isPending}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -195,6 +239,23 @@ export default function UsersPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'user' | 'admin')}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="user" id="role-user" />
+                      <Label htmlFor="role-user" className="font-normal cursor-pointer">
+                        User - Can view and interact with the timeline
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="admin" id="role-admin" />
+                      <Label htmlFor="role-admin" className="font-normal cursor-pointer">
+                        Admin - Full access including user management
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </div>
               <DialogFooter>

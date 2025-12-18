@@ -13,6 +13,7 @@ export const registerSchema = z.object({
 
 export const inviteSchema = z.object({
   email: z.string().email(),
+  role: z.enum(['user', 'admin']).default('user'),
 })
 
 export const teamSchema = z.object({
