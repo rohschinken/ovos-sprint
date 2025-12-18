@@ -19,8 +19,9 @@ interface TimelineProps {
   zoomLevel: number
   expandedItems: number[]
   onExpandedItemsChange: (items: number[]) => void
-  hideTentative: boolean
-  hideWeekends: boolean
+  showTentative: boolean
+  showWeekends: boolean
+  showOverlaps: boolean
 }
 
 export default function Timeline({
@@ -32,8 +33,9 @@ export default function Timeline({
   zoomLevel,
   expandedItems: expandedItemsProp,
   onExpandedItemsChange,
-  hideTentative,
-  hideWeekends,
+  showTentative,
+  showWeekends,
+  showOverlaps,
 }: TimelineProps) {
   const [dragState, setDragState] = useState<{
     assignmentId: number | null
@@ -67,8 +69,8 @@ export default function Timeline({
     allDates.push(addDays(startDate, i))
   }
 
-  // Filter out weekends if hideWeekends is enabled
-  const dates = hideWeekends ? allDates.filter(date => !isWeekend(date)) : allDates
+  // Filter out weekends if showWeekends is disabled
+  const dates = showWeekends ? allDates : allDates.filter(date => !isWeekend(date))
 
   // Group dates by month for month labels
   const monthGroups: { month: string; count: number; firstDate: Date }[] = []
@@ -210,18 +212,18 @@ export default function Timeline({
     return assignments.length > 0
   })
 
-  // Filter out tentative projects if hideTentative is true
-  const filteredProjects = hideTentative
-    ? filteredProjectsWithMembers.filter((project) => project.status === 'confirmed')
-    : filteredProjectsWithMembers
+  // Filter out tentative projects if showTentative is false
+  const filteredProjects = showTentative
+    ? filteredProjectsWithMembers
+    : filteredProjectsWithMembers.filter((project) => project.status === 'confirmed')
 
   // Filter out members without projects
   const filteredMembersWithProjects = filteredMembers.filter((member) => {
     const assignments = projectAssignments.filter(
       (pa: any) => pa.teamMemberId === member.id
     )
-    // If hideTentative is true, only count confirmed project assignments
-    if (hideTentative) {
+    // If showTentative is false, only count confirmed project assignments
+    if (!showTentative) {
       const confirmedAssignments = assignments.filter((pa: any) => {
         const project = projects.find((p) => p.id === pa.projectId)
         return project && project.status === 'confirmed'
@@ -629,7 +631,7 @@ export default function Timeline({
   }
 
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
-    if (settings.showOverlapVisualization === 'false') return false
+    if (!showOverlaps) return false
 
     const count = mode === 'member'
       ? getMemberAssignmentsOnDate(id, date)
@@ -1012,8 +1014,8 @@ export default function Timeline({
                   )
                   if (!project) return null
 
-                  // Hide tentative projects if hideTentative is enabled
-                  if (hideTentative && project.status === 'tentative') return null
+                  // Hide tentative projects if showTentative is disabled
+                  if (!showTentative && project.status === 'tentative') return null
 
                   return (
                     <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">

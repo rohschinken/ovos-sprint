@@ -27,9 +27,9 @@ export default function DashboardPage() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
   const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (narrow)
   const [expandedItems, setExpandedItems] = useState<number[]>([])
-  const [hideTentative, setHideTentative] = useState(true) // default: hidden
-  const [hideWeekends, setHideWeekends] = useState(true) // default: hidden
-  const [hideOverlaps, setHideOverlaps] = useState(false) // default: shown (not hidden)
+  const [showTentative, setShowTentative] = useState(true) // default: shown
+  const [showWeekends, setShowWeekends] = useState(true) // default: shown
+  const [showOverlaps, setShowOverlaps] = useState(true) // default: shown
   const [warnWeekends, setWarnWeekends] = useState(true) // default: warn
 
   const queryClient = useQueryClient()
@@ -79,8 +79,9 @@ export default function DashboardPage() {
         if (prefs.selectedTeamIds) setSelectedTeamIds(prefs.selectedTeamIds)
         if (prefs.zoomLevel) setZoomLevel(prefs.zoomLevel)
         if (prefs.expandedItems !== undefined) setExpandedItems(prefs.expandedItems)
-        if (prefs.hideTentative !== undefined) setHideTentative(prefs.hideTentative)
-        if (prefs.hideWeekends !== undefined) setHideWeekends(prefs.hideWeekends)
+        if (prefs.showTentative !== undefined) setShowTentative(prefs.showTentative)
+        if (prefs.showWeekends !== undefined) setShowWeekends(prefs.showWeekends)
+        if (prefs.showOverlaps !== undefined) setShowOverlaps(prefs.showOverlaps)
       } catch (error) {
         console.error('Failed to load dashboard preferences:', error)
       }
@@ -97,11 +98,12 @@ export default function DashboardPage() {
       selectedTeamIds,
       zoomLevel,
       expandedItems,
-      hideTentative,
-      hideWeekends,
+      showTentative,
+      showWeekends,
+      showOverlaps,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, hideTentative, hideWeekends])
+  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps])
 
   useEffect(() => {
     if (settings.timelinePrevDays) {
@@ -111,7 +113,7 @@ export default function DashboardPage() {
       setNextDays(parseInt(settings.timelineNextDays))
     }
     if (settings.showOverlapVisualization !== undefined) {
-      setHideOverlaps(settings.showOverlapVisualization === 'false')
+      setShowOverlaps(settings.showOverlapVisualization !== 'false')
     }
     if (settings.warnWeekendAssignments !== undefined) {
       setWarnWeekends(settings.warnWeekendAssignments !== 'false')
@@ -184,7 +186,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex items-center gap-3 px-4 py-2 rounded-md border bg-background"
+            className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
           >
             <span className="text-xs font-medium text-muted-foreground">
               By Member
@@ -193,17 +195,17 @@ export default function DashboardPage() {
               <Switch
                 checked={viewMode === 'by-project'}
                 onCheckedChange={(checked) => setViewMode(checked ? 'by-project' : 'by-member')}
-                className="h-7 w-14"
+                className="h-7 w-14 [&>span]:hidden"
               />
               <div className="absolute inset-0 flex items-center pointer-events-none">
                 <div className={cn(
-                  "h-6 w-6 rounded-full bg-background flex items-center justify-center transition-transform duration-200",
-                  viewMode === 'by-project' ? 'translate-x-[30px]' : 'translate-x-[2px]'
+                  "h-7 w-7 flex items-center justify-center transition-transform duration-200",
+                  viewMode === 'by-project' ? 'translate-x-[28px]' : 'translate-x-0'
                 )}>
                   {viewMode === 'by-project' ? (
-                    <Briefcase className="h-3.5 w-3.5 text-primary" />
+                    <Briefcase className="h-4 w-4 text-primary" />
                   ) : (
-                    <UserCircle className="h-3.5 w-3.5 text-primary" />
+                    <UserCircle className="h-4 w-4 text-primary" />
                   )}
                 </div>
               </div>
@@ -231,7 +233,7 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   onClick={toggleExpandAll}
-                  className="gap-2"
+                  className="gap-2 h-12"
                 >
                   {allExpanded ? <FoldVertical className="h-4 w-4" /> : <UnfoldVertical className="h-4 w-4" />}
                   {allExpanded ? 'Collapse All' : 'Expand All'}
@@ -245,7 +247,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center gap-3 px-4 py-2 rounded-md border bg-background"
+            className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
           >
             <ZoomIn className="h-4 w-4 text-muted-foreground" />
             <Slider
@@ -264,7 +266,7 @@ export default function DashboardPage() {
           <Popover>
             <PopoverTrigger asChild>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 h-12">
                   <Filter className="h-4 w-4" />
                   Teams
                   {selectedTeamIds.length > 0 && (
@@ -327,7 +329,7 @@ export default function DashboardPage() {
           <Popover>
             <PopoverTrigger asChild>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 h-12">
                   <Settings className="h-4 w-4" />
                   Display
                 </Button>
@@ -339,44 +341,44 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="hide-tentative"
-                      checked={hideTentative}
-                      onCheckedChange={(checked) => setHideTentative(!!checked)}
+                      id="show-tentative"
+                      checked={showTentative}
+                      onCheckedChange={(checked) => setShowTentative(!!checked)}
                     />
                     <Label
-                      htmlFor="hide-tentative"
+                      htmlFor="show-tentative"
                       className="text-sm font-normal cursor-pointer flex-1"
                     >
-                      Hide Tentative Projects
+                      Show Tentative Projects
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="hide-weekends"
-                      checked={hideWeekends}
-                      onCheckedChange={(checked) => setHideWeekends(!!checked)}
+                      id="show-weekends"
+                      checked={showWeekends}
+                      onCheckedChange={(checked) => setShowWeekends(!!checked)}
                     />
                     <Label
-                      htmlFor="hide-weekends"
+                      htmlFor="show-weekends"
                       className="text-sm font-normal cursor-pointer flex-1"
                     >
-                      Hide Weekends
+                      Show Weekends
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="hide-overlaps"
-                      checked={hideOverlaps}
+                      id="show-overlaps"
+                      checked={showOverlaps}
                       onCheckedChange={(checked) => {
-                        setHideOverlaps(!!checked)
-                        handleSettingChange('showOverlapVisualization', !checked)
+                        setShowOverlaps(!!checked)
+                        handleSettingChange('showOverlapVisualization', !!checked)
                       }}
                     />
                     <Label
-                      htmlFor="hide-overlaps"
+                      htmlFor="show-overlaps"
                       className="text-sm font-normal cursor-pointer flex-1"
                     >
-                      Hide Overlap Indicators
+                      Show Overlap Indicators
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -418,8 +420,9 @@ export default function DashboardPage() {
             zoomLevel={zoomLevel}
             expandedItems={expandedItems}
             onExpandedItemsChange={setExpandedItems}
-            hideTentative={hideTentative}
-            hideWeekends={hideWeekends}
+            showTentative={showTentative}
+            showWeekends={showWeekends}
+            showOverlaps={showOverlaps}
           />
         </Card>
       </motion.div>
