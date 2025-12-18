@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -14,9 +14,10 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn, Settings, UnfoldVertical, FoldVertical } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn, Settings, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
@@ -30,6 +31,8 @@ export default function DashboardPage() {
   const [hideWeekends, setHideWeekends] = useState(true) // default: hidden
   const [hideOverlaps, setHideOverlaps] = useState(false) // default: shown (not hidden)
   const [warnWeekends, setWarnWeekends] = useState(true) // default: warn
+
+  const queryClient = useQueryClient()
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -119,6 +122,9 @@ export default function DashboardPage() {
     mutationFn: async (data: { key: string; value: string }) => {
       await api.put(`/settings/${data.key}`, { value: data.value })
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+    },
   })
 
   const handleSettingChange = (key: string, value: boolean) => {
@@ -180,18 +186,31 @@ export default function DashboardPage() {
             transition={{ delay: 0.1 }}
             className="flex items-center gap-3 px-4 py-2 rounded-md border bg-background"
           >
-            {viewMode === 'by-project' ? (
-              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <List className="h-4 w-4 text-muted-foreground" />
-            )}
-            <span className="text-xs font-medium text-muted-foreground min-w-[70px]">
-              {viewMode === 'by-project' ? 'By Project' : 'By Member'}
+            <span className="text-xs font-medium text-muted-foreground">
+              By Member
             </span>
-            <Switch
-              checked={viewMode === 'by-member'}
-              onCheckedChange={(checked) => setViewMode(checked ? 'by-member' : 'by-project')}
-            />
+            <div className="relative">
+              <Switch
+                checked={viewMode === 'by-project'}
+                onCheckedChange={(checked) => setViewMode(checked ? 'by-project' : 'by-member')}
+                className="h-7 w-14"
+              />
+              <div className="absolute inset-0 flex items-center pointer-events-none">
+                <div className={cn(
+                  "h-6 w-6 rounded-full bg-background flex items-center justify-center transition-transform duration-200",
+                  viewMode === 'by-project' ? 'translate-x-[30px]' : 'translate-x-[2px]'
+                )}>
+                  {viewMode === 'by-project' ? (
+                    <Briefcase className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <UserCircle className="h-3.5 w-3.5 text-primary" />
+                  )}
+                </div>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">
+              By Project
+            </span>
           </motion.div>
 
           {/* Expand/Collapse All */}
