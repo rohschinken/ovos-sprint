@@ -834,7 +834,7 @@ export default function Timeline({
                               </span>
                             </div>
                             {hasOverlap(member.id, date, 'member') && (
-                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 dark:bg-orange-400 rounded-b-sm shadow-sm pointer-events-none z-10" />
+                              <div className="absolute bottom-0 left-0 right-0 h-2 bg-orange-500 border-t-2 border-orange-400 dark:bg-orange-400 dark:border-orange-500 shadow-sm pointer-events-none z-10" />
                             )}
                             {(isDayAssigned(assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
