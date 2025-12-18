@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn, Settings, Unfold, Fold } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn, Settings, Unfold, FoldVertical } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                   onClick={toggleExpandAll}
                   className="gap-2"
                 >
-                  {allExpanded ? <Fold className="h-4 w-4" /> : <Unfold className="h-4 w-4" />}
+                  {allExpanded ? <FoldVertical className="h-4 w-4" /> : <Unfold className="h-4 w-4" />}
                   {allExpanded ? 'Collapse All' : 'Expand All'}
                 </Button>
               </motion.div>
