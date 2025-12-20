@@ -770,10 +770,8 @@ export default function Timeline({
     return count > 1
   }
 
-  if (viewMode === 'by-project') {
-    return (
-      <TooltipProvider>
-        <div className="overflow-x-auto">
+  const content = viewMode === 'by-project' ? (
+    <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header */}
           <div className="sticky top-0 bg-background z-10 shadow-sm">
@@ -1008,14 +1006,10 @@ export default function Timeline({
           })}
         </div>
       </div>
-      </TooltipProvider>
-    )
-  }
-
-  // By Member view
-  return (
-    <TooltipProvider>
-      <div className="overflow-x-auto">
+    </div>
+  ) : (
+    // By Member view
+    <div className="overflow-x-auto">
       <div className="min-w-max">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 shadow-sm">
@@ -1262,6 +1256,7 @@ export default function Timeline({
         })}
       </div>
     </div>
-    </TooltipProvider>
   )
+
+  return <TooltipProvider>{content}</TooltipProvider>
 }
