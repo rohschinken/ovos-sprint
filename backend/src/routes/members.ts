@@ -1,10 +1,17 @@
 import { Router } from 'express'
 import multer from 'multer'
 import path from 'path'
-import { db, teamMembers } from '../db/index.js'
+import { fileURLToPath } from 'url'
+import fs from 'fs'
+import sharp from 'sharp'
+import crypto from 'crypto'
+import { db, teamMembers, invitations, users } from '../db/index.js'
 import { teamMemberSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const router = Router()
 
@@ -123,9 +130,24 @@ router.post('/:id/avatar', authenticate, requireAdmin, upload.single('avatar'), 
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    // Construct full URL including backend server
+    // Process image: resize to 256x256, crop to center, convert to PNG
+    const processedFilename = `avatar-${Date.now()}-${Math.floor(Math.random() * 1000000000)}.png`
+    const outputPath = path.join(__dirname, '../../data/avatars', processedFilename)
+
+    await sharp(req.file.path)
+      .resize(256, 256, {
+        fit: 'cover',
+        position: 'center'
+      })
+      .png({ quality: 90 })
+      .toFile(outputPath)
+
+    // Delete original uploaded file
+    fs.unlinkSync(req.file.path)
+
+    // Update database with new avatar URL
     const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`
-    const avatarUrl = `${backendUrl}/avatars/${req.file.filename}`
+    const avatarUrl = `${backendUrl}/avatars/${processedFilename}`
 
     const [updated] = await db
       .update(teamMembers)
@@ -141,6 +163,82 @@ router.post('/:id/avatar', authenticate, requireAdmin, upload.single('avatar'), 
   } catch (error) {
     console.error('Upload avatar error:', error)
     res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Invite member as user (admin only)
+router.post('/:id/invite', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const memberId = parseInt(req.params.id)
+
+    // Get member details
+    const member = await db.query.teamMembers.findFirst({
+      where: eq(teamMembers.id, memberId),
+    })
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' })
+    }
+
+    if (!member.email) {
+      return res.status(400).json({ error: 'Member has no email address' })
+    }
+
+    // Check if user already exists
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, member.email),
+    })
+
+    if (existingUser) {
+      // User exists - link them to this member
+      await db.update(teamMembers)
+        .set({ userId: existingUser.id })
+        .where(eq(teamMembers.id, member.id))
+
+      return res.json({
+        message: 'User linked successfully',
+        email: member.email,
+        linked: true
+      })
+    }
+
+    // Check if invitation already exists
+    const existingInvitation = await db.query.invitations.findFirst({
+      where: and(
+        eq(invitations.email, member.email),
+        isNull(invitations.usedAt)
+      ),
+    })
+
+    if (existingInvitation) {
+      return res.status(400).json({ error: 'Invitation already sent for this email' })
+    }
+
+    // Create invitation
+    const token = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    await db.insert(invitations).values({
+      email: member.email,
+      role: 'user',
+      token,
+      expiresAt,
+    })
+
+    // In production, send email here
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+    const inviteLink = `${frontendUrl}/register?token=${token}&email=${encodeURIComponent(member.email)}`
+
+    console.log(`Invitation created for ${member.email}: ${inviteLink}`)
+
+    res.json({
+      message: 'Invitation created successfully',
+      email: member.email,
+      inviteLink
+    })
+  } catch (error) {
+    console.error('Failed to create invitation:', error)
+    res.status(500).json({ error: 'Failed to create invitation' })
   }
 })
 

@@ -32,8 +32,10 @@ export interface WorkSchedule {
 
 export interface TeamMember {
   id: number
+  userId?: number | null
   firstName: string
   lastName: string
+  email?: string | null
   avatarUrl: string | null
   workSchedule: string
   createdAt: string

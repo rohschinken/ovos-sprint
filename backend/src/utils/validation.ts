@@ -28,6 +28,7 @@ export const customerSchema = z.object({
 export const teamMemberSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  email: z.string().email().optional().nullable(),
   avatarUrl: z.string().url().optional().nullable(),
   workSchedule: z.string().optional(),
 })

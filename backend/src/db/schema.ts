@@ -30,8 +30,10 @@ export const customers = sqliteTable('customers', {
 
 export const teamMembers = sqliteTable('team_members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
+  email: text('email'),
   avatarUrl: text('avatar_url'),
   workSchedule: text('work_schedule')
     .notNull()
@@ -157,4 +159,19 @@ export const projectsRelations = relations(projects, ({ one }) => ({
 
 export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
+}))
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  user: one(users, {
+    fields: [teamMembers.userId],
+    references: [users.id],
+  }),
+}))
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  teamMember: one(teamMembers, {
+    fields: [users.id],
+    references: [teamMembers.userId],
+  }),
+  settings: many(settings),
 }))

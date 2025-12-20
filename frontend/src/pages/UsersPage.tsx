@@ -176,7 +176,6 @@ export default function UsersPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
-                  whileHover={{ scale: 1.01, x: 4 }}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>

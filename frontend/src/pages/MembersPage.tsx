@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Pencil, Trash2, Upload, Camera } from 'lucide-react'
+import { Plus, Pencil, Trash2, Upload, Camera, Mail, UserPlus } from 'lucide-react'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
 
@@ -33,6 +33,7 @@ export default function MembersPage() {
   const [uploadingAvatarFor, setUploadingAvatarFor] = useState<TeamMember | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -58,7 +59,7 @@ export default function MembersPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: { firstName: string; lastName: string; workSchedule: string }) => {
+    mutationFn: async (data: { firstName: string; lastName: string; email: string | null; workSchedule: string }) => {
       const avatarUrl = generateAvatarUrl(data.firstName, data.lastName)
       const response = await api.post('/members', { ...data, avatarUrl })
       return response.data
@@ -79,6 +80,7 @@ export default function MembersPage() {
       id: number
       firstName: string
       lastName: string
+      email: string | null
       workSchedule: string
     }) => {
       const response = await api.put(`/members/${id}`, data)
@@ -129,9 +131,38 @@ export default function MembersPage() {
     },
   })
 
+  const inviteMutation = useMutation({
+    mutationFn: async (memberId: number) => {
+      const response = await api.post(`/members/${memberId}/invite`)
+      return response.data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      if (data.linked) {
+        toast({
+          title: 'User linked!',
+          description: `User ${data.email} has been linked to this member`
+        })
+      } else {
+        toast({
+          title: 'Invitation sent!',
+          description: `Invitation link created for ${data.email}`
+        })
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to send invitation',
+        description: error.response?.data?.error || 'An error occurred',
+        variant: 'destructive'
+      })
+    },
+  })
+
   const resetForm = () => {
     setFirstName('')
     setLastName('')
+    setEmail('')
     setWorkSchedule({
       sun: false,
       mon: true,
@@ -171,10 +202,11 @@ export default function MembersPage() {
         id: editingMember.id,
         firstName,
         lastName,
+        email: email || null,
         workSchedule: workScheduleString,
       })
     } else {
-      createMutation.mutate({ firstName, lastName, workSchedule: workScheduleString })
+      createMutation.mutate({ firstName, lastName, email: email || null, workSchedule: workScheduleString })
     }
   }
 
@@ -244,6 +276,12 @@ export default function MembersPage() {
                   <CardTitle>
                     {member.firstName} {member.lastName}
                   </CardTitle>
+                  {member.email && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                      <Mail className="h-3 w-3" />
+                      {member.email}
+                    </div>
+                  )}
                   <CardDescription>
                     Added{' '}
                     {new Date(member.createdAt).toLocaleDateString('de-AT')}
@@ -253,6 +291,24 @@ export default function MembersPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-2">
+                {member.email && !member.userId && (
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(`Send invitation to ${member.email}?`)) {
+                          inviteMutation.mutate(member.id)
+                        }
+                      }}
+                      disabled={inviteMutation.isPending}
+                      className="gap-2 w-full"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      Invite User
+                    </Button>
+                  </motion.div>
+                )}
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="secondary"
@@ -273,6 +329,7 @@ export default function MembersPage() {
                         setEditingMember(member)
                         setFirstName(member.firstName)
                         setLastName(member.lastName)
+                        setEmail(member.email || '')
                         setWorkSchedule(JSON.parse(member.workSchedule))
                       }}
                       className="gap-2"
@@ -340,6 +397,19 @@ export default function MembersPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="member@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required to invite member as a user
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Work Schedule</Label>

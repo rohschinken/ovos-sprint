@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { db, users, invitations } from '../db/index.js'
+import { db, users, invitations, teamMembers } from '../db/index.js'
 import { generateToken } from '../utils/jwt.js'
 import { loginSchema, registerSchema, inviteSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 const router = Router()
 
@@ -86,13 +86,24 @@ router.post('/register', async (req, res) => {
     const [newUser] = await db.insert(users).values({
       email,
       passwordHash,
-      role: invitation.role || 'user',
+      role: (invitation.role as 'admin' | 'user') || 'user',
     }).returning()
 
     // Mark invitation as used
     await db.update(invitations)
       .set({ usedAt: new Date().toISOString() })
       .where(eq(invitations.id, invitation.id))
+
+    // Link user to member if member exists with this email
+    const member = await db.query.teamMembers.findFirst({
+      where: eq(teamMembers.email, email),
+    })
+
+    if (member) {
+      await db.update(teamMembers)
+        .set({ userId: newUser.id })
+        .where(eq(teamMembers.id, member.id))
+    }
 
     const authToken = generateToken({
       userId: newUser.id,
