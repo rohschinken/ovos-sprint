@@ -763,7 +763,7 @@ export default function Timeline({
                       )}
                     >
                       <div className="font-semibold text-sm">{project.name}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs">
                         {project.customer?.icon && `${project.customer.icon} `}
                         {project.customer?.name}
                       </div>
@@ -832,7 +832,7 @@ export default function Timeline({
                               {getInitials(member.firstName, member.lastName)}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm">
                             {member.firstName} {member.lastName}
                           </span>
                         </div>
@@ -1059,8 +1059,8 @@ export default function Timeline({
                           project.status === 'tentative' && 'opacity-50'
                         )}
                       >
-                        <div className="text-xs font-medium text-muted-foreground">{project.name}</div>
-                        <div className="text-xs text-muted-foreground/70">
+                        <div className="text-xs font-medium">{project.name}</div>
+                        <div className="text-xs">
                           {project.customer?.icon && `${project.customer.icon} `}
                           {project.customer?.name}
                         </div>
