@@ -18,6 +18,7 @@ import assignmentsRoutes from './routes/assignments.js'
 import settingsRoutes from './routes/settings.js'
 import milestonesRoutes from './routes/milestones.js'
 import { setupWebSocket } from './websocket/index.js'
+import { emailService } from './services/email/emailService.js'
 
 // Load environment variables
 dotenv.config()
@@ -59,6 +60,57 @@ app.use('/api/projects', projectsRoutes)
 app.use('/api/assignments', assignmentsRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/milestones', milestonesRoutes)
+
+// Test email endpoint (development only)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/api/test/email', async (req, res) => {
+    const { type, email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email address is required' })
+    }
+
+    try {
+      let result = false
+
+      switch (type) {
+        case 'team-invite':
+          result = await emailService.sendTeamInvite(email, {
+            teamMemberName: 'John Doe',
+            inviterName: 'Jane Admin',
+            inviteLink: 'http://localhost:3000/register?token=test123',
+            expiresInDays: 7,
+          })
+          break
+
+        case 'user-invite':
+          result = await emailService.sendUserInvite(email, {
+            inviterName: 'Jane Admin',
+            inviteLink: 'http://localhost:3000/register?token=test456',
+            expiresInDays: 7,
+            role: 'user',
+          })
+          break
+
+        case 'password-reset':
+          result = await emailService.sendPasswordReset(email, {
+            userName: 'John Doe',
+            resetLink: 'http://localhost:3000/reset-password?token=test789',
+            expiresInHours: 24,
+          })
+          break
+
+        default:
+          result = await emailService.sendTestEmail(email)
+      }
+
+      res.json({ success: result, message: result ? 'Email sent successfully' : 'Failed to send email' })
+    } catch (error) {
+      console.error('Test email error:', error)
+      res.status(500).json({ error: 'Failed to send test email' })
+    }
+  })
+}
 
 // Health check
 app.get('/health', (req, res) => {
