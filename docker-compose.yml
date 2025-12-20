@@ -45,6 +45,7 @@ services:
       - PORT=3001
       - DATABASE_URL=./data/ovos-sprint.db
       - JWT_SECRET=development-secret-change-in-production
+      - FRONTEND_URL=http://localhost:3000
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
       - SMTP_SECURE=false

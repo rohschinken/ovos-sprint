@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ovos Sprint 🏃‍♂️‍➡️ - Workload Management Documentation</title>
+    <title>ovos Sprint - Workload Management Documentation</title>
     <style>
         * {
             margin: 0;
@@ -53,6 +53,7 @@
             gap: 1rem;
             justify-content: center;
             margin-top: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .badge {
@@ -81,6 +82,12 @@
             color: #764ba2;
         }
 
+        h4 {
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem;
+            color: #667eea;
+        }
+
         p {
             margin-bottom: 1rem;
         }
@@ -105,10 +112,10 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .feature-card h3 {
+        .feature-card h4 {
             color: #667eea;
             margin-top: 0;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
         }
 
         .tech-stack {
@@ -147,9 +154,15 @@
         .code-block code {
             font-size: 0.9rem;
             line-height: 1.5;
+            white-space: pre;
         }
 
         ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        ol {
             margin: 1rem 0;
             padding-left: 2rem;
         }
@@ -172,6 +185,11 @@
             padding: 1.5rem;
             border-radius: 10px;
             margin: 2rem 0;
+        }
+
+        .info-box a {
+            color: white;
+            text-decoration: underline;
         }
 
         .warning-box {
@@ -207,18 +225,6 @@
             font-size: 0.9rem;
         }
 
-        .screenshot-placeholder {
-            background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
-            height: 300px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 2rem 0;
-            font-size: 1.2rem;
-            color: #636e72;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -240,6 +246,23 @@
             background: #f5f7fa;
         }
 
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        strong {
+            font-weight: 600;
+        }
+
+        em {
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.5rem;
@@ -257,39 +280,13 @@
                 font-size: 1.5rem;
             }
 
+            h4 {
+                font-size: 1.2rem;
+            }
+
             .feature-grid {
                 grid-template-columns: 1fr;
             }
-        }
-
-        .toc {
-            background: #f5f7fa;
-            padding: 2rem;
-            border-radius: 15px;
-            margin: 2rem 0;
-        }
-
-        .toc h3 {
-            margin-top: 0;
-        }
-
-        .toc ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .toc li {
-            margin: 0.5rem 0;
-        }
-
-        .toc a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .toc a:hover {
-            text-decoration: underline;
         }
     </style>
 </head>
@@ -297,192 +294,581 @@
     <div class="container">
         <div class="header">
             <h1>ovos Sprint 🏃‍♂️‍➡️</h1>
-            <p class="tagline">Professional Workload Management & Resource Planning</p>
+            <p class="tagline">Workload management and resource planning tool for IT project managers</p>
             <div class="badges">
                 <span class="badge">Version 1.0.0</span>
-                <span class="badge">TypeScript</span>
-                <span class="badge">React + Express</span>
-                <span class="badge">SQLite</span>
+                <span class="badge">MIT License</span>
             </div>
         </div>
 
         <div class="content">
-            <div class="info-box">
-                <strong>📣 What is ovos Sprint?</strong><br>
-                ovos Sprint is a modern, real-time web application designed to help IT project managers visualize and manage team workloads efficiently. Built with cutting-edge technologies, it offers an intuitive timeline-based interface for resource allocation and project planning.
-            </div>
+            <h2>Features</h2>
 
-            <h2>✨ Key Features</h2>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>🔐 Role-Based Access</h3>
-                    <p><strong>Admin</strong>: Full CRUD permissions<br>
-                    <strong>User</strong>: Read-only access<br>
-                    Invitation-based secure registration</p>
-                </div>
+            <h3>Role-Based Access Control</h3>
+            <ul>
+                <li>Admin role with full CRUD permissions</li>
+                <li>User role with read-only access</li>
+                <li>Invitation-based registration</li>
+            </ul>
 
-                <div class="feature-card">
-                    <h3>👥 Team Management</h3>
-                    <p>Create and manage teams, add members with custom or auto-generated avatars, organize resources efficiently</p>
-                </div>
+            <h3>Team & Resource Management</h3>
+            <ul>
+                <li>Create and manage teams</li>
+                <li>Team members with customizable avatars</li>
+                <li>Resource allocation across projects</li>
+            </ul>
 
-                <div class="feature-card">
-                    <h3>📊 Project Planning</h3>
-                    <p>Track confirmed and tentative projects, assign team members, visualize project status at a glance</p>
-                </div>
+            <h3>Project Management</h3>
+            <ul>
+                <li>Projects with customer information</li>
+                <li>Confirmed and tentative status types</li>
+                <li>Many-to-many relationships between team members and projects</li>
+            </ul>
 
-                <div class="feature-card">
-                    <h3>📅 Interactive Timeline</h3>
-                    <p>View by Project or Team Member, drag-to-assign functionality, holiday and weekend detection</p>
-                </div>
+            <h3>Timeline View</h3>
+            <ul>
+                <li>View by project or by team member</li>
+                <li>Configurable zoom levels</li>
+                <li>Day-by-day workload visualization</li>
+                <li>Weekend and holiday highlighting</li>
+                <li>Expandable/collapsible rows</li>
+                <li>User preference persistence</li>
+            </ul>
 
-                <div class="feature-card">
-                    <h3>🔄 Real-Time Updates</h3>
-                    <p>WebSocket-based synchronization, multiple users working simultaneously, no page refresh needed</p>
-                </div>
+            <h3>Drag-to-Assign (Admin Only)</h3>
+            <ul>
+                <li>Click-and-drag interface for day assignments</li>
+                <li>Multi-day selection</li>
+                <li>Right-click or CTRL+click to delete</li>
+                <li>Weekend/holiday assignment warnings</li>
+            </ul>
 
-                <div class="feature-card">
-                    <h3>⚙️ Configurable Settings</h3>
-                    <p>Customize timeline ranges, toggle warnings, adjust overlap visualization, per-user preferences</p>
-                </div>
-            </div>
+            <h3>Real-Time Updates</h3>
+            <ul>
+                <li>WebSocket-based synchronization</li>
+                <li>Instant updates across users</li>
+            </ul>
 
-            <h2>🛠️ Technology Stack</h2>
+            <h3>UI Features</h3>
+            <ul>
+                <li>Dark mode support</li>
+                <li>Responsive layout</li>
+                <li>Framer Motion animations</li>
+            </ul>
+
+            <h2>Technology Stack</h2>
+
+            <h3>Frontend</h3>
             <div class="tech-stack">
                 <span class="tech-badge">React 18</span>
                 <span class="tech-badge">TypeScript</span>
                 <span class="tech-badge">Vite</span>
                 <span class="tech-badge">Tailwind CSS</span>
                 <span class="tech-badge">shadcn/ui</span>
+                <span class="tech-badge">Zustand</span>
+                <span class="tech-badge">React Query</span>
+                <span class="tech-badge">React Router v6</span>
+                <span class="tech-badge">date-fns</span>
+                <span class="tech-badge">Socket.IO Client</span>
+                <span class="tech-badge">Lucide React</span>
+                <span class="tech-badge">Framer Motion</span>
+            </div>
+
+            <h3>Backend</h3>
+            <div class="tech-stack">
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">TypeScript</span>
                 <span class="tech-badge">Express.js</span>
                 <span class="tech-badge">SQLite</span>
                 <span class="tech-badge">Drizzle ORM</span>
+                <span class="tech-badge">JWT</span>
+                <span class="tech-badge">bcryptjs</span>
                 <span class="tech-badge">Socket.IO</span>
+                <span class="tech-badge">Zod</span>
+                <span class="tech-badge">Multer</span>
+                <span class="tech-badge">Sharp</span>
+                <span class="tech-badge">Nodemailer</span>
+                <span class="tech-badge">React Email</span>
+                <span class="tech-badge">Helmet</span>
+                <span class="tech-badge">CORS</span>
+            </div>
+
+            <h3>DevOps & Infrastructure</h3>
+            <div class="tech-stack">
                 <span class="tech-badge">Docker</span>
                 <span class="tech-badge">Caddy</span>
+                <span class="tech-badge">Docker Compose</span>
+                <span class="tech-badge">Drizzle Kit</span>
+                <span class="tech-badge">Mailpit</span>
             </div>
 
-            <h2>🚀 Quick Start</h2>
+            <h2>Prerequisites</h2>
+            <ul>
+                <li><strong>Node.js</strong>: v20.x or higher</li>
+                <li><strong>Docker</strong>: Latest version</li>
+                <li><strong>Docker Compose</strong>: Latest version</li>
+                <li><strong>npm</strong>: v10.x or higher</li>
+            </ul>
 
-            <h3>1. Clone the Repository</h3>
-            <div class="code-block">
-                <code>git clone https://github.com/rohschinken/ovos-sprint.git
-cd ovos-sprint</code>
-            </div>
+            <h2>Quick Start</h2>
 
-            <h3>2. Install Dependencies</h3>
-            <div class="code-block">
-                <code># Backend
-cd backend
-npm install
+            <h3>Option 1: Development Mode (Recommended for Development)</h3>
+            <div class="code-block"><code># 1. Clone the repository
+git clone https://github.com/rohschinken/ovos-sprint.git
+cd ovos-sprint
 
-# Frontend
-cd ../frontend
-npm install</code>
-            </div>
+# 2. Install all dependencies (root, backend, and frontend)
+npm run install:all
 
-            <h3>3. Initialize Database</h3>
-            <div class="code-block">
-                <code>cd backend
-npm run db:generate
-npm run db:migrate
-npm run db:seed</code>
-            </div>
+# 3. Set up database (first time only)
+npm run db:setup
+
+# 4. Run both frontend and backend
+npm run dev</code></div>
 
             <div class="warning-box">
-                <strong>⚠️ Important:</strong> The seed command will output admin credentials. Save these securely!
+                <strong>Important:</strong> The database setup will prompt you to enter an admin email and output the generated password. <strong>Save these securely!</strong>
             </div>
 
-            <h3>4. Start with Docker Compose</h3>
-            <div class="code-block">
-                <code>docker-compose up --build</code>
+            <div class="code-block"><code>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: Enter admin email address (e.g. your-email@example.com)
+Password: [generated-password]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</code></div>
+
+            <p>The application will be available at:</p>
+            <ul>
+                <li><strong>Frontend</strong>: <a href="http://localhost:5173">http://localhost:5173</a></li>
+                <li><strong>Backend API</strong>: <a href="http://localhost:3001">http://localhost:3001</a></li>
+                <li><strong>WebSocket</strong>: ws://localhost:3001</li>
+            </ul>
+
+            <h3>Option 2: Docker Compose (Recommended for Consistency)</h3>
+            <p>Docker Compose provides a consistent development environment with all services pre-configured, including email testing with Mailpit.</p>
+
+            <div class="code-block"><code># 1. Clone the repository
+git clone https://github.com/rohschinken/ovos-sprint.git
+cd ovos-sprint
+
+# 2. Build and start all services
+docker compose up --build -d
+
+# 3. Initialize the database (first time only)
+docker compose exec backend sh -c "echo 'y' | npm run db:push"
+
+# 4. Seed the database with admin user
+docker compose exec backend sh -c "echo -e 'admin@example.com\npassword' | npm run db:seed"</code></div>
+
+            <div class="warning-box">
+                <strong>Important:</strong> The seed command will output your admin credentials. Save them securely!
             </div>
 
-            <div class="highlight-box">
-                <strong>🎉 Application Ready!</strong><br>
-                Frontend: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a><br>
-                Backend API: <a href="http://localhost:3001" target="_blank">http://localhost:3001</a>
-            </div>
+            <div class="code-block"><code>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: admin@example.com
+Password: [randomly-generated-password]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Please save this password securely!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</code></div>
 
-            <h2>👤 Default Admin Account</h2>
-            <p>After seeding the database, log in with:</p>
+            <p>The application will be available at:</p>
             <ul>
-                <li><strong>Email:</strong> af@ovos.at</li>
-                <li><strong>Password:</strong> <em>(check console output from seed command)</em></li>
+                <li><strong>Frontend</strong>: <a href="http://localhost:3000">http://localhost:3000</a> (via Caddy reverse proxy)</li>
+                <li><strong>Backend API</strong>: <a href="http://localhost:3001">http://localhost:3001</a> (via Caddy reverse proxy)</li>
+                <li><strong>WebSocket</strong>: ws://localhost:3001</li>
+                <li><strong>Mailpit Web UI</strong>: <a href="http://localhost:8025">http://localhost:8025</a> (email testing interface)</li>
             </ul>
 
-            <h2>📚 Features in Detail</h2>
-
-            <h3>Timeline View Modes</h3>
-            <p><strong>By Project Mode:</strong> View all team members assigned to each project. Expand projects to see individual member assignments.</p>
-            <p><strong>By Team Member Mode:</strong> View all projects assigned to each team member. Expand members to see their project commitments.</p>
-
-            <h3>Drag-to-Assign</h3>
-            <p>Admins can click and drag across days to create assignments. The system will:</p>
+            <h4>Docker Services</h4>
+            <p>The Docker Compose setup includes:</p>
             <ul>
-                <li>Warn about weekend/holiday assignments (if enabled)</li>
-                <li>Show visual feedback during dragging</li>
-                <li>Create assignments for all selected days</li>
-                <li>Color-code based on project status (confirmed/tentative)</li>
+                <li><strong>Frontend</strong> (React + Vite) - Port 3000</li>
+                <li><strong>Backend</strong> (Node.js + Express) - Port 3001</li>
+                <li><strong>Caddy</strong> - Reverse proxy for both frontend and backend</li>
+                <li><strong>Mailpit</strong> - SMTP server and web UI for email testing (ports 1025, 8025)</li>
             </ul>
 
-            <h3>Austrian Holidays</h3>
-            <p>The system automatically detects and highlights all Austrian federal holidays:</p>
+            <h4>Rebuilding After Changes</h4>
+            <p>If you modify the Docker configuration or want to start fresh:</p>
+            <div class="code-block"><code># Stop and remove all containers
+docker compose down
+
+# Remove the database (optional - only if you want to reset data)
+rm -rf data/ovos-sprint.db*
+
+# Rebuild and restart
+docker compose up --build -d
+
+# Re-initialize database
+docker compose exec backend sh -c "echo 'y' | npm run db:push"
+docker compose exec backend sh -c "echo -e 'admin@example.com\npassword' | npm run db:seed"</code></div>
+
+            <h4>Viewing Logs</h4>
+            <div class="code-block"><code># View all logs
+docker compose logs -f
+
+# View specific service logs
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f mailpit</code></div>
+
+            <h4>Troubleshooting Docker Setup</h4>
+            <p>If you encounter issues with native modules (like better-sqlite3):</p>
+            <div class="code-block"><code># Rebuild native modules inside the container
+docker compose exec backend npm rebuild better-sqlite3
+docker compose restart backend</code></div>
+
+            <h3>Environment Configuration (Optional)</h3>
+            <p>If you need custom configuration, create a <code>.env</code> file in the <code>backend</code> directory:</p>
+            <div class="code-block"><code>cp backend/.env.example backend/.env</code></div>
+
+            <p>Edit <code>backend/.env</code> with your configuration:</p>
+            <div class="code-block"><code>NODE_ENV=development
+PORT=3001
+DATABASE_URL=./data/ovos-sprint.db
+JWT_SECRET=your-secure-secret-key-here
+FRONTEND_URL=http://localhost:3000
+
+# Email Configuration (Mailpit for development)
+SMTP_HOST=mailpit
+SMTP_PORT=1025
+SMTP_SECURE=false
+SMTP_FROM_EMAIL=noreply@ovos-sprint.local
+SMTP_FROM_NAME=OVOS Sprint</code></div>
+
+            <p><strong>Note</strong>: When using Docker Compose, these environment variables are already configured in <code>docker-compose.yml</code>.</p>
+
+            <h2>Email Testing with Mailpit</h2>
+            <p>The Docker Compose setup includes Mailpit, a local SMTP server with a web UI for testing emails without sending real emails.</p>
+
+            <h3>Accessing Mailpit</h3>
             <ul>
-                <li>Fixed holidays (New Year, Labour Day, National Day, Christmas, etc.)</li>
-                <li>Easter-dependent holidays (Easter Monday, Ascension Day, Whit Monday, Corpus Christi)</li>
+                <li><strong>Web UI</strong>: <a href="http://localhost:8025">http://localhost:8025</a></li>
+                <li><strong>SMTP Server</strong>: localhost:1025 (used by the backend)</li>
             </ul>
 
-            <h2>🔐 Security Features</h2>
+            <h3>Testing Email Functionality</h3>
+            <p>The backend includes a test endpoint for sending sample emails:</p>
+            <div class="code-block"><code># Test team member invitation email
+curl -X POST http://localhost:3001/api/test/email \
+  -H "Content-Type: application/json" \
+  -d '{"type": "team-invite", "email": "test@example.com"}'
+
+# Test user invitation email
+curl -X POST http://localhost:3001/api/test/email \
+  -H "Content-Type: application/json" \
+  -d '{"type": "user-invite", "email": "test@example.com"}'
+
+# Test password reset email
+curl -X POST http://localhost:3001/api/test/email \
+  -H "Content-Type: application/json" \
+  -d '{"type": "password-reset", "email": "test@example.com"}'
+
+# Test basic email
+curl -X POST http://localhost:3001/api/test/email \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com"}'</code></div>
+
+            <p>All sent emails will appear instantly in the Mailpit web UI at <a href="http://localhost:8025">http://localhost:8025</a>.</p>
+
+            <h3>Email Templates</h3>
+            <p>The application includes three professionally designed email templates built with React Email:</p>
             <ul>
-                <li>JWT-based authentication with secure token management</li>
-                <li>Bcrypt password hashing (10 rounds)</li>
+                <li><strong>Team Member Invitations</strong> - Blue CTA button for team member onboarding</li>
+                <li><strong>User Invitations</strong> - Blue CTA button for general user onboarding</li>
+                <li><strong>Password Reset</strong> - Red CTA button for security emphasis</li>
+            </ul>
+            <p>Templates are located in <code>backend/src/services/email/templates/</code>.</p>
+
+            <h2>Admin Account</h2>
+            <p>During the database seeding process (<code>npm run db:setup</code> or Docker setup), you will be prompted to enter an admin email address. Use that email and the generated password to log in:</p>
+            <ul>
+                <li><strong>Email</strong>: <em>(enter during seed process)</em></li>
+                <li><strong>Password</strong>: <em>(displayed in console output from seed command)</em></li>
+            </ul>
+
+            <h2>User Guide</h2>
+
+            <h3>For Admins</h3>
+
+            <h4>Inviting Users</h4>
+            <ol>
+                <li>Navigate to the admin dashboard</li>
+                <li>Use the invite function to send invitation links</li>
+                <li>Invitation links are displayed in the console (email integration pending)</li>
+                <li>Share the link with the user</li>
+            </ol>
+
+            <h4>Creating Teams</h4>
+            <ol>
+                <li>Go to Teams page</li>
+                <li>Click Create Team</li>
+                <li>Enter team name</li>
+                <li>Add members to the team</li>
+            </ol>
+
+            <h4>Managing Team Members</h4>
+            <ol>
+                <li>Go to Team Members page</li>
+                <li>Click Add Member</li>
+                <li>Enter first name and last name</li>
+                <li>Avatar will be auto-generated (custom upload available)</li>
+            </ol>
+
+            <h4>Creating Projects</h4>
+            <ol>
+                <li>Go to Projects page</li>
+                <li>Click Create Project</li>
+                <li>Enter customer name and project name</li>
+                <li>Select status (Confirmed/Tentative)</li>
+            </ol>
+
+            <h4>Assigning Team Members to Projects</h4>
+            <ol>
+                <li>In the timeline view, expand a project (By Project mode)</li>
+                <li>You'll see all team members assigned to that project</li>
+                <li>First, create a general assignment between member and project</li>
+                <li>Then drag across days to create day-specific assignments</li>
+            </ol>
+
+            <h4>Day-by-Day Assignment</h4>
+            <ol>
+                <li>Click and hold on a day cell</li>
+                <li>Drag across multiple days if needed</li>
+                <li>Release to create the assignment</li>
+                <li>Assignments will show with color coding based on project status</li>
+                <li>Weekend/holiday warnings will appear if enabled</li>
+            </ol>
+
+            <h3>For Users (Read-Only)</h3>
+            <ul>
+                <li>View the timeline in both modes</li>
+                <li>See current workload distribution</li>
+                <li>Check project assignments</li>
+                <li>View project statuses</li>
+            </ul>
+
+            <h2>Configuration</h2>
+
+            <h3>Timeline Settings</h3>
+            <p>Configure in Settings page:</p>
+            <ul>
+                <li><strong>Previous Days</strong>: How many days before today to show (default: 1)</li>
+                <li><strong>Next Days</strong>: How many days after today to show (default: 30)</li>
+            </ul>
+
+            <h3>Assignment Settings</h3>
+            <ul>
+                <li><strong>Weekend Assignment Warning</strong>: Enable/disable warnings when assigning work on weekends or holidays</li>
+                <li><strong>Overlap Visualization</strong>: Enable/disable highlighting when team members have multiple assignments on the same day</li>
+            </ul>
+
+            <h2>Austrian Holidays</h2>
+            <p>The following Austrian federal holidays are automatically detected and highlighted:</p>
+            <ul>
+                <li><strong>January 1</strong>: New Year</li>
+                <li><strong>January 6</strong>: Epiphany</li>
+                <li><strong>May 1</strong>: Labour Day</li>
+                <li><strong>August 15</strong>: Assumption</li>
+                <li><strong>October 26</strong>: National Day</li>
+                <li><strong>November 1</strong>: All Saints</li>
+                <li><strong>December 8</strong>: Immaculate Conception</li>
+                <li><strong>December 25</strong>: Christmas</li>
+                <li><strong>December 26</strong>: St. Stephen</li>
+            </ul>
+            <p>Plus Easter-dependent holidays:</p>
+            <ul>
+                <li><strong>Easter Monday</strong></li>
+                <li><strong>Ascension</strong></li>
+                <li><strong>Whit Monday</strong></li>
+                <li><strong>Corpus Christi</strong></li>
+            </ul>
+
+            <h2>Security Features</h2>
+            <ul>
+                <li>JWT-based authentication</li>
+                <li>Secure password hashing with bcrypt</li>
                 <li>Role-based access control (RBAC)</li>
                 <li>CORS protection</li>
                 <li>Helmet security headers</li>
-                <li>SQL injection prevention via Drizzle ORM</li>
+                <li>SQL injection prevention via ORM</li>
                 <li>Invitation-based user registration</li>
+                <li>Session management</li>
             </ul>
 
-            <h2>📂 Project Structure</h2>
-            <div class="code-block">
-                <code>ovos-sprint/
+            <h2>Project Structure</h2>
+            <div class="code-block"><code>ovos-sprint/
 ├── frontend/              # React frontend application
 │   ├── src/
-│   │   ├── components/   # React components & shadcn/ui
+│   │   ├── api/          # API client configuration
+│   │   ├── components/   # React components
+│   │   │   └── ui/       # shadcn/ui components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utility functions
 │   │   ├── pages/        # Page components
 │   │   ├── store/        # Zustand stores
-│   │   └── types/        # TypeScript definitions
+│   │   ├── styles/       # Global styles
+│   │   └── types/        # TypeScript type definitions
+│   ├── package.json
+│   └── vite.config.ts
 ├── backend/               # Express backend application
 │   ├── src/
-│   │   ├── db/           # Database schema & migrations
+│   │   ├── db/           # Database schema and migrations
+│   │   ├── middleware/   # Express middleware
 │   │   ├── routes/       # API route handlers
+│   │   ├── services/     # Business logic services
+│   │   │   └── email/    # Email service and templates
+│   │   │       ├── emailService.ts    # Email sending service
+│   │   │       ├── types.ts           # Email type definitions
+│   │   │       └── templates/         # React Email templates
+│   │   │           ├── TeamInviteEmail.tsx
+│   │   │           ├── UserInviteEmail.tsx
+│   │   │           └── PasswordResetEmail.tsx
+│   │   ├── utils/        # Utility functions
 │   │   ├── websocket/    # WebSocket setup
-│   │   └── index.ts      # Entry point
-├── data/                  # SQLite database & uploads
-├── docker-compose.yml     # Docker Compose config
-└── README.md             # Documentation</code>
-            </div>
+│   │   └── index.ts      # Application entry point
+│   ├── package.json
+│   └── drizzle.config.ts
+├── data/                  # SQLite database and uploads
+│   └── avatars/          # User avatar uploads
+├── docker-compose.yml     # Docker Compose configuration
+├── Caddyfile             # Caddy reverse proxy config
+└── README.md             # This file</code></div>
 
-            <h2>🤝 Contributing</h2>
-            <p>Contributions are welcome! Please follow these steps:</p>
+            <h2>API Endpoints</h2>
+
+            <h3>Authentication</h3>
+            <ul>
+                <li><code>POST /api/auth/login</code> - User login</li>
+                <li><code>POST /api/auth/register</code> - Complete invitation registration</li>
+                <li><code>POST /api/auth/invite</code> - Invite new user (admin only)</li>
+                <li><code>GET /api/auth/me</code> - Get current user</li>
+            </ul>
+
+            <h3>Teams</h3>
+            <ul>
+                <li><code>GET /api/teams</code> - List all teams</li>
+                <li><code>GET /api/teams/:id</code> - Get team details</li>
+                <li><code>POST /api/teams</code> - Create team (admin only)</li>
+                <li><code>PUT /api/teams/:id</code> - Update team (admin only)</li>
+                <li><code>DELETE /api/teams/:id</code> - Delete team (admin only)</li>
+            </ul>
+
+            <h3>Team Members</h3>
+            <ul>
+                <li><code>GET /api/members</code> - List all members</li>
+                <li><code>GET /api/members/:id</code> - Get member details</li>
+                <li><code>POST /api/members</code> - Create member (admin only)</li>
+                <li><code>PUT /api/members/:id</code> - Update member (admin only)</li>
+                <li><code>DELETE /api/members/:id</code> - Delete member (admin only)</li>
+                <li><code>POST /api/members/:id/avatar</code> - Upload avatar (admin only)</li>
+            </ul>
+
+            <h3>Projects</h3>
+            <ul>
+                <li><code>GET /api/projects</code> - List all projects</li>
+                <li><code>GET /api/projects/:id</code> - Get project details</li>
+                <li><code>POST /api/projects</code> - Create project (admin only)</li>
+                <li><code>PUT /api/projects/:id</code> - Update project (admin only)</li>
+                <li><code>DELETE /api/projects/:id</code> - Delete project (admin only)</li>
+            </ul>
+
+            <h3>Assignments</h3>
+            <ul>
+                <li><code>GET /api/assignments/projects</code> - List project assignments</li>
+                <li><code>GET /api/assignments/projects/:projectId</code> - Get assignments for project</li>
+                <li><code>GET /api/assignments/members/:memberId</code> - Get assignments for member</li>
+                <li><code>POST /api/assignments/projects</code> - Create project assignment (admin only)</li>
+                <li><code>DELETE /api/assignments/projects/:id</code> - Delete assignment (admin only)</li>
+                <li><code>GET /api/assignments/days</code> - List day assignments</li>
+                <li><code>POST /api/assignments/days</code> - Create day assignment (admin only)</li>
+                <li><code>PUT /api/assignments/days/:id</code> - Update day assignment (admin only)</li>
+                <li><code>DELETE /api/assignments/days/:id</code> - Delete day assignment (admin only)</li>
+            </ul>
+
+            <h3>Settings</h3>
+            <ul>
+                <li><code>GET /api/settings</code> - Get user settings</li>
+                <li><code>GET /api/settings/:key</code> - Get specific setting</li>
+                <li><code>PUT /api/settings/:key</code> - Update setting</li>
+                <li><code>DELETE /api/settings/:key</code> - Delete setting</li>
+            </ul>
+
+            <h2>Testing</h2>
+            <div class="code-block"><code># Backend tests
+cd backend
+npm test
+
+# Frontend tests
+cd frontend
+npm test</code></div>
+
+            <h2>Building for Production</h2>
+
+            <h3>Build Frontend</h3>
+            <div class="code-block"><code>cd frontend
+npm run build</code></div>
+
+            <h3>Build Backend</h3>
+            <div class="code-block"><code>cd backend
+npm run build</code></div>
+
+            <h3>Run Production Build</h3>
+            <div class="code-block"><code># Backend
+cd backend
+npm start
+
+# Or use Docker Compose with production configuration
+docker-compose -f docker-compose.prod.yml up</code></div>
+
+            <h2>Contributing</h2>
+            <p>Contributions are welcome. Please follow these steps:</p>
             <ol>
                 <li>Fork the repository</li>
-                <li>Create a feature branch</li>
-                <li>Commit your changes</li>
-                <li>Push to the branch</li>
+                <li>Create a feature branch (<code>git checkout -b feature/amazing-feature</code>)</li>
+                <li>Commit your changes (<code>git commit -m 'Add amazing feature'</code>)</li>
+                <li>Push to the branch (<code>git push origin feature/amazing-feature</code>)</li>
                 <li>Open a Pull Request</li>
             </ol>
 
-            <h2>📝 License</h2>
-            <p>This project is licensed under the MIT License - see the LICENSE file for details.</p>
+            <h2>License</h2>
+            <p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
 
-            <div class="info-box">
-                <h3>📞 Support</h3>
-                <p>For issues, questions, or suggestions:</p>
-                <p><strong>Email:</strong> support@ovos.at<br>
-                <strong>GitHub:</strong> <a href="https://github.com/rohschinken/ovos-sprint/issues" style="color: white; text-decoration: underline;">Report an Issue</a></p>
-            </div>
+            <h2>Known Issues & Roadmap</h2>
+
+            <h3>Recently Completed</h3>
+            <ul>
+                <li>Dark mode - Full dark mode support with system preference detection</li>
+                <li>Zoom controls - Four zoom levels (Compact, Narrow, Normal, Wide)</li>
+                <li>User preferences - Persistent settings per user (zoom, collapsed state, filters)</li>
+                <li>English localization - Full UI translation from German to English</li>
+                <li>Quick deletion - CTRL+click and right-click deletion without confirmation</li>
+                <li>Smart filtering - Hide tentative projects, auto-hide empty members/projects</li>
+                <li>Milestone markers - Add flag icons to mark important project dates</li>
+                <li>Avatar upload - Custom avatar support with 5MB upload limit</li>
+                <li>Email infrastructure - Mailpit integration with React Email templates for development testing</li>
+                <li>Docker Compose setup - Fully containerized development environment with database initialization</li>
+            </ul>
+
+            <h3>Roadmap</h3>
+            <ul>
+                <li>Production email integration (SMTP configuration for real email sending)</li>
+                <li>Integrate email sending into invitation workflows</li>
+                <li>Export functionality (PDF, Excel)</li>
+                <li>Advanced filtering and search</li>
+                <li>Capacity planning features</li>
+                <li>Custom working hours per team member</li>
+                <li>Multi-language support</li>
+                <li>Mobile app</li>
+                <li>Bulk assignment operations</li>
+                <li>Assignment templates</li>
+                <li>Resource utilization reports</li>
+            </ul>
+
+            <h2>Support</h2>
+            <p>For issues, questions, or suggestions:</p>
+            <ul>
+                <li><strong>Email</strong>: support@ovos.at</li>
+                <li><strong>GitHub Issues</strong>: <a href="https://github.com/rohschinken/ovos-sprint/issues">https://github.com/rohschinken/ovos-sprint/issues</a></li>
+            </ul>
 
             <div style="text-align: center; margin: 3rem 0;">
                 <a href="https://github.com/rohschinken/ovos-sprint" class="btn">View on GitHub</a>
@@ -490,7 +876,7 @@ npm run db:seed</code>
         </div>
 
         <div class="footer">
-            <p>Made with ❤️ by ovos</p>
+            <p>Made by ovos</p>
             <p>Last Updated: December 2025</p>
         </div>
     </div>
