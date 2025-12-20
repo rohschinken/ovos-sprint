@@ -96,6 +96,13 @@ export interface Milestone {
   createdAt: string
 }
 
+export interface DayOff {
+  id: number
+  teamMemberId: number
+  date: string
+  createdAt: string
+}
+
 // Extended types with relations
 export interface TeamWithMembers extends Team {
   members: TeamMember[]

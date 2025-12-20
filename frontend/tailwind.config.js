@@ -56,6 +56,8 @@ export default {
         confirmed: "hsl(var(--confirmed))",
         tentative: "hsl(var(--tentative))",
         overlap: "hsl(var(--overlap))",
+        dayOff: "hsl(var(--day-off))",
+        dayOffText: "hsl(var(--day-off-text))",
       },
       borderRadius: {
         lg: "var(--radius)",

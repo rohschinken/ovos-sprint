@@ -31,6 +31,8 @@
     --confirmed: 158 64% 88%;
     --tentative: 35 100% 90%;
     --overlap: 12 100% 92%;
+    --day-off: 45 95% 92%;
+    --day-off-text: 45 95% 35%;
 
     /* Gradient colors */
     --gradient-from: 221.2 83.2% 53.3%;
@@ -73,6 +75,8 @@
     --confirmed: 160 55% 38%;
     --tentative: 38 75% 42%;
     --overlap: 12 75% 48%;
+    --day-off: 45 75% 35%;
+    --day-off-text: 45 95% 65%;
 
     /* Gradient colors - dark mode */
     --gradient-from: 217.2 91.2% 59.8%;

@@ -17,6 +17,7 @@ import projectsRoutes from './routes/projects.js'
 import assignmentsRoutes from './routes/assignments.js'
 import settingsRoutes from './routes/settings.js'
 import milestonesRoutes from './routes/milestones.js'
+import dayOffsRoutes from './routes/day-offs.js'
 import { setupWebSocket } from './websocket/index.js'
 import { emailService } from './services/email/emailService.js'
 
@@ -60,6 +61,7 @@ app.use('/api/projects', projectsRoutes)
 app.use('/api/assignments', assignmentsRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/milestones', milestonesRoutes)
+app.use('/api/day-offs', dayOffsRoutes)
 
 // Test email endpoint (development only)
 if (process.env.NODE_ENV === 'development') {

@@ -127,6 +127,17 @@ export const milestones = sqliteTable('milestones', {
     .default(sql`(CURRENT_TIMESTAMP)`),
 })
 
+export const dayOffs = sqliteTable('day_offs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  teamMemberId: integer('team_member_id')
+    .notNull()
+    .references(() => teamMembers.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // ISO date string (YYYY-MM-DD)
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 // Types
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
@@ -148,6 +159,8 @@ export type Milestone = typeof milestones.$inferSelect
 export type NewMilestone = typeof milestones.$inferInsert
 export type Customer = typeof customers.$inferSelect
 export type NewCustomer = typeof customers.$inferInsert
+export type DayOff = typeof dayOffs.$inferSelect
+export type NewDayOff = typeof dayOffs.$inferInsert
 
 // Relations
 export const projectsRelations = relations(projects, ({ one }) => ({
