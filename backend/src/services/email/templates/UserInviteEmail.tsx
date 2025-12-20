@@ -22,22 +22,22 @@ export default function UserInviteEmail({
   return (
     <Html>
       <Head />
-      <Preview>Invitation to OVOS Sprint</Preview>
+      <Preview>Invitation to ovos Sprint 🏃‍♂️‍➡️</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={title}>OVOS Sprint</Text>
+            <Text style={title}>ovos Sprint 🏃‍♂️‍➡️</Text>
           </Section>
 
           <Section style={content}>
             <Text style={greeting}>Hello,</Text>
 
             <Text style={paragraph}>
-              {inviterName} has invited you to join <strong>OVOS Sprint</strong> as {roleText}.
+              {inviterName} has invited you to join <strong>ovos Sprint 🏃‍♂️‍➡️</strong> as {roleText}.
             </Text>
 
             <Text style={paragraph}>
-              OVOS Sprint is a workload management application that helps teams organize
+              ovos Sprint 🏃‍♂️‍➡️ is a workload management application that helps teams organize
               projects, assignments, and schedules efficiently.
             </Text>
 

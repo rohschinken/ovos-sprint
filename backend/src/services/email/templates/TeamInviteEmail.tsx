@@ -20,18 +20,18 @@ export default function TeamInviteEmail({
   return (
     <Html>
       <Head />
-      <Preview>You've been invited to join OVOS Sprint</Preview>
+      <Preview>You've been invited to join ovos Sprint 🏃‍♂️‍➡️</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={title}>OVOS Sprint</Text>
+            <Text style={title}>ovos Sprint 🏃‍♂️‍➡️</Text>
           </Section>
 
           <Section style={content}>
             <Text style={greeting}>Hi {teamMemberName},</Text>
 
             <Text style={paragraph}>
-              {inviterName} has invited you to join <strong>OVOS Sprint</strong> as a team member.
+              {inviterName} has invited you to join <strong>ovos Sprint 🏃‍♂️‍➡️</strong> as a team member.
             </Text>
 
             <Text style={paragraph}>

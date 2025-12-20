@@ -16,7 +16,7 @@ class EmailService {
       secure: process.env.SMTP_SECURE === 'true',
       from: {
         email: process.env.SMTP_FROM_EMAIL || 'noreply@ovos-sprint.local',
-        name: process.env.SMTP_FROM_NAME || 'OVOS Sprint',
+        name: process.env.SMTP_FROM_NAME || 'ovos Sprint 🏃‍♂️‍➡️',
       },
     }
 
@@ -67,7 +67,7 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: `You've been invited to join OVOS Sprint`,
+      subject: `You've been invited to join ovos Sprint 🏃‍♂️‍➡️`,
       html,
     })
   }
@@ -77,7 +77,7 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: `Invitation to OVOS Sprint`,
+      subject: `Invitation to ovos Sprint 🏃‍♂️‍➡️`,
       html,
     })
   }
@@ -87,7 +87,7 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: `Reset your OVOS Sprint password`,
+      subject: `Reset your ovos Sprint 🏃‍♂️‍➡️ password`,
       html,
     })
   }
@@ -96,7 +96,7 @@ class EmailService {
   async sendTestEmail(to: string): Promise<boolean> {
     return this.sendEmail({
       to,
-      subject: 'Test Email from OVOS Sprint',
+      subject: 'Test Email from ovos Sprint 🏃‍♂️‍➡️',
       html: '<h1>Test Email</h1><p>Email service is working correctly!</p>',
     })
   }

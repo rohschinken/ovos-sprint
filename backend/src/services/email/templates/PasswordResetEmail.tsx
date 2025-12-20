@@ -19,18 +19,18 @@ export default function PasswordResetEmail({
   return (
     <Html>
       <Head />
-      <Preview>Reset your OVOS Sprint password</Preview>
+      <Preview>Reset your ovos Sprint 🏃‍♂️‍➡️ password</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={title}>OVOS Sprint</Text>
+            <Text style={title}>ovos Sprint 🏃‍♂️‍➡️</Text>
           </Section>
 
           <Section style={content}>
             <Text style={greeting}>Hi {userName},</Text>
 
             <Text style={paragraph}>
-              We received a request to reset your password for your OVOS Sprint account.
+              We received a request to reset your password for your ovos Sprint 🏃‍♂️‍➡️ account.
             </Text>
 
             <Text style={paragraph}>

@@ -2,7 +2,7 @@
 
 Workload management and resource planning tool for IT project managers.
 
-![ovos Sprint](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![ovos Sprint 🏃‍♂️‍➡️](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Features
@@ -114,8 +114,10 @@ npm run dev
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Email: Enter admin email address (e.g. your-email@example.com)
+Email: admin@example.com
 Password: [generated-password]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Please save this password securely!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
