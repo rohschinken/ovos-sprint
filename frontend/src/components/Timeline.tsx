@@ -772,11 +772,11 @@ export default function Timeline({
 
   const content = viewMode === 'by-project' ? (
     <div className="overflow-x-auto">
-        <div className="min-w-max">
-          {/* Header */}
-          <div className="sticky top-0 bg-background z-10 shadow-sm">
-            {/* Month labels row */}
-            <div className="flex border-b">
+      <div className="min-w-max">
+        {/* Header */}
+        <div className="sticky top-0 bg-background z-10 shadow-sm">
+          {/* Month labels row */}
+          <div className="flex border-b">
               <div className="w-64 border-r bg-muted/30"></div>
               {monthGroups.map((group, idx) => {
                 // Calculate width based on column count and zoom level
@@ -1004,7 +1004,6 @@ export default function Timeline({
               </div>
             )
           })}
-        </div>
       </div>
     </div>
   ) : (
