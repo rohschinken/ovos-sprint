@@ -151,11 +151,11 @@ npm run db:setup
 npm run dev
 ```
 
-**⚠️ Important**: The database setup will output admin credentials. **Save these securely!**
+**⚠️ Important**: The database setup will prompt you to enter an admin email and output the generated password. **Save these securely!**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📧 Email: af@ovos.at
+📧 Email: Enter admin email address (e.g. your-email@example.com)
 🔑 Password: [generated-password]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -201,16 +201,12 @@ JWT_SECRET=your-secure-secret-key-here
 FRONTEND_URL=http://localhost:5173
 ```
 
----
+## 👤 Admin Account
 
-## 👤 Default Admin Account
+During the database seeding process (`npm run db:setup`), you will be prompted to enter an admin email address. Use that email and the generated password to log in:
 
-After seeding the database, log in with:
-
-- **Email**: `af@ovos.at`
-- **Password**: _(check console output from seed command)_
-
----
+- **Email**: _(enter during seed process)_
+- **Password**: _(displayed in console output from seed command)_
 
 ## 📚 User Guide
 
