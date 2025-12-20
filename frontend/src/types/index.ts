@@ -13,11 +13,29 @@ export interface Team {
   createdAt: string
 }
 
+export interface Customer {
+  id: number
+  name: string
+  icon: string | null
+  createdAt: string
+}
+
+export interface WorkSchedule {
+  sun: boolean
+  mon: boolean
+  tue: boolean
+  wed: boolean
+  thu: boolean
+  fri: boolean
+  sat: boolean
+}
+
 export interface TeamMember {
   id: number
   firstName: string
   lastName: string
   avatarUrl: string | null
+  workSchedule: string
   createdAt: string
 }
 
@@ -25,7 +43,8 @@ export type ProjectStatus = 'confirmed' | 'tentative'
 
 export interface Project {
   id: number
-  customer: string
+  customerId: number
+  customer?: Customer
   name: string
   status: ProjectStatus
   createdAt: string

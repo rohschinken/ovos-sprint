@@ -314,6 +314,22 @@ export default function Timeline({
     onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
+  // Helper function to check if a date is a non-working day for a specific member
+  const isNonWorkingDay = (memberId: number, date: Date): boolean => {
+    const member = members.find((m) => m.id === memberId)
+    if (!member) return false
+
+    try {
+      const schedule = JSON.parse(member.workSchedule)
+      const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+      const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+      return !schedule[dayKeys[dayOfWeek]]
+    } catch {
+      // If parsing fails, fall back to weekend check
+      return isWeekend(date)
+    }
+  }
+
   const handleMouseDown = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!isAdmin) return
 
@@ -322,15 +338,30 @@ export default function Timeline({
       return
     }
 
+    // Find the assignment to get the member
+    const assignment = projectAssignments.find((pa: any) => pa.id === assignmentId)
     const warnWeekend = settings.warnWeekendAssignments !== 'false'
-    if (warnWeekend && (isWeekend(date) || isHoliday(date))) {
-      const holidayName = getHolidayName(date)
-      const message = holidayName
-        ? `This is a holiday (${holidayName}). Are you sure?`
-        : 'This is a weekend. Are you sure?'
 
-      if (!confirm(message)) {
-        return
+    if (warnWeekend && assignment) {
+      // Check if it's a holiday
+      if (isHoliday(date)) {
+        const holidayName = getHolidayName(date)
+        const message = holidayName
+          ? `This is a holiday (${holidayName}). Are you sure?`
+          : 'This is a holiday. Are you sure?'
+
+        if (!confirm(message)) {
+          return
+        }
+      }
+      // Check if it's a non-working day for this member
+      else if (isNonWorkingDay(assignment.teamMemberId, date)) {
+        const member = members.find((m) => m.id === assignment.teamMemberId)
+        const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
+
+        if (!confirm(`This is a non-working day for ${memberName}. Are you sure?`)) {
+          return
+        }
       }
     }
 
@@ -731,7 +762,8 @@ export default function Timeline({
                     >
                       <div className="font-semibold text-sm">{project.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {project.customer}
+                        {project.customer?.icon && `${project.customer.icon} `}
+                        {project.customer?.name}
                       </div>
                     </div>
                   </div>
@@ -1027,7 +1059,8 @@ export default function Timeline({
                       >
                         <div className="text-xs font-medium text-muted-foreground">{project.name}</div>
                         <div className="text-xs text-muted-foreground/70">
-                          {project.customer}
+                          {project.customer?.icon && `${project.customer.icon} `}
+                          {project.customer?.name}
                         </div>
                       </div>
                       {dates.map((date, dateIndex) => (

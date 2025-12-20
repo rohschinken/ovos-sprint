@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { Project, ProjectStatus } from '@/types'
+import { Project, ProjectStatus, Customer } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,9 +30,10 @@ export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [assigningProject, setAssigningProject] = useState<Project | null>(null)
-  const [customer, setCustomer] = useState('')
+  const [customerId, setCustomerId] = useState<number | ''>('')
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('tentative')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -45,9 +46,17 @@ export default function ProjectsPage() {
     },
   })
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      const response = await api.get('/customers')
+      return response.data as Customer[]
+    },
+  })
+
   const createMutation = useMutation({
     mutationFn: async (data: {
-      customer: string
+      customerId: number
       name: string
       status: ProjectStatus
     }) => {
@@ -68,7 +77,7 @@ export default function ProjectsPage() {
       ...data
     }: {
       id: number
-      customer: string
+      customerId: number
       name: string
       status: ProjectStatus
     }) => {
@@ -94,24 +103,36 @@ export default function ProjectsPage() {
   })
 
   const resetForm = () => {
-    setCustomer('')
+    setCustomerId('')
     setName('')
     setStatus('tentative')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (customerId === '') {
+      toast({ title: 'Please select a customer', variant: 'destructive' })
+      return
+    }
     if (editingProject) {
       updateMutation.mutate({
         id: editingProject.id,
-        customer,
+        customerId: Number(customerId),
         name,
         status,
       })
     } else {
-      createMutation.mutate({ customer, name, status })
+      createMutation.mutate({ customerId: Number(customerId), name, status })
     }
   }
+
+  const filteredProjects = projects.filter((project) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    const customerName = project.customer?.name?.toLowerCase() || ''
+    const projectName = project.name.toLowerCase()
+    return customerName.includes(query) || projectName.includes(query)
+  })
 
   return (
     <div className="container mx-auto">
@@ -139,8 +160,15 @@ export default function ProjectsPage() {
         </motion.div>
       </motion.div>
 
+      <Input
+        placeholder="Search projects by name or customer..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-md"
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project, index) => (
+        {filteredProjects.map((project, index) => (
           <motion.div
             key={project.id}
             initial={{ opacity: 0, y: 20 }}
@@ -153,7 +181,10 @@ export default function ProjectsPage() {
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <CardTitle>{project.name}</CardTitle>
-                  <CardDescription>{project.customer}</CardDescription>
+                  <CardDescription>
+                    {project.customer?.icon && `${project.customer.icon} `}
+                    {project.customer?.name || 'Unknown Customer'}
+                  </CardDescription>
                 </div>
                 <div
                   className={cn(
@@ -191,7 +222,7 @@ export default function ProjectsPage() {
                     size="sm"
                     onClick={() => {
                       setEditingProject(project)
-                      setCustomer(project.customer)
+                      setCustomerId(project.customerId)
                       setName(project.name)
                       setStatus(project.status)
                     }}
@@ -243,13 +274,26 @@ export default function ProjectsPage() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="customer">Customer</Label>
-                <Input
-                  id="customer"
-                  value={customer}
-                  onChange={(e) => setCustomer(e.target.value)}
+                <Label htmlFor="customerId">Customer</Label>
+                <select
+                  id="customerId"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(Number(e.target.value))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   required
-                />
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.icon ? `${customer.icon} ` : ''}{customer.name}
+                    </option>
+                  ))}
+                </select>
+                {customers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No customers available. Create one first in the Customers page.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Project Name</Label>

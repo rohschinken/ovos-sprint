@@ -11,6 +11,7 @@ import { mkdirSync } from 'fs'
 import authRoutes from './routes/auth.js'
 import usersRoutes from './routes/users.js'
 import teamsRoutes from './routes/teams.js'
+import customersRoutes from './routes/customers.js'
 import membersRoutes from './routes/members.js'
 import projectsRoutes from './routes/projects.js'
 import assignmentsRoutes from './routes/assignments.js'
@@ -52,6 +53,7 @@ app.use('/avatars', express.static(path.join(__dirname, '../data/avatars')))
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/teams', teamsRoutes)
+app.use('/api/customers', customersRoutes)
 app.use('/api/members', membersRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/assignments', assignmentsRoutes)

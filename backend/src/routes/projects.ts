@@ -11,6 +11,9 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const allProjects = await db.query.projects.findMany({
       orderBy: (projects, { desc }) => [desc(projects.createdAt)],
+      with: {
+        customer: true,
+      },
     })
     res.json(allProjects)
   } catch (error) {
@@ -25,6 +28,9 @@ router.get('/:id', authenticate, async (req, res) => {
     const projectId = parseInt(req.params.id)
     const project = await db.query.projects.findFirst({
       where: (projects, { eq }) => eq(projects.id, projectId),
+      with: {
+        customer: true,
+      },
     })
 
     if (!project) {

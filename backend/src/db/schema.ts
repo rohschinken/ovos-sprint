@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -19,11 +19,23 @@ export const teams = sqliteTable('teams', {
     .default(sql`(CURRENT_TIMESTAMP)`),
 })
 
+export const customers = sqliteTable('customers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 export const teamMembers = sqliteTable('team_members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   avatarUrl: text('avatar_url'),
+  workSchedule: text('work_schedule')
+    .notNull()
+    .default('{"sun":false,"mon":true,"tue":true,"wed":true,"thu":true,"fri":true,"sat":false}'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -31,7 +43,9 @@ export const teamMembers = sqliteTable('team_members', {
 
 export const projects = sqliteTable('projects', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  customer: text('customer').notNull(),
+  customerId: integer('customer_id')
+    .notNull()
+    .references(() => customers.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   status: text('status', { enum: ['confirmed', 'tentative'] }).notNull().default('tentative'),
   createdAt: text('created_at')
@@ -130,3 +144,17 @@ export type Settings = typeof settings.$inferSelect
 export type NewSettings = typeof settings.$inferInsert
 export type Milestone = typeof milestones.$inferSelect
 export type NewMilestone = typeof milestones.$inferInsert
+export type Customer = typeof customers.$inferSelect
+export type NewCustomer = typeof customers.$inferInsert
+
+// Relations
+export const projectsRelations = relations(projects, ({ one }) => ({
+  customer: one(customers, {
+    fields: [projects.customerId],
+    references: [customers.id],
+  }),
+}))
+
+export const customersRelations = relations(customers, ({ many }) => ({
+  projects: many(projects),
+}))

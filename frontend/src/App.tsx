@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
 import TeamsPage from './pages/TeamsPage'
+import CustomersPage from './pages/CustomersPage'
 import MembersPage from './pages/MembersPage'
 import ProjectsPage from './pages/ProjectsPage'
 import SettingsPage from './pages/SettingsPage'
@@ -74,6 +75,14 @@ function App() {
             element={
               <AdminRoute>
                 <TeamsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="customers"
+            element={
+              <AdminRoute>
+                <CustomersPage />
               </AdminRoute>
             }
           />

@@ -21,6 +21,9 @@ build/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
+*.db.backup
 *.sqlite
 *.sqlite3
 
@@ -47,3 +50,9 @@ temp/
 # Uploads
 uploads/
 avatars/
+
+# Claude Code
+.claude/
+
+# Windows artifacts
+nul

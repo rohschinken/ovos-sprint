@@ -39,7 +39,7 @@ Two powerful view modes:
 
 Timeline features:
 
-- **Configurable zoom levels**: Compact (48px), Narrow (64px), Normal (80px), Wide (96px)
+- **Configurable zoom levels**: Extra Narrow (40px), Compact (48px), Narrow (64px), Normal (80px)
 - **Smart TODAY indicator**: Shows "TDY" in compact views, "TODAY" in wider views
 - **Weekday hover tooltips**: Hover over any cell to see the day of the week
 - **Configurable date range**: Previous X days, next X days
@@ -163,8 +163,8 @@ npm run dev
 The application will be available at:
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **WebSocket**: ws://localhost:3000
+- **Backend API**: http://localhost:3001
+- **WebSocket**: ws://localhost:3001
 
 ### Option 2: Docker Compose (For Production-Like Environment)
 
@@ -195,7 +195,7 @@ Edit `backend/.env` with your configuration:
 
 ```env
 NODE_ENV=development
-PORT=3000
+PORT=3001
 DATABASE_URL=./data/ovos-sprint.db
 JWT_SECRET=your-secure-secret-key-here
 FRONTEND_URL=http://localhost:5173
@@ -477,7 +477,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Known Issues
 
 - Email invitations currently only output to console (SMTP integration pending)
-- Avatar upload requires manual implementation on admin pages
 
 ### Recently Completed ✅
 
@@ -487,6 +486,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **English localization** - Full UI translation from German to English
 - ✅ **Quick deletion** - CTRL+click and right-click deletion without confirmation
 - ✅ **Smart filtering** - Hide tentative projects, auto-hide empty members/projects
+- ✅ **Milestone markers** - Add flag icons to mark important project dates
+- ✅ **Avatar upload** - Custom avatar support with 5MB upload limit
 
 ### Roadmap
 

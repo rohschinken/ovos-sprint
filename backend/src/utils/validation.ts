@@ -20,14 +20,20 @@ export const teamSchema = z.object({
   name: z.string().min(1),
 })
 
+export const customerSchema = z.object({
+  name: z.string().min(1),
+  icon: z.string().optional().nullable(),
+})
+
 export const teamMemberSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   avatarUrl: z.string().url().optional().nullable(),
+  workSchedule: z.string().optional(),
 })
 
 export const projectSchema = z.object({
-  customer: z.string().min(1),
+  customerId: z.number().int().positive(),
   name: z.string().min(1),
   status: z.enum(['confirmed', 'tentative']),
 })

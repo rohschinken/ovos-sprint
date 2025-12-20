@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   Mail,
+  Building2,
 } from 'lucide-react'
 
 export default function Layout() {
@@ -53,6 +54,15 @@ export default function Layout() {
                     >
                       <Users className="h-4 w-4" />
                       Teams
+                    </Button>
+                  </Link>
+                  <Link to="/customers">
+                    <Button
+                      variant={isActive('/customers') ? 'default' : 'ghost'}
+                      className="gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      Customers
                     </Button>
                   </Link>
                   <Link to="/members">

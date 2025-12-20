@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { TeamMember } from '@/types'
+import { TeamMember, WorkSchedule } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   Card,
@@ -34,6 +35,16 @@ export default function MembersPage() {
   const [lastName, setLastName] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [workSchedule, setWorkSchedule] = useState<WorkSchedule>({
+    sun: false,
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: false,
+  })
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -47,7 +58,7 @@ export default function MembersPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: { firstName: string; lastName: string }) => {
+    mutationFn: async (data: { firstName: string; lastName: string; workSchedule: string }) => {
       const avatarUrl = generateAvatarUrl(data.firstName, data.lastName)
       const response = await api.post('/members', { ...data, avatarUrl })
       return response.data
@@ -68,6 +79,7 @@ export default function MembersPage() {
       id: number
       firstName: string
       lastName: string
+      workSchedule: string
     }) => {
       const response = await api.put(`/members/${id}`, data)
       return response.data
@@ -120,6 +132,15 @@ export default function MembersPage() {
   const resetForm = () => {
     setFirstName('')
     setLastName('')
+    setWorkSchedule({
+      sun: false,
+      mon: true,
+      tue: true,
+      wed: true,
+      thu: true,
+      fri: true,
+      sat: false,
+    })
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,16 +165,25 @@ export default function MembersPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const workScheduleString = JSON.stringify(workSchedule)
     if (editingMember) {
       updateMutation.mutate({
         id: editingMember.id,
         firstName,
         lastName,
+        workSchedule: workScheduleString,
       })
     } else {
-      createMutation.mutate({ firstName, lastName })
+      createMutation.mutate({ firstName, lastName, workSchedule: workScheduleString })
     }
   }
+
+  const filteredMembers = members.filter((member) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    const fullName = `${member.firstName} ${member.lastName}`.toLowerCase()
+    return fullName.includes(query)
+  })
 
   return (
     <div className="container mx-auto">
@@ -181,8 +211,15 @@ export default function MembersPage() {
         </motion.div>
       </motion.div>
 
+      <Input
+        placeholder="Search members by name..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-md"
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map((member, index) => (
+        {filteredMembers.map((member, index) => (
           <motion.div
             key={member.id}
             initial={{ opacity: 0, y: 20 }}
@@ -237,6 +274,7 @@ export default function MembersPage() {
                         setEditingMember(member)
                         setFirstName(member.firstName)
                         setLastName(member.lastName)
+                        setWorkSchedule(JSON.parse(member.workSchedule))
                       }}
                       className="gap-2"
                     >
@@ -303,6 +341,36 @@ export default function MembersPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Work Schedule</Label>
+                <div className="grid grid-cols-7 gap-2">
+                  {[
+                    { key: 'sun' as keyof WorkSchedule, label: 'Sun' },
+                    { key: 'mon' as keyof WorkSchedule, label: 'Mon' },
+                    { key: 'tue' as keyof WorkSchedule, label: 'Tue' },
+                    { key: 'wed' as keyof WorkSchedule, label: 'Wed' },
+                    { key: 'thu' as keyof WorkSchedule, label: 'Thu' },
+                    { key: 'fri' as keyof WorkSchedule, label: 'Fri' },
+                    { key: 'sat' as keyof WorkSchedule, label: 'Sat' },
+                  ].map((day) => (
+                    <div key={day.key} className="flex flex-col items-center space-y-1">
+                      <Label htmlFor={day.key} className="text-xs">
+                        {day.label}
+                      </Label>
+                      <Checkbox
+                        id={day.key}
+                        checked={workSchedule[day.key]}
+                        onCheckedChange={(checked) =>
+                          setWorkSchedule({
+                            ...workSchedule,
+                            [day.key]: checked === true,
+                          })
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter>

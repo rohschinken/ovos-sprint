@@ -185,9 +185,9 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Weekend Assignment Warning</Label>
+              <Label>Non-Working Day Warning</Label>
               <p className="text-sm text-muted-foreground">
-                Show warning when assigning work on weekends or holidays
+                Show warning when assigning work on member's non-working days or holidays
               </p>
             </div>
             <button
