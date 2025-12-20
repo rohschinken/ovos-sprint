@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
@@ -129,8 +130,8 @@ export default function DashboardPage() {
     },
   })
 
-  const handleSettingChange = (key: string, value: boolean) => {
-    updateSettingMutation.mutate({ key, value: value.toString() })
+  const handleSettingChange = (key: string, value: boolean | string) => {
+    updateSettingMutation.mutate({ key, value: typeof value === 'boolean' ? value.toString() : value })
   }
 
   const toggleTeam = (teamId: number) => {
@@ -384,21 +385,61 @@ export default function DashboardPage() {
                       Show Overlap Indicators
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="warn-weekends"
-                      checked={warnWeekends}
-                      onCheckedChange={(checked) => {
-                        setWarnWeekends(!!checked)
-                        handleSettingChange('warnWeekendAssignments', !!checked)
-                      }}
-                    />
-                    <Label
-                      htmlFor="warn-weekends"
-                      className="text-sm font-normal cursor-pointer flex-1"
-                    >
-                      Warn Weekend Assignments
-                    </Label>
+                  {user?.role === 'admin' && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="warn-weekends"
+                        checked={warnWeekends}
+                        onCheckedChange={(checked) => {
+                          setWarnWeekends(!!checked)
+                          handleSettingChange('warnWeekendAssignments', !!checked)
+                        }}
+                      />
+                      <Label
+                        htmlFor="warn-weekends"
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        Non-Working Day Warning
+                      </Label>
+                    </div>
+                  )}
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="space-y-1">
+                      <Label htmlFor="prev-days" className="text-sm font-normal">
+                        Previous Days
+                      </Label>
+                      <Input
+                        id="prev-days"
+                        type="number"
+                        min="0"
+                        max="365"
+                        value={prevDays}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0
+                          setPrevDays(val)
+                          handleSettingChange('timelinePrevDays', val.toString())
+                        }}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="next-days" className="text-sm font-normal">
+                        Next Days
+                      </Label>
+                      <Input
+                        id="next-days"
+                        type="number"
+                        min="0"
+                        max="365"
+                        value={nextDays}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0
+                          setNextDays(val)
+                          handleSettingChange('timelineNextDays', val.toString())
+                        }}
+                        className="h-8"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

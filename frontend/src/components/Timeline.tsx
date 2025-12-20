@@ -7,7 +7,7 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
-import { enUS } from 'date-fns/locale'
+import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
 
 interface TimelineProps {
@@ -79,7 +79,7 @@ export default function Timeline({
   let currentFirstDate: Date | null = null
 
   dates.forEach((date) => {
-    const monthKey = format(date, 'MMMM yyyy', { locale: enUS })
+    const monthKey = format(date, 'MMMM yyyy', { locale: enGB })
     if (monthKey !== currentMonth) {
       if (currentMonth) {
         monthGroups.push({ month: currentMonth, count: currentCount, firstDate: currentFirstDate! })
@@ -322,8 +322,10 @@ export default function Timeline({
     try {
       const schedule = JSON.parse(member.workSchedule)
       const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-      const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-      return !schedule[dayKeys[dayOfWeek]]
+      // Change from Sunday-first to Monday-first
+      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+      const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
+      return !schedule[dayKeys[dayIndex]]
     } catch {
       // If parsing fails, fall back to weekend check
       return isWeekend(date)
@@ -716,7 +718,7 @@ export default function Timeline({
                 )}
               >
                 <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                  {format(date, 'EEE', { locale: enUS })}
+                  {format(date, 'EEE', { locale: enGB })}
                 </div>
                 <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                   {format(date, 'dd.MM')}
@@ -864,7 +866,7 @@ export default function Timeline({
                           >
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                               <span className="text-xs text-muted-foreground/40 font-medium">
-                                {format(date, 'EEE', { locale: enUS })}
+                                {format(date, 'EEE', { locale: enGB })}
                               </span>
                             </div>
                             {(isDayAssigned(assignment.id, date) ||
@@ -948,7 +950,7 @@ export default function Timeline({
               )}
             >
               <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                {format(date, 'EEE', { locale: enUS })}
+                {format(date, 'EEE', { locale: enGB })}
               </div>
               <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                 {format(date, 'dd.MM')}
@@ -1093,7 +1095,7 @@ export default function Timeline({
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <span className="text-xs text-muted-foreground/40 font-medium">
-                              {format(date, 'EEE', { locale: enUS })}
+                              {format(date, 'EEE', { locale: enGB })}
                             </span>
                           </div>
                           {hasMilestone(project.id, date) && (

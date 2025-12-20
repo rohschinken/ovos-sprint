@@ -30,6 +30,7 @@ export default function CustomersPage() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -112,6 +113,12 @@ export default function CustomersPage() {
     resetForm()
   }
 
+  const filteredCustomers = customers.filter((customer) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return customer.name.toLowerCase().includes(query)
+  })
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -140,8 +147,15 @@ export default function CustomersPage() {
         )}
       </motion.div>
 
+      <Input
+        placeholder="Search customers by name..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-md"
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {customers.map((customer, index) => (
+        {filteredCustomers.map((customer, index) => (
           <motion.div
             key={customer.id}
             initial={{ opacity: 0, y: 20 }}
@@ -192,6 +206,12 @@ export default function CustomersPage() {
           </motion.div>
         ))}
       </div>
+
+      {filteredCustomers.length === 0 && customers.length > 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No customers found matching "{searchQuery}".</p>
+        </div>
+      )}
 
       {customers.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">

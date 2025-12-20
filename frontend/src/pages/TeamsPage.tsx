@@ -40,6 +40,7 @@ export default function TeamsPage() {
   const [managingTeam, setManagingTeam] = useState<Team | null>(null)
   const [teamName, setTeamName] = useState('')
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -159,6 +160,12 @@ export default function TeamsPage() {
     (member) => !teamDetails?.members?.some((tm) => tm.id === member.id)
   )
 
+  const filteredTeams = teams.filter((team) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return team.name.toLowerCase().includes(query)
+  })
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -185,14 +192,20 @@ export default function TeamsPage() {
         </motion.div>
       </motion.div>
 
+      <Input
+        placeholder="Search teams by name..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-md"
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {teams.map((team, index) => (
+        {filteredTeams.map((team, index) => (
           <motion.div
             key={team.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
+            transition={{ delay: index * 0.05 }}
           >
             <Card>
             <CardHeader>
@@ -247,6 +260,19 @@ export default function TeamsPage() {
           </motion.div>
         ))}
       </div>
+
+      {filteredTeams.length === 0 && teams.length > 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No teams found matching "{searchQuery}".</p>
+        </div>
+      )}
+
+      {teams.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No teams yet.</p>
+          <p className="text-sm mt-2">Click "Create Team" to get started.</p>
+        </div>
+      )}
 
       <Dialog
         open={isCreateOpen || !!editingTeam}

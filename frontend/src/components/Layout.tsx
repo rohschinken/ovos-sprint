@@ -56,15 +56,6 @@ export default function Layout() {
                       Teams
                     </Button>
                   </Link>
-                  <Link to="/customers">
-                    <Button
-                      variant={isActive('/customers') ? 'default' : 'ghost'}
-                      className="gap-2"
-                    >
-                      <Building2 className="h-4 w-4" />
-                      Customers
-                    </Button>
-                  </Link>
                   <Link to="/members">
                     <Button
                       variant={isActive('/members') ? 'default' : 'ghost'}
@@ -72,6 +63,15 @@ export default function Layout() {
                     >
                       <UserCircle className="h-4 w-4" />
                       Members
+                    </Button>
+                  </Link>
+                  <Link to="/customers">
+                    <Button
+                      variant={isActive('/customers') ? 'default' : 'ghost'}
+                      className="gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      Customers
                     </Button>
                   </Link>
                   <Link to="/projects">

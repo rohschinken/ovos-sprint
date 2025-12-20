@@ -224,8 +224,7 @@ export default function MembersPage() {
             key={member.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
+            transition={{ delay: index * 0.05 }}
           >
             <Card>
             <CardHeader>
@@ -346,13 +345,13 @@ export default function MembersPage() {
                 <Label>Work Schedule</Label>
                 <div className="grid grid-cols-7 gap-2">
                   {[
-                    { key: 'sun' as keyof WorkSchedule, label: 'Sun' },
                     { key: 'mon' as keyof WorkSchedule, label: 'Mon' },
                     { key: 'tue' as keyof WorkSchedule, label: 'Tue' },
                     { key: 'wed' as keyof WorkSchedule, label: 'Wed' },
                     { key: 'thu' as keyof WorkSchedule, label: 'Thu' },
                     { key: 'fri' as keyof WorkSchedule, label: 'Fri' },
                     { key: 'sat' as keyof WorkSchedule, label: 'Sat' },
+                    { key: 'sun' as keyof WorkSchedule, label: 'Sun' },
                   ].map((day) => (
                     <div key={day.key} className="flex flex-col items-center space-y-1">
                       <Label htmlFor={day.key} className="text-xs">
