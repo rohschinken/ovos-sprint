@@ -947,6 +947,7 @@ export default function Timeline({
                               columnWidth, 'border-r group relative flex items-center justify-center select-none',
                               isWeekend(date) && 'bg-weekend',
                               isHoliday(date) && 'bg-holiday',
+                              isDayOff(member.id, date) && 'bg-dayOff',
                               isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                               isAdmin && 'cursor-pointer',
                               isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
@@ -1217,11 +1218,6 @@ export default function Timeline({
                               {format(date, 'EEE', { locale: enGB })}
                             </span>
                           </div>
-                          {isDayOff(member.id, date) && (
-                            <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
-                              Day Off
-                            </div>
-                          )}
                           {hasMilestone(project.id, date) && (
                             <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
                           )}
