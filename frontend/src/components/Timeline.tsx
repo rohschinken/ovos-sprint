@@ -876,13 +876,15 @@ export default function Timeline({
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                             isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                            isAdmin && 'cursor-pointer hover:bg-muted/30'
+                            isAdmin && 'cursor-pointer'
                           )}
                           onClick={(e) => handleProjectCellClick(project.id, date, e)}
                           onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
                         >
                           {hasMilestone(project.id, date) && (
-                            <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
+                            <div className="absolute top-0 bottom-0 right-0 left-0 text-sm text-center font-medium pointer-events-none">
+                            🚩
+                            </div>
                           )}
                           {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
                             <div
@@ -898,7 +900,7 @@ export default function Timeline({
                                   projectHasAssignmentOnNextDay(project.id, date)
                                 ),
                                 // Always green for collapsed projects (with opacity for tentative)
-                                'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                'bg-confirmed border-emerald-400',
                                 project.status === 'tentative' && 'opacity-60'
                               )}
                             />
@@ -970,7 +972,7 @@ export default function Timeline({
                             }}
                           >
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                              <span className="text-xs text-muted-foreground/40 font-medium">
+                              <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/60 font-medium">
                                 {format(date, 'EEE', { locale: enGB })}
                               </span>
                             </div>
@@ -978,14 +980,14 @@ export default function Timeline({
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
-                                  'h-6 shadow-sm relative z-20',
+                                  'h-5 shadow-sm relative z-20',
                                   getAssignmentWidthClass(assignment.id, date),
                                   getAssignmentRoundedClass(assignment.id, date),
                                   getAssignmentBorderClass(assignment.id, date),
                                   // Color orange if overlap, otherwise green
                                   hasOverlap(member.id, date, 'member')
-                                    ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
-                                    : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                    ? 'bg-orange-500/40 border-orange-400'
+                                    : 'bg-confirmed border-emerald-400',
                                   project.status === 'tentative' && !hasOverlap(member.id, date, 'member') && 'opacity-60',
                                   isDayInDragRange(assignment.id, date) &&
                                     'opacity-50'
@@ -1117,14 +1119,14 @@ export default function Timeline({
                           isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                           isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                           isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                          isAdmin && 'cursor-pointer hover:bg-muted/30'
+                          isAdmin && 'cursor-pointer'
                         )}
                         onClick={(e) => handleMemberCellClick(member.id, date, e)}
                         onContextMenu={(e) => handleMemberCellClick(member.id, date, e)}
                       >
                         {isDayOff(member.id, date) && (
                           <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
-                            Day Off
+                            vac. 🏝️
                           </div>
                         )}
                         {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
@@ -1142,8 +1144,8 @@ export default function Timeline({
                               ),
                               // Color orange if overlap, otherwise green (with opacity for tentative)
                               hasOverlap(member.id, date, 'member')
-                                ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
-                                : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                ? 'bg-orange-500/40 border-orange-400'
+                                : 'bg-confirmed border-emerald-400',
                               // Reduce opacity for tentative (when not all assignments are confirmed)
                               !hasOverlap(member.id, date, 'member') && !memberHasConfirmedAssignmentOnDate(member.id, date) && 'opacity-60'
                             )}
@@ -1214,22 +1216,24 @@ export default function Timeline({
                           }}
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            <span className="text-xs text-muted-foreground/40 font-medium">
+                            <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
                               {format(date, 'EEE', { locale: enGB })}
                             </span>
                           </div>
                           {hasMilestone(project.id, date) && (
-                            <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
+                            <div className="absolute top-0 right-0 left-0 text-[10px] text-center font-medium pointer-events-none">
+                            🚩
+                            </div>
                           )}
                           {(isDayAssigned(assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
-                                'h-6 shadow-sm',
+                                'h-5 shadow-sm',
                                 getAssignmentWidthClass(assignment.id, date),
                                 getAssignmentRoundedClass(assignment.id, date),
                                 getAssignmentBorderClass(assignment.id, date),
-                                'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                'bg-confirmed border-emerald-400',
                                 project.status === 'tentative' && 'opacity-60',
                                 isDayInDragRange(assignment.id, date) &&
                                   'opacity-50'
