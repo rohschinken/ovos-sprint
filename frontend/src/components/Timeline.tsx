@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { TimelineViewMode, Project, TeamMember, DayAssignment, Milestone } from '@/types'
+import { TimelineViewMode, Project, TeamMember, Milestone, DayOff } from '@/types'
 import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useToast } from '@/hooks/use-toast'
-import { format, addDays, startOfDay, isSameDay, startOfMonth, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
+import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
 
@@ -152,6 +153,23 @@ export default function Timeline({
         },
       })
       return response.data as Milestone[]
+    },
+  })
+
+  const { data: dayOffs = [] } = useQuery({
+    queryKey: [
+      'day-offs',
+      format(startDate, 'yyyy-MM-dd'),
+      format(dates[dates.length - 1], 'yyyy-MM-dd'),
+    ],
+    queryFn: async () => {
+      const response = await api.get('/day-offs', {
+        params: {
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
+        },
+      })
+      return response.data as DayOff[]
     },
   })
 
@@ -304,6 +322,36 @@ export default function Timeline({
     },
   })
 
+  const createDayOffMutation = useMutation({
+    mutationFn: async ({ teamMemberId, date }: { teamMemberId: number; date: string }) => {
+      await api.post('/day-offs', { teamMemberId, date })
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['day-offs'],
+        type: 'all'
+      })
+      await queryClient.refetchQueries({
+        queryKey: ['assignments', 'days'],
+        type: 'all'
+      })
+      toast({ title: 'Day off added' })
+    },
+  })
+
+  const deleteDayOffMutation = useMutation({
+    mutationFn: async (dayOffId: number) => {
+      await api.delete(`/day-offs/${dayOffId}`)
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['day-offs'],
+        type: 'all'
+      })
+      toast({ title: 'Day off removed' })
+    },
+  })
+
   const toggleExpand = (id: number) => {
     const newExpandedSet = new Set(expandedItemsProp)
     if (newExpandedSet.has(id)) {
@@ -314,10 +362,29 @@ export default function Timeline({
     onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
+  // Helper function to check if a date is a day-off for a specific member
+  const isDayOff = (memberId: number, date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return dayOffs.some(
+      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
+    )
+  }
+
+  // Helper function to get the day-off record for a specific member and date
+  const getDayOff = (memberId: number, date: Date): DayOff | undefined => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return dayOffs.find(
+      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
+    )
+  }
+
   // Helper function to check if a date is a non-working day for a specific member
   const isNonWorkingDay = (memberId: number, date: Date): boolean => {
     const member = members.find((m) => m.id === memberId)
     if (!member) return false
+
+    // Check day-off first
+    if (isDayOff(memberId, date)) return true
 
     try {
       const schedule = JSON.parse(member.workSchedule)
@@ -539,6 +606,36 @@ export default function Timeline({
     }
   }
 
+  const handleMemberCellClick = (memberId: number, date: Date, event: React.MouseEvent) => {
+    if (!isAdmin || viewMode !== 'by-member') return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    // Check if there's already a day-off
+    const existingDayOff = getDayOff(memberId, date)
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const member = members.find((m) => m.id === memberId)
+    const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
+
+    if (existingDayOff) {
+      // Delete existing day-off if CTRL/CMD+click or right-click
+      if (event.ctrlKey || event.metaKey || event.button === 2) {
+        if (confirm(`Remove day off for ${memberName} on ${dateStr}?`)) {
+          deleteDayOffMutation.mutate(existingDayOff.id)
+        }
+      }
+    } else {
+      // Create new day-off on normal click
+      if (!event.ctrlKey && !event.metaKey && event.button === 0) {
+        createDayOffMutation.mutate({
+          teamMemberId: memberId,
+          date: dateStr,
+        })
+      }
+    }
+  }
+
   // Week separator helper - checks if a date should show a week boundary
   const isWeekStart = (date: Date, index: number) => {
     // First visible date always gets a separator
@@ -675,7 +772,8 @@ export default function Timeline({
 
   if (viewMode === 'by-project') {
     return (
-      <div className="overflow-x-auto">
+      <TooltipProvider>
+        <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header */}
           <div className="sticky top-0 bg-background z-10 shadow-sm">
@@ -770,43 +868,51 @@ export default function Timeline({
                     </div>
                   </div>
                   {dates.map((date, dateIndex) => (
-                    <div
-                      key={date.toISOString()}
-                      className={cn(
-                        columnWidth, 'border-r relative flex items-center justify-center',
-                        isWeekend(date) && 'bg-weekend',
-                        isHoliday(date) && 'bg-holiday',
-                        isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                        isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                        isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                        isAdmin && 'cursor-pointer hover:bg-muted/30'
-                      )}
-                      onClick={(e) => handleProjectCellClick(project.id, date, e)}
-                      onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
-                    >
-                      {hasMilestone(project.id, date) && (
-                        <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
-                      )}
-                      {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
+                    <Tooltip key={date.toISOString()}>
+                      <TooltipTrigger asChild>
                         <div
                           className={cn(
-                            'h-3 shadow-sm',
-                            getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(project.id, date)),
-                            getCollapsedBarRoundedClass(
-                              projectHasAssignmentOnPrevDay(project.id, date),
-                              projectHasAssignmentOnNextDay(project.id, date)
-                            ),
-                            getCollapsedBarBorderClass(
-                              projectHasAssignmentOnPrevDay(project.id, date),
-                              projectHasAssignmentOnNextDay(project.id, date)
-                            ),
-                            // Always green for collapsed projects (with opacity for tentative)
-                            'bg-confirmed border-emerald-400 dark:border-emerald-500',
-                            project.status === 'tentative' && 'opacity-60'
+                            columnWidth, 'border-r relative flex items-center justify-center',
+                            isWeekend(date) && 'bg-weekend',
+                            isHoliday(date) && 'bg-holiday',
+                            isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                            isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
+                            isAdmin && 'cursor-pointer hover:bg-muted/30'
                           )}
-                        />
+                          onClick={(e) => handleProjectCellClick(project.id, date, e)}
+                          onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
+                        >
+                          {hasMilestone(project.id, date) && (
+                            <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1" />
+                          )}
+                          {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
+                            <div
+                              className={cn(
+                                'h-3 shadow-sm',
+                                getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(project.id, date)),
+                                getCollapsedBarRoundedClass(
+                                  projectHasAssignmentOnPrevDay(project.id, date),
+                                  projectHasAssignmentOnNextDay(project.id, date)
+                                ),
+                                getCollapsedBarBorderClass(
+                                  projectHasAssignmentOnPrevDay(project.id, date),
+                                  projectHasAssignmentOnNextDay(project.id, date)
+                                ),
+                                // Always green for collapsed projects (with opacity for tentative)
+                                'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                                project.status === 'tentative' && 'opacity-60'
+                              )}
+                            />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      {isAdmin && (
+                        <TooltipContent side="top" className="text-xs">
+                          Add/remove milestone
+                        </TooltipContent>
                       )}
-                    </div>
+                    </Tooltip>
                   ))}
                 </div>
 
@@ -902,12 +1008,14 @@ export default function Timeline({
           })}
         </div>
       </div>
+      </TooltipProvider>
     )
   }
 
   // By Member view
   return (
-    <div className="overflow-x-auto">
+    <TooltipProvider>
+      <div className="overflow-x-auto">
       <div className="min-w-max">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 shadow-sm">
@@ -1004,40 +1112,57 @@ export default function Timeline({
                   </span>
                 </div>
                 {dates.map((date, dateIndex) => (
-                  <div
-                    key={date.toISOString()}
-                    className={cn(
-                      columnWidth, 'border-r relative flex items-center justify-center',
-                      isWeekend(date) && 'bg-weekend',
-                      isHoliday(date) && 'bg-holiday',
-                      isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                      isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                      isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
-                    )}
-                  >
-                    {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
+                  <Tooltip key={date.toISOString()}>
+                    <TooltipTrigger asChild>
                       <div
                         className={cn(
-                          'h-3 shadow-sm',
-                          getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(member.id, date)),
-                          getCollapsedBarRoundedClass(
-                            memberHasAssignmentOnPrevDay(member.id, date),
-                            memberHasAssignmentOnNextDay(member.id, date)
-                          ),
-                          getCollapsedBarBorderClass(
-                            memberHasAssignmentOnPrevDay(member.id, date),
-                            memberHasAssignmentOnNextDay(member.id, date)
-                          ),
-                          // Color orange if overlap, otherwise green (with opacity for tentative)
-                          hasOverlap(member.id, date, 'member')
-                            ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
-                            : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
-                          // Reduce opacity for tentative (when not all assignments are confirmed)
-                          !hasOverlap(member.id, date, 'member') && !memberHasConfirmedAssignmentOnDate(member.id, date) && 'opacity-60'
+                          columnWidth, 'border-r relative flex items-center justify-center',
+                          isWeekend(date) && 'bg-weekend',
+                          isHoliday(date) && 'bg-holiday',
+                          isDayOff(member.id, date) && 'bg-dayOff',
+                          isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+                          isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                          isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
+                          isAdmin && 'cursor-pointer hover:bg-muted/30'
                         )}
-                      />
+                        onClick={(e) => handleMemberCellClick(member.id, date, e)}
+                        onContextMenu={(e) => handleMemberCellClick(member.id, date, e)}
+                      >
+                        {isDayOff(member.id, date) && (
+                          <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
+                            Day Off
+                          </div>
+                        )}
+                        {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
+                          <div
+                            className={cn(
+                              'h-3 shadow-sm',
+                              getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(member.id, date)),
+                              getCollapsedBarRoundedClass(
+                                memberHasAssignmentOnPrevDay(member.id, date),
+                                memberHasAssignmentOnNextDay(member.id, date)
+                              ),
+                              getCollapsedBarBorderClass(
+                                memberHasAssignmentOnPrevDay(member.id, date),
+                                memberHasAssignmentOnNextDay(member.id, date)
+                              ),
+                              // Color orange if overlap, otherwise green (with opacity for tentative)
+                              hasOverlap(member.id, date, 'member')
+                                ? 'bg-orange-500 border-orange-400 dark:bg-orange-400 dark:border-orange-500'
+                                : 'bg-confirmed border-emerald-400 dark:border-emerald-500',
+                              // Reduce opacity for tentative (when not all assignments are confirmed)
+                              !hasOverlap(member.id, date, 'member') && !memberHasConfirmedAssignmentOnDate(member.id, date) && 'opacity-60'
+                            )}
+                          />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    {isAdmin && (
+                      <TooltipContent side="top" className="text-xs">
+                        Add/remove day off
+                      </TooltipContent>
                     )}
-                  </div>
+                  </Tooltip>
                 ))}
               </div>
 
@@ -1072,6 +1197,7 @@ export default function Timeline({
                             columnWidth, 'border-r group relative flex items-center justify-center select-none',
                             isWeekend(date) && 'bg-weekend',
                             isHoliday(date) && 'bg-holiday',
+                            isDayOff(member.id, date) && 'bg-dayOff',
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                             isAdmin && 'cursor-pointer',
                             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
@@ -1098,6 +1224,11 @@ export default function Timeline({
                               {format(date, 'EEE', { locale: enGB })}
                             </span>
                           </div>
+                          {isDayOff(member.id, date) && (
+                            <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
+                              Day Off
+                            </div>
+                          )}
                           {hasMilestone(project.id, date) && (
                             <Flag className="h-4 w-4 text-red-600 dark:text-red-500 fill-current absolute top-1 right-1 pointer-events-none" />
                           )}
@@ -1131,5 +1262,6 @@ export default function Timeline({
         })}
       </div>
     </div>
+    </TooltipProvider>
   )
 }
