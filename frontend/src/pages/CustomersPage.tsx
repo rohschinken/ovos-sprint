@@ -24,6 +24,14 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/auth'
+import { AlertDialog } from '@/components/ui/alert-dialog'
+
+interface CascadeInfo {
+  projects: number
+  assignments: number
+  dayAssignments: number
+  milestones: number
+}
 
 export default function CustomersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -31,6 +39,11 @@ export default function CustomersPage() {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteDialog, setDeleteDialog] = useState<{
+    customerId: number
+    customerName: string
+    cascadeInfo: CascadeInfo | null
+  } | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -96,9 +109,20 @@ export default function CustomersPage() {
     setIcon(customer.icon || '')
   }
 
-  const handleDelete = (customer: Customer) => {
-    if (confirm(`Delete customer "${customer.name}"? This will also delete all associated projects.`)) {
-      deleteMutation.mutate(customer.id)
+  const handleDelete = async (customer: Customer) => {
+    try {
+      const response = await api.get(`/customers/${customer.id}/cascade-info`)
+      setDeleteDialog({
+        customerId: customer.id,
+        customerName: customer.name,
+        cascadeInfo: response.data,
+      })
+    } catch (error) {
+      setDeleteDialog({
+        customerId: customer.id,
+        customerName: customer.name,
+        cascadeInfo: null,
+      })
     }
   }
 
@@ -267,6 +291,31 @@ export default function CustomersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Customer Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+        title="Delete Customer"
+        description="This will permanently delete the customer and all associated data. This action cannot be undone."
+        entityName={deleteDialog?.customerName}
+        cascadeWarning={deleteDialog?.cascadeInfo ? {
+          items: [
+            { type: 'projects', count: deleteDialog.cascadeInfo.projects },
+            { type: 'project assignments', count: deleteDialog.cascadeInfo.assignments },
+            { type: 'day assignments', count: deleteDialog.cascadeInfo.dayAssignments },
+            { type: 'milestones', count: deleteDialog.cascadeInfo.milestones },
+          ].filter(item => item.count > 0)
+        } : undefined}
+        confirmLabel="Delete Customer"
+        onConfirm={() => {
+          if (deleteDialog) {
+            deleteMutation.mutate(deleteDialog.customerId)
+            setDeleteDialog(null)
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </motion.div>
     </div>
   )

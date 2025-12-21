@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2, Users, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getInitials, getAvatarColor } from '@/lib/utils'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 
 export default function TeamsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -41,6 +42,18 @@ export default function TeamsPage() {
   const [teamName, setTeamName] = useState('')
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [removeDialog, setRemoveDialog] = useState<{
+    teamId: number
+    memberId: number
+    memberName: string
+  } | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    teamId: number
+    teamName: string
+    cascadeInfo: {
+      memberLinks: number
+    } | null
+  } | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -146,14 +159,13 @@ export default function TeamsPage() {
     })
   }
 
-  const handleRemoveMember = (memberId: number) => {
+  const handleRemoveMember = (memberId: number, memberName: string) => {
     if (!managingTeam) return
-    if (confirm('Remove this member from the team?')) {
-      removeMemberMutation.mutate({
-        teamId: managingTeam.id,
-        memberId,
-      })
-    }
+    setRemoveDialog({
+      teamId: managingTeam.id,
+      memberId,
+      memberName,
+    })
   }
 
   const availableMembers = allMembers.filter(
@@ -246,7 +258,22 @@ export default function TeamsPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => deleteMutation.mutate(team.id)}
+                      onClick={async () => {
+                        try {
+                          const response = await api.get(`/teams/${team.id}/cascade-info`)
+                          setDeleteDialog({
+                            teamId: team.id,
+                            teamName: team.name,
+                            cascadeInfo: response.data,
+                          })
+                        } catch (error) {
+                          setDeleteDialog({
+                            teamId: team.id,
+                            teamName: team.name,
+                            cascadeInfo: null,
+                          })
+                        }
+                      }}
                       className="gap-2"
                     >
                       <Trash2 className="h-3 w-3" />
@@ -363,7 +390,7 @@ export default function TeamsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveMember(member.id)}
+                          onClick={() => handleRemoveMember(member.id, `${member.firstName} ${member.lastName}`)}
                           className="h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4" />
@@ -433,6 +460,48 @@ export default function TeamsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Remove Team Member Confirmation Dialog */}
+      <AlertDialog
+        open={!!removeDialog}
+        onOpenChange={() => setRemoveDialog(null)}
+        title="Remove Team Member"
+        description="This will remove the member from this team. The member's profile will not be deleted."
+        entityName={removeDialog?.memberName}
+        confirmLabel="Remove Member"
+        onConfirm={() => {
+          if (removeDialog) {
+            removeMemberMutation.mutate({
+              teamId: removeDialog.teamId,
+              memberId: removeDialog.memberId,
+            })
+            setRemoveDialog(null)
+          }
+        }}
+        isLoading={removeMemberMutation.isPending}
+      />
+
+      {/* Delete Team Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+        title="Delete Team"
+        description="This will permanently delete the team. This action cannot be undone."
+        entityName={deleteDialog?.teamName}
+        cascadeWarning={deleteDialog?.cascadeInfo ? {
+          items: [
+            { type: 'team member links', count: deleteDialog.cascadeInfo.memberLinks },
+          ].filter(item => item.count > 0)
+        } : undefined}
+        confirmLabel="Delete Team"
+        onConfirm={() => {
+          if (deleteDialog) {
+            deleteMutation.mutate(deleteDialog.teamId)
+            setDeleteDialog(null)
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </motion.div>
     </div>
   )

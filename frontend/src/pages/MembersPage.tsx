@@ -26,6 +26,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2, Upload, Camera, Mail, UserPlus } from 'lucide-react'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { WarningDialog } from '@/components/ui/warning-dialog'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 
 export default function MembersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -46,6 +48,20 @@ export default function MembersPage() {
     fri: true,
     sat: false,
   })
+  const [inviteDialog, setInviteDialog] = useState<{
+    memberId: number
+    email: string
+  } | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    memberId: number
+    memberName: string
+    cascadeInfo: {
+      assignments: number
+      dayAssignments: number
+      dayOffs: number
+      teamLinks: number
+    } | null
+  } | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -297,9 +313,10 @@ export default function MembersPage() {
                       variant="default"
                       size="sm"
                       onClick={() => {
-                        if (confirm(`Send invitation to ${member.email}?`)) {
-                          inviteMutation.mutate(member.id)
-                        }
+                        setInviteDialog({
+                          memberId: member.id,
+                          email: member.email || '',
+                        })
                       }}
                       disabled={inviteMutation.isPending}
                       className="gap-2 w-full"
@@ -342,7 +359,22 @@ export default function MembersPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => deleteMutation.mutate(member.id)}
+                      onClick={async () => {
+                        try {
+                          const response = await api.get(`/members/${member.id}/cascade-info`)
+                          setDeleteDialog({
+                            memberId: member.id,
+                            memberName: `${member.firstName} ${member.lastName}`,
+                            cascadeInfo: response.data,
+                          })
+                        } catch (error) {
+                          setDeleteDialog({
+                            memberId: member.id,
+                            memberName: `${member.firstName} ${member.lastName}`,
+                            cascadeInfo: null,
+                          })
+                        }
+                      }}
                       className="gap-2"
                     >
                       <Trash2 className="h-3 w-3" />
@@ -558,6 +590,46 @@ export default function MembersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Invitation Confirmation Dialog */}
+      <WarningDialog
+        open={!!inviteDialog}
+        onOpenChange={() => setInviteDialog(null)}
+        title="Send Invitation"
+        message={`Send an invitation email to ${inviteDialog?.email}? This will allow them to register and access the system.`}
+        confirmLabel="Send Invitation"
+        onConfirm={() => {
+          if (inviteDialog) {
+            inviteMutation.mutate(inviteDialog.memberId)
+            setInviteDialog(null)
+          }
+        }}
+      />
+
+      {/* Delete Member Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+        title="Delete Team Member"
+        description="This will permanently delete the team member and all associated data. This action cannot be undone."
+        entityName={deleteDialog?.memberName}
+        cascadeWarning={deleteDialog?.cascadeInfo ? {
+          items: [
+            { type: 'project assignments', count: deleteDialog.cascadeInfo.assignments },
+            { type: 'day assignments', count: deleteDialog.cascadeInfo.dayAssignments },
+            { type: 'day-offs', count: deleteDialog.cascadeInfo.dayOffs },
+            { type: 'team links', count: deleteDialog.cascadeInfo.teamLinks },
+          ].filter(item => item.count > 0)
+        } : undefined}
+        confirmLabel="Delete Member"
+        onConfirm={() => {
+          if (deleteDialog) {
+            deleteMutation.mutate(deleteDialog.memberId)
+            setDeleteDialog(null)
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </motion.div>
     </div>
   )

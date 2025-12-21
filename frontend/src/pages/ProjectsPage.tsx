@@ -25,6 +25,13 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { AlertDialog } from '@/components/ui/alert-dialog'
+
+interface CascadeInfo {
+  assignments: number
+  dayAssignments: number
+  milestones: number
+}
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -34,6 +41,11 @@ export default function ProjectsPage() {
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('tentative')
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteDialog, setDeleteDialog] = useState<{
+    projectId: number
+    projectName: string
+    cascadeInfo: CascadeInfo | null
+  } | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -235,7 +247,22 @@ export default function ProjectsPage() {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => deleteMutation.mutate(project.id)}
+                    onClick={async () => {
+                      try {
+                        const response = await api.get(`/projects/${project.id}/cascade-info`)
+                        setDeleteDialog({
+                          projectId: project.id,
+                          projectName: project.name,
+                          cascadeInfo: response.data,
+                        })
+                      } catch (error) {
+                        setDeleteDialog({
+                          projectId: project.id,
+                          projectName: project.name,
+                          cascadeInfo: null,
+                        })
+                      }
+                    }}
                     className="gap-2"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -332,6 +359,30 @@ export default function ProjectsPage() {
           onOpenChange={(open) => !open && setAssigningProject(null)}
         />
       )}
+
+      {/* Delete Project Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+        title="Delete Project"
+        description="This will permanently delete the project and all associated data. This action cannot be undone."
+        entityName={deleteDialog?.projectName}
+        cascadeWarning={deleteDialog?.cascadeInfo ? {
+          items: [
+            { type: 'project assignments', count: deleteDialog.cascadeInfo.assignments },
+            { type: 'day assignments', count: deleteDialog.cascadeInfo.dayAssignments },
+            { type: 'milestones', count: deleteDialog.cascadeInfo.milestones },
+          ].filter(item => item.count > 0)
+        } : undefined}
+        confirmLabel="Delete Project"
+        onConfirm={() => {
+          if (deleteDialog) {
+            deleteMutation.mutate(deleteDialog.projectId)
+            setDeleteDialog(null)
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </motion.div>
     </div>
   )

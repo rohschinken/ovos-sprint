@@ -30,6 +30,30 @@ router.get('/members/relationships', authenticate, async (req, res) => {
   }
 })
 
+// Get cascade info for team deletion (admin only)
+// MUST be before /:id route to avoid matching "cascade-info" as an ID
+router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const teamId = parseInt(req.params.id)
+
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' })
+    }
+
+    // Get team member links
+    const teamLinks = await db.query.teamTeamMembers.findMany({
+      where: eq(teamTeamMembers.teamId, teamId),
+    })
+
+    res.json({
+      memberLinks: teamLinks.length,
+    })
+  } catch (error) {
+    console.error('Get cascade info error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 // Get team by ID with members
 router.get('/:id', authenticate, async (req, res) => {
   try {

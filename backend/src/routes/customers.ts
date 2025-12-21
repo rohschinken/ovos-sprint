@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { db, customers } from '../db/index.js'
+import { db, customers, projects, projectAssignments, dayAssignments, milestones } from '../db/index.js'
 import { customerSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
@@ -15,6 +15,51 @@ router.get('/', authenticate, async (req, res) => {
     res.json(allCustomers)
   } catch (error) {
     console.error('Get customers error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Get cascade info for customer deletion (admin only)
+// MUST be before /:id route to avoid matching "cascade-info" as an ID
+router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const customerId = parseInt(req.params.id)
+
+    const customerProjects = await db.query.projects.findMany({
+      where: eq(projects.customerId, customerId),
+    })
+
+    let totalAssignments = 0
+    let totalDayAssignments = 0
+    let totalMilestones = 0
+
+    for (const project of customerProjects) {
+      const assignments = await db.query.projectAssignments.findMany({
+        where: eq(projectAssignments.projectId, project.id),
+      })
+      totalAssignments += assignments.length
+
+      for (const assignment of assignments) {
+        const dayAssigns = await db.query.dayAssignments.findMany({
+          where: eq(dayAssignments.projectAssignmentId, assignment.id),
+        })
+        totalDayAssignments += dayAssigns.length
+      }
+
+      const projectMilestones = await db.query.milestones.findMany({
+        where: eq(milestones.projectId, project.id),
+      })
+      totalMilestones += projectMilestones.length
+    }
+
+    res.json({
+      projects: customerProjects.length,
+      assignments: totalAssignments,
+      dayAssignments: totalDayAssignments,
+      milestones: totalMilestones,
+    })
+  } catch (error) {
+    console.error('Get cascade info error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })

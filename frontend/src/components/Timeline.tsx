@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
+import { AlertDialog } from './ui/alert-dialog'
+import { WarningDialog } from './ui/warning-dialog'
 
 interface TimelineProps {
   viewMode: TimelineViewMode
@@ -43,6 +45,16 @@ export default function Timeline({
     startDate: Date | null
     endDate: Date | null
   }>({ assignmentId: null, startDate: null, endDate: null })
+  const [timelineWarning, setTimelineWarning] = useState<{
+    type: 'holiday' | 'non-working-day'
+    message: string
+    onConfirm: () => void
+  } | null>(null)
+  const [deleteDayOffDialog, setDeleteDayOffDialog] = useState<{
+    dayOffId: number
+    memberName: string
+    date: string
+  } | null>(null)
 
   // Track if initial expansion has been done to prevent re-expanding when user collapses all
   const hasInitializedExpansion = useRef(false)
@@ -416,21 +428,41 @@ export default function Timeline({
       if (isHoliday(date)) {
         const holidayName = getHolidayName(date)
         const message = holidayName
-          ? `This is a holiday (${holidayName}). Are you sure?`
-          : 'This is a holiday. Are you sure?'
+          ? `This is a holiday (${holidayName}). Are you sure you want to assign work on this day?`
+          : 'This is a holiday. Are you sure you want to assign work on this day?'
 
-        if (!confirm(message)) {
-          return
-        }
+        setTimelineWarning({
+          type: 'holiday',
+          message,
+          onConfirm: () => {
+            setDragState({
+              assignmentId,
+              startDate: date,
+              endDate: date,
+            })
+            setTimelineWarning(null)
+          },
+        })
+        return
       }
       // Check if it's a non-working day for this member
       else if (isNonWorkingDay(assignment.teamMemberId, date)) {
         const member = members.find((m) => m.id === assignment.teamMemberId)
         const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
 
-        if (!confirm(`This is a non-working day for ${memberName}. Are you sure?`)) {
-          return
-        }
+        setTimelineWarning({
+          type: 'non-working-day',
+          message: `This is a non-working day for ${memberName}. Are you sure you want to assign work on this day?`,
+          onConfirm: () => {
+            setDragState({
+              assignmentId,
+              startDate: date,
+              endDate: date,
+            })
+            setTimelineWarning(null)
+          },
+        })
+        return
       }
     }
 
@@ -621,9 +653,11 @@ export default function Timeline({
     if (existingDayOff) {
       // Delete existing day-off if CTRL/CMD+click or right-click
       if (event.ctrlKey || event.metaKey || event.button === 2) {
-        if (confirm(`Remove day off for ${memberName} on ${dateStr}?`)) {
-          deleteDayOffMutation.mutate(existingDayOff.id)
-        }
+        setDeleteDayOffDialog({
+          dayOffId: existingDayOff.id,
+          memberName,
+          date: dateStr,
+        })
       }
     } else {
       // Create new day-off on normal click
@@ -1257,5 +1291,37 @@ export default function Timeline({
     </div>
   )
 
-  return <TooltipProvider>{content}</TooltipProvider>
+  return (
+    <TooltipProvider>
+      {content}
+
+      {/* Holiday/Non-Working Day Warning Dialog */}
+      <WarningDialog
+        open={!!timelineWarning}
+        onOpenChange={() => setTimelineWarning(null)}
+        title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
+        message={timelineWarning?.message || ''}
+        confirmLabel="Continue Anyway"
+        onConfirm={() => {
+          timelineWarning?.onConfirm()
+        }}
+      />
+
+      {/* Delete Day-Off Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDayOffDialog}
+        onOpenChange={() => setDeleteDayOffDialog(null)}
+        title="Remove Day Off"
+        description={`Remove day off for ${deleteDayOffDialog?.memberName} on ${deleteDayOffDialog?.date}?`}
+        confirmLabel="Remove"
+        onConfirm={() => {
+          if (deleteDayOffDialog) {
+            deleteDayOffMutation.mutate(deleteDayOffDialog.dayOffId)
+            setDeleteDayOffDialog(null)
+          }
+        }}
+        isLoading={deleteDayOffMutation.isPending}
+      />
+    </TooltipProvider>
+  )
 }

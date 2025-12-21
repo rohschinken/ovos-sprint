@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
 import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 
 interface Invitation {
   id: number
@@ -48,6 +49,11 @@ interface User {
   createdAt: string
 }
 
+interface CascadeInfo {
+  settings: number
+  linkedTeamMembers: number
+}
+
 export default function UsersPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [email, setEmail] = useState('')
@@ -56,6 +62,11 @@ export default function UsersPage() {
   const [confirmRoleChange, setConfirmRoleChange] = useState<{
     userId: number
     newRole: 'user' | 'admin'
+  } | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    userId: number
+    userEmail: string
+    cascadeInfo: CascadeInfo | null
   } | null>(null)
 
   const { toast } = useToast()
@@ -147,9 +158,20 @@ export default function UsersPage() {
     inviteMutation.mutate({ email, role })
   }
 
-  const handleDeleteUser = (user: User) => {
-    if (window.confirm(`Are you sure you want to delete ${user.email}?`)) {
-      deleteMutation.mutate(user.id)
+  const handleDeleteUser = async (user: User) => {
+    try {
+      const response = await api.get(`/users/${user.id}/cascade-info`)
+      setDeleteDialog({
+        userId: user.id,
+        userEmail: user.email,
+        cascadeInfo: response.data,
+      })
+    } catch (error) {
+      setDeleteDialog({
+        userId: user.id,
+        userEmail: user.email,
+        cascadeInfo: null,
+      })
     }
   }
 
@@ -425,6 +447,29 @@ export default function UsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+        title="Delete User"
+        description="This will permanently delete the user and all associated data. This action cannot be undone."
+        entityName={deleteDialog?.userEmail}
+        cascadeWarning={deleteDialog?.cascadeInfo ? {
+          items: [
+            { type: 'user settings', count: deleteDialog.cascadeInfo.settings },
+            { type: 'linked team member profiles', count: deleteDialog.cascadeInfo.linkedTeamMembers },
+          ].filter(item => item.count > 0)
+        } : undefined}
+        confirmLabel="Delete User"
+        onConfirm={() => {
+          if (deleteDialog) {
+            deleteMutation.mutate(deleteDialog.userId)
+            setDeleteDialog(null)
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </motion.div>
     </div>
   )

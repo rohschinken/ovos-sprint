@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { db, projects } from '../db/index.js'
+import { db, projects, projectAssignments, dayAssignments, milestones } from '../db/index.js'
 import { projectSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
@@ -18,6 +18,46 @@ router.get('/', authenticate, async (req, res) => {
     res.json(allProjects)
   } catch (error) {
     console.error('Get projects error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Get cascade info for project deletion (admin only)
+// MUST be before /:id route to avoid matching "cascade-info" as an ID
+router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const projectId = parseInt(req.params.id)
+
+    if (isNaN(projectId)) {
+      return res.status(400).json({ error: 'Invalid project ID' })
+    }
+
+    // Get project assignments
+    const assignments = await db.query.projectAssignments.findMany({
+      where: eq(projectAssignments.projectId, projectId),
+    })
+
+    // Count day assignments for all project assignments
+    let totalDayAssignments = 0
+    for (const assignment of assignments) {
+      const dayAssigns = await db.query.dayAssignments.findMany({
+        where: eq(dayAssignments.projectAssignmentId, assignment.id),
+      })
+      totalDayAssignments += dayAssigns.length
+    }
+
+    // Get milestones
+    const projectMilestones = await db.query.milestones.findMany({
+      where: eq(milestones.projectId, projectId),
+    })
+
+    res.json({
+      assignments: assignments.length,
+      dayAssignments: totalDayAssignments,
+      milestones: projectMilestones.length,
+    })
+  } catch (error) {
+    console.error('Get cascade info error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import sharp from 'sharp'
 import crypto from 'crypto'
-import { db, teamMembers, invitations, users } from '../db/index.js'
+import { db, teamMembers, invitations, users, projectAssignments, dayAssignments, dayOffs, teamTeamMembers } from '../db/index.js'
 import { teamMemberSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq, and, isNull } from 'drizzle-orm'
@@ -52,6 +52,44 @@ router.get('/', authenticate, async (req, res) => {
     res.json(members)
   } catch (error) {
     console.error('Get members error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Get cascade info for member deletion (admin only)
+// MUST be before /:id route to avoid matching "cascade-info" as an ID
+router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const memberId = parseInt(req.params.id)
+
+    const assignments = await db.query.projectAssignments.findMany({
+      where: eq(projectAssignments.teamMemberId, memberId),
+    })
+
+    let totalDayAssignments = 0
+    for (const assignment of assignments) {
+      const dayAssigns = await db.query.dayAssignments.findMany({
+        where: eq(dayAssignments.projectAssignmentId, assignment.id),
+      })
+      totalDayAssignments += dayAssigns.length
+    }
+
+    const memberDayOffs = await db.query.dayOffs.findMany({
+      where: eq(dayOffs.teamMemberId, memberId),
+    })
+
+    const teamLinks = await db.query.teamTeamMembers.findMany({
+      where: eq(teamTeamMembers.teamMemberId, memberId),
+    })
+
+    res.json({
+      assignments: assignments.length,
+      dayAssignments: totalDayAssignments,
+      dayOffs: memberDayOffs.length,
+      teamLinks: teamLinks.length,
+    })
+  } catch (error) {
+    console.error('Get cascade info error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })

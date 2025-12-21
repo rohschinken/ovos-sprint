@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { eq } from 'drizzle-orm'
-import { db, users } from '../db/index.js'
+import { db, users, settings, teamMembers } from '../db/index.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { updateUserRoleSchema } from '../utils/validation.js'
 
@@ -62,6 +62,35 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: AuthRequest, r
   } catch (error) {
     console.error('Update user role error:', error)
     res.status(400).json({ error: 'Invalid request' })
+  }
+})
+
+// Get cascade info for user deletion (admin only)
+router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id)
+
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' })
+    }
+
+    // Get user's settings
+    const userSettings = await db.query.settings.findMany({
+      where: eq(settings.userId, userId),
+    })
+
+    // Get team members linked to this user
+    const linkedMembers = await db.query.teamMembers.findMany({
+      where: eq(teamMembers.userId, userId),
+    })
+
+    res.json({
+      settings: userSettings.length,
+      linkedTeamMembers: linkedMembers.length,
+    })
+  } catch (error) {
+    console.error('Get cascade info error:', error)
+    res.status(500).json({ error: 'Server error' })
   }
 })
 
