@@ -228,8 +228,7 @@ export default function TeamsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-2">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
+                <Button
                     variant="default"
                     size="sm"
                     onClick={() => setManagingTeam(team)}
@@ -237,11 +236,9 @@ export default function TeamsPage() {
                   >
                     <Users className="h-3 w-3" />
                     Manage Members
-                  </Button>
-                </motion.div>
+                </Button>
                 <div className="flex gap-2">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
+                  <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -252,10 +249,8 @@ export default function TeamsPage() {
                     >
                       <Pencil className="h-3 w-3" />
                       Edit
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
+                  </Button>
+                  <Button
                       variant="destructive"
                       size="sm"
                       onClick={async () => {
@@ -278,8 +273,7 @@ export default function TeamsPage() {
                     >
                       <Trash2 className="h-3 w-3" />
                       Delete
-                    </Button>
-                  </motion.div>
+                  </Button>
                 </div>
               </div>
             </CardContent>

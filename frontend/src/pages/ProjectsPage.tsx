@@ -216,8 +216,7 @@ export default function ProjectsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
+                <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => setAssigningProject(project)}
@@ -225,10 +224,8 @@ export default function ProjectsPage() {
                   >
                     <Users className="h-3 w-3" />
                     Assign Members
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
+                </Button>
+                <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
@@ -241,10 +238,8 @@ export default function ProjectsPage() {
                   >
                     <Pencil className="h-3 w-3" />
                     Edit
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
+                </Button>
+                <Button
                     variant="destructive"
                     size="sm"
                     onClick={async () => {
@@ -267,8 +262,7 @@ export default function ProjectsPage() {
                   >
                     <Trash2 className="h-3 w-3" />
                     Delete
-                  </Button>
-                </motion.div>
+                </Button>
               </div>
             </CardContent>
             </Card>
