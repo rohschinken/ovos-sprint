@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
-import { ChevronDown, ChevronRight, Flag } from 'lucide-react'
+import { ChevronDown, ChevronRight, Flag, CheckCircle2, Clock } from 'lucide-react'
 import { AlertDialog } from './ui/alert-dialog'
 import { WarningDialog } from './ui/warning-dialog'
 
@@ -892,7 +892,18 @@ export default function Timeline({
                         project.status === 'tentative' && 'opacity-50'
                       )}
                     >
-                      <div className="font-semibold text-sm">{project.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-sm">{project.name}</div>
+                        {project.status === 'tentative' ? (
+                          <div
+                            className={cn('flex items-center text-sm font-medium text-slate-700 dark:text-slate-300')}
+                          >
+                              <Clock className="h-3 w-3" />
+                          </div>
+                        ) : (
+                          ""
+                        )}
+                      </div>
                       <div className="text-xs">
                         {project.customer?.icon && `${project.customer.icon} `}
                         {project.customer?.name}
@@ -1214,7 +1225,18 @@ export default function Timeline({
                           project.status === 'tentative' && 'opacity-50'
                         )}
                       >
-                        <div className="text-xs font-medium">{project.name}</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-sm font-medium">{project.name}</div>
+                          {project.status === 'tentative' ? (
+                            <div
+                              className={cn('flex items-center text-sm font-medium text-slate-700 dark:text-slate-300')}
+                            >
+                                <Clock className="h-2.5 w-2.5" />
+                            </div>
+                          ) : (
+                            ""
+                          )}
+                        </div>
                         <div className="text-xs">
                           {project.customer?.icon && `${project.customer.icon} `}
                           {project.customer?.name}
