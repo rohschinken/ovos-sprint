@@ -58,3 +58,16 @@ export const settingsSchema = z.object({
 export const updateUserRoleSchema = z.object({
   role: z.enum(['user', 'admin']),
 })
+
+export const assignmentGroupSchema = z.object({
+  projectAssignmentId: z.number().int().positive(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  priority: z.enum(['high', 'normal', 'low']).default('normal'),
+  comment: z.string().optional().nullable(),
+})
+
+export const updateAssignmentGroupSchema = z.object({
+  priority: z.enum(['high', 'normal', 'low']).optional(),
+  comment: z.string().optional().nullable(),
+})

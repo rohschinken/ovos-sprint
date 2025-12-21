@@ -91,6 +91,22 @@ export const dayAssignments = sqliteTable('day_assignments', {
     .default(sql`(CURRENT_TIMESTAMP)`),
 })
 
+export const assignmentGroups = sqliteTable('assignment_groups', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectAssignmentId: integer('project_assignment_id')
+    .notNull()
+    .references(() => projectAssignments.id, { onDelete: 'cascade' }),
+  startDate: text('start_date').notNull(), // ISO date string (YYYY-MM-DD)
+  endDate: text('end_date').notNull(), // ISO date string (YYYY-MM-DD)
+  priority: text('priority', { enum: ['high', 'normal', 'low'] })
+    .notNull()
+    .default('normal'),
+  comment: text('comment'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 export const invitations = sqliteTable('invitations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull(),
@@ -161,6 +177,8 @@ export type Customer = typeof customers.$inferSelect
 export type NewCustomer = typeof customers.$inferInsert
 export type DayOff = typeof dayOffs.$inferSelect
 export type NewDayOff = typeof dayOffs.$inferInsert
+export type AssignmentGroup = typeof assignmentGroups.$inferSelect
+export type NewAssignmentGroup = typeof assignmentGroups.$inferInsert
 
 // Relations
 export const projectsRelations = relations(projects, ({ one }) => ({

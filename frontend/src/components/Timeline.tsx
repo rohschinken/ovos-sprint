@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { TimelineViewMode, Project, TeamMember, Milestone, DayOff } from '@/types'
+import { TimelineViewMode, Project, TeamMember, Milestone, DayOff, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
@@ -12,6 +12,7 @@ import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag, CheckCircle2, Clock } from 'lucide-react'
 import { AlertDialog } from './ui/alert-dialog'
 import { WarningDialog } from './ui/warning-dialog'
+import { AssignmentEditPopover } from './AssignmentEditPopover'
 
 interface TimelineProps {
   viewMode: TimelineViewMode
@@ -54,6 +55,14 @@ export default function Timeline({
     dayOffId: number
     memberName: string
     date: string
+  } | null>(null)
+
+  const [editPopover, setEditPopover] = useState<{
+    open: boolean
+    position: { x: number; y: number }
+    projectAssignmentId: number
+    dateRange: { start: string; end: string }
+    group: AssignmentGroup | null
   } | null>(null)
 
   // Track if initial expansion has been done to prevent re-expanding when user collapses all
@@ -201,6 +210,23 @@ export default function Timeline({
     },
   })
 
+  const { data: assignmentGroups = [] } = useQuery({
+    queryKey: [
+      'assignment-groups',
+      format(startDate, 'yyyy-MM-dd'),
+      format(dates[dates.length - 1], 'yyyy-MM-dd'),
+    ],
+    queryFn: async () => {
+      const response = await api.get('/assignments/groups', {
+        params: {
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
+        },
+      })
+      return response.data as AssignmentGroup[]
+    },
+  })
+
   // Filter members based on selected teams
   const filteredMembers =
     selectedTeamIds.length === 0
@@ -288,8 +314,13 @@ export default function Timeline({
       const response = await api.post('/assignments/days', data)
       return response.data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
+      // Day mutations can trigger group merges, so refetch groups too
+      await queryClient.refetchQueries({
+        queryKey: ['assignment-groups'],
+        type: 'all'
+      })
     },
   })
 
@@ -301,6 +332,11 @@ export default function Timeline({
       // Force immediate refetch of day assignments
       await queryClient.refetchQueries({
         queryKey: ['assignments', 'days'],
+        type: 'all'
+      })
+      // Day deletions can trigger group splits/deletions, so refetch groups too
+      await queryClient.refetchQueries({
+        queryKey: ['assignment-groups'],
         type: 'all'
       })
       toast({ title: 'Assignment deleted' })
@@ -361,6 +397,60 @@ export default function Timeline({
         type: 'all'
       })
       toast({ title: 'Day off removed' })
+    },
+  })
+
+  const saveAssignmentGroupMutation = useMutation({
+    mutationFn: async (data: {
+      groupId?: number
+      projectAssignmentId: number
+      startDate: string
+      endDate: string
+      priority: AssignmentPriority
+      comment: string | null
+    }) => {
+      if (data.groupId) {
+        // Update existing group
+        const response = await api.put(`/assignments/groups/${data.groupId}`, {
+          priority: data.priority,
+          comment: data.comment,
+        })
+        return response.data
+      } else {
+        // Try to create new group
+        try {
+          const response = await api.post('/assignments/groups', {
+            projectAssignmentId: data.projectAssignmentId,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            priority: data.priority,
+            comment: data.comment,
+          })
+          return response.data
+        } catch (error: unknown) {
+          // If overlapping group exists, update it instead
+          const axiosError = error as { response?: { data?: { existingGroupId?: number } } }
+          if (axiosError.response?.data?.existingGroupId) {
+            const response = await api.put(`/assignments/groups/${axiosError.response.data.existingGroupId}`, {
+              priority: data.priority,
+              comment: data.comment,
+            })
+            return response.data
+          }
+          throw error
+        }
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['assignment-groups'],
+        type: 'all'
+      })
+      toast({ title: 'Assignment updated' })
+    },
+    onError: (error) => {
+      console.error('Failed to save assignment group:', error)
+      toast({ title: 'Failed to update assignment', variant: 'destructive' })
     },
   })
 
@@ -594,6 +684,117 @@ export default function Timeline({
     if (!dayAssignmentId) return
 
     deleteDayAssignmentMutation.mutate(dayAssignmentId)
+  }
+
+  // Get the contiguous date range containing a specific date for an assignment
+  const getContiguousRangeForDate = (assignmentId: number, date: Date): { start: string; end: string } => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const dates: string[] = [dateStr]
+
+    // Expand backwards
+    let checkDate = addDays(date, -1)
+    while (isDayAssigned(assignmentId, checkDate)) {
+      dates.unshift(format(checkDate, 'yyyy-MM-dd'))
+      checkDate = addDays(checkDate, -1)
+    }
+
+    // Expand forwards
+    checkDate = addDays(date, 1)
+    while (isDayAssigned(assignmentId, checkDate)) {
+      dates.push(format(checkDate, 'yyyy-MM-dd'))
+      checkDate = addDays(checkDate, 1)
+    }
+
+    return {
+      start: dates[0],
+      end: dates[dates.length - 1]
+    }
+  }
+
+  // Get the assignment group for a specific date within an assignment
+  const getGroupForDate = (assignmentId: number, date: Date): AssignmentGroup | null => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return assignmentGroups.find(g =>
+      g.projectAssignmentId === assignmentId &&
+      dateStr >= g.startDate &&
+      dateStr <= g.endDate
+    ) ?? null
+  }
+
+  // Get priority for a specific date within an assignment
+  const getGroupPriority = (assignmentId: number, date: Date): AssignmentPriority => {
+    const group = getGroupForDate(assignmentId, date)
+    return group?.priority ?? 'normal'
+  }
+
+  // Get comment for a specific date within an assignment
+  const getGroupComment = (assignmentId: number, date: Date): string | null => {
+    const group = getGroupForDate(assignmentId, date)
+    return group?.comment ?? null
+  }
+
+  // Check if this is the first day of a contiguous range (for showing comment indicator)
+  const isFirstDayOfRange = (assignmentId: number, date: Date): boolean => {
+    return !isPrevDayAssigned(assignmentId, date)
+  }
+
+  // Check if this is the last day of a contiguous range (for showing priority indicators)
+  const isLastDayOfRange = (assignmentId: number, date: Date): boolean => {
+    return !isNextDayAssigned(assignmentId, date)
+  }
+
+  // Get the number of visible days in the contiguous range containing a date
+  // This counts only days that are in the filtered `dates` array (respects showWeekends setting)
+  const getVisibleRangeLengthInDays = (assignmentId: number, startDate: Date): number => {
+    const range = getContiguousRangeForDate(assignmentId, startDate)
+    const rangeStart = new Date(range.start)
+    const rangeEnd = new Date(range.end)
+
+    // Count visible days in the range
+    let count = 1
+    for (const d of dates) {
+      if (d >= rangeStart && d <= rangeEnd) {
+        count++
+      }
+    }
+    return count
+  }
+
+  // Get the pixel width for the comment text overlay based on visible range length and zoom
+  const getCommentOverlayWidth = (assignmentId: number, date: Date): number => {
+    const visibleRangeLength = getVisibleRangeLengthInDays(assignmentId, date)
+    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
+    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
+    // Reserve space for priority indicator (24px) at end only - emoji is inside the width
+    return visibleRangeLength * cellWidth - 24
+  }
+
+  // Get the pixel offset from the start of the dates grid for a specific date
+  const getDatePixelOffset = (targetDate: Date): number => {
+    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
+    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
+    const dayIndex = dates.findIndex(d => isSameDay(d, targetDate))
+    if (dayIndex === -1) return 0
+    return dayIndex * cellWidth
+  }
+
+  // Handle click on assignment bar to open edit popover
+  const handleAssignmentClick = (assignmentId: number, date: Date, event: React.MouseEvent) => {
+    if (!isAdmin) return
+    if (event.ctrlKey || event.metaKey) return // Don't interfere with delete action
+
+    event.stopPropagation()
+
+    const range = getContiguousRangeForDate(assignmentId, date)
+    const group = getGroupForDate(assignmentId, date)
+
+    setEditPopover({
+      open: true,
+      position: { x: event.clientX, y: event.clientY },
+      projectAssignmentId: assignmentId,
+      dateRange: range,
+      group
+    })
   }
 
   // Milestone helper functions
@@ -969,7 +1170,7 @@ export default function Timeline({
                     if (!member) return null
 
                     return (
-                      <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
+                      <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
                         <div className="w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background/50">
                           <Avatar className="h-6 w-6 ring-1 ring-border/50">
                             <AvatarImage src={member.avatarUrl || undefined} />
@@ -1035,17 +1236,68 @@ export default function Timeline({
                                     : 'bg-confirmed border-emerald-400',
                                   project.status === 'tentative' && !hasOverlap(member.id, date, 'member') && 'opacity-60',
                                   isDayInDragRange(assignment.id, date) &&
-                                    'opacity-50'
+                                    'opacity-50',
+                                  isAdmin && 'cursor-pointer'
                                 )}
                                 onMouseDown={(e) => {
                                   // Stop propagation to prevent parent cell from starting drag
                                   e.stopPropagation()
                                 }}
+                                onClick={(e) => {
+                                  if (isDayAssigned(assignment.id, date)) {
+                                    handleAssignmentClick(assignment.id, date, e)
+                                  }
+                                }}
                                 style={{ pointerEvents: 'auto' }}
-                              />
+                              >
+                                {/* Priority indicators - on last day of range */}
+                                {isDayAssigned(assignment.id, date) && isLastDayOfRange(assignment.id, date) && (
+                                  <>
+                                    {getGroupPriority(assignment.id, date) === 'high' && (
+                                      <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
+                                        {'🔥'}
+                                      </span>
+                                    )}
+                                    {getGroupPriority(assignment.id, date) === 'low' && (
+                                      <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
+                                        {'🤷‍♂️'}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         ))}
+                        {/* Comment overlay rendered at row level to appear above all bar segments */}
+                        {(() => {
+                          // Find all contiguous ranges with comments for this assignment
+                          const commentRanges: { date: Date; comment: string }[] = []
+                          dates.forEach(date => {
+                            if (isDayAssigned(assignment.id, date) && isFirstDayOfRange(assignment.id, date)) {
+                              const comment = getGroupComment(assignment.id, date)
+                              if (comment) {
+                                commentRanges.push({ date, comment })
+                              }
+                            }
+                          })
+                          return commentRanges.map(({ date, comment }) => (
+                            <div
+                              key={`comment-${date.toISOString()}`}
+                              className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-none overflow-hidden"
+                              style={{
+                                left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
+                                width: getCommentOverlayWidth(assignment.id, date),
+                                zIndex: 50
+                              }}
+                            >
+                              <span className="flex-shrink-0">💬</span>
+                              <span className="truncate text-foreground/70 font-medium">
+                                {comment}
+                              </span>
+                            </div>
+                          ))
+                        })()}
                       </div>
                     )
                   })}
@@ -1218,7 +1470,7 @@ export default function Timeline({
                   if (!showTentative && project.status === 'tentative') return null
 
                   return (
-                    <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors">
+                    <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
                       <div
                         className={cn(
                           'w-64 p-2 pl-10 border-r bg-background/50',
@@ -1285,24 +1537,75 @@ export default function Timeline({
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
-                                'h-5 shadow-sm',
+                                'h-5 shadow-sm relative z-20',
                                 getAssignmentWidthClass(assignment.id, date),
                                 getAssignmentRoundedClass(assignment.id, date),
                                 getAssignmentBorderClass(assignment.id, date),
                                 'bg-confirmed border-emerald-400',
                                 project.status === 'tentative' && 'opacity-60',
                                 isDayInDragRange(assignment.id, date) &&
-                                  'opacity-50'
+                                  'opacity-50',
+                                isAdmin && 'cursor-pointer'
                               )}
                               onMouseDown={(e) => {
                                 // Stop propagation to prevent parent cell from starting drag
                                 e.stopPropagation()
                               }}
+                              onClick={(e) => {
+                                if (isDayAssigned(assignment.id, date)) {
+                                  handleAssignmentClick(assignment.id, date, e)
+                                }
+                              }}
                               style={{ pointerEvents: 'auto' }}
-                            />
+                            >
+                              {/* Priority indicators - on last day of range */}
+                              {isDayAssigned(assignment.id, date) && isLastDayOfRange(assignment.id, date) && (
+                                <>
+                                  {getGroupPriority(assignment.id, date) === 'high' && (
+                                    <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
+                                      {'🔥'}
+                                    </span>
+                                  )}
+                                  {getGroupPriority(assignment.id, date) === 'low' && (
+                                    <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
+                                      {'🤷‍♂️'}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
                       ))}
+                      {/* Comment overlay rendered at row level to appear above all bar segments */}
+                      {(() => {
+                        // Find all contiguous ranges with comments for this assignment
+                        const commentRanges: { date: Date; comment: string }[] = []
+                        dates.forEach(date => {
+                          if (isDayAssigned(assignment.id, date) && isFirstDayOfRange(assignment.id, date)) {
+                            const comment = getGroupComment(assignment.id, date)
+                            if (comment) {
+                              commentRanges.push({ date, comment })
+                            }
+                          }
+                        })
+                        return commentRanges.map(({ date, comment }) => (
+                          <div
+                            key={`comment-${date.toISOString()}`}
+                            className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-none overflow-hidden"
+                            style={{
+                              left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
+                              width: getCommentOverlayWidth(assignment.id, date),
+                              zIndex: 50
+                            }}
+                          >
+                            <span className="flex-shrink-0">💬</span>
+                            <span className="truncate text-foreground/70 font-medium">
+                              {comment}
+                            </span>
+                          </div>
+                        ))
+                      })()}
                     </div>
                   )
                 })}
@@ -1344,6 +1647,31 @@ export default function Timeline({
         }}
         isLoading={deleteDayOffMutation.isPending}
       />
+
+      {/* Assignment Edit Popover */}
+      {editPopover && (
+        <AssignmentEditPopover
+          open={editPopover.open}
+          onOpenChange={(open) => {
+            if (!open) setEditPopover(null)
+          }}
+          position={editPopover.position}
+          group={editPopover.group}
+          projectAssignmentId={editPopover.projectAssignmentId}
+          dateRange={editPopover.dateRange}
+          onSave={(data) => {
+            saveAssignmentGroupMutation.mutate({
+              groupId: editPopover.group?.id,
+              projectAssignmentId: editPopover.projectAssignmentId,
+              startDate: editPopover.dateRange.start,
+              endDate: editPopover.dateRange.end,
+              priority: data.priority,
+              comment: data.comment,
+            })
+            setEditPopover(null)
+          }}
+        />
+      )}
     </TooltipProvider>
   )
 }

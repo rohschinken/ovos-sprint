@@ -111,6 +111,18 @@ export interface DayOff {
   createdAt: string
 }
 
+export type AssignmentPriority = 'high' | 'normal' | 'low'
+
+export interface AssignmentGroup {
+  id: number
+  projectAssignmentId: number
+  startDate: string
+  endDate: string
+  priority: AssignmentPriority
+  comment: string | null
+  createdAt: string
+}
+
 // Extended types with relations
 export interface TeamWithMembers extends Team {
   members: TeamMember[]

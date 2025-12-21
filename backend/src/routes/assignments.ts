@@ -1,8 +1,9 @@
 import { Router } from 'express'
-import { db, projectAssignments, dayAssignments, projects, teamMembers } from '../db/index.js'
-import { projectAssignmentSchema, dayAssignmentSchema } from '../utils/validation.js'
+import { db, projectAssignments, dayAssignments, assignmentGroups } from '../db/index.js'
+import { projectAssignmentSchema, dayAssignmentSchema, assignmentGroupSchema, updateAssignmentGroupSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq, and, gte, lte } from 'drizzle-orm'
+import { handleGroupMergeOnDayAdd, handleGroupSplitOnDayDelete } from '../utils/groupMerge.js'
 
 const router = Router()
 
@@ -152,18 +153,20 @@ router.get('/days', authenticate, async (req, res) => {
   try {
     const { startDate, endDate } = req.query
 
-    let query = db.select().from(dayAssignments)
-
+    let days
     if (startDate && endDate) {
-      query = query.where(
-        and(
-          gte(dayAssignments.date, startDate as string),
-          lte(dayAssignments.date, endDate as string)
+      days = await db
+        .select()
+        .from(dayAssignments)
+        .where(
+          and(
+            gte(dayAssignments.date, startDate as string),
+            lte(dayAssignments.date, endDate as string)
+          )
         )
-      )
+    } else {
+      days = await db.select().from(dayAssignments)
     }
-
-    const days = await query
 
     const daysWithDetails = await Promise.all(
       days.map(async (day) => {
@@ -202,7 +205,14 @@ router.post('/days', authenticate, requireAdmin, async (req: AuthRequest, res) =
   try {
     const data = dayAssignmentSchema.parse(req.body)
     const [dayAssignment] = await db.insert(dayAssignments).values(data).returning()
-    res.status(201).json(dayAssignment)
+
+    // Handle potential group merges when adding a day
+    const mergeResult = await handleGroupMergeOnDayAdd(data.projectAssignmentId, data.date)
+
+    res.status(201).json({
+      ...dayAssignment,
+      groupMerge: mergeResult.merged ? mergeResult : undefined
+    })
   } catch (error) {
     console.error('Create day assignment error:', error)
     res.status(400).json({ error: 'Invalid request' })
@@ -236,10 +246,134 @@ router.put('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, res
 router.delete('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id)
+
+    // Get the day assignment first so we know its date and projectAssignmentId
+    const dayAssignment = await db.query.dayAssignments.findFirst({
+      where: (da, { eq }) => eq(da.id, id)
+    })
+
+    if (!dayAssignment) {
+      return res.status(404).json({ error: 'Day assignment not found' })
+    }
+
+    // Delete the day assignment
     await db.delete(dayAssignments).where(eq(dayAssignments.id, id))
+
+    // Handle potential group splits when deleting a day
+    await handleGroupSplitOnDayDelete(
+      dayAssignment.projectAssignmentId,
+      dayAssignment.date
+    )
+
     res.status(204).send()
   } catch (error) {
     console.error('Delete day assignment error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// ============== Assignment Groups ==============
+
+// Get all assignment groups (optionally filtered by date range)
+router.get('/groups', authenticate, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query
+
+    let groups
+    // Filter groups that overlap with the date range
+    if (startDate && endDate) {
+      groups = await db
+        .select()
+        .from(assignmentGroups)
+        .where(
+          and(
+            lte(assignmentGroups.startDate, endDate as string),
+            gte(assignmentGroups.endDate, startDate as string)
+          )
+        )
+    } else {
+      groups = await db.select().from(assignmentGroups)
+    }
+
+    res.json(groups)
+  } catch (error) {
+    console.error('Get assignment groups error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Create assignment group (admin only)
+router.post('/groups', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const data = assignmentGroupSchema.parse(req.body)
+
+    // Validate that endDate >= startDate
+    if (data.endDate < data.startDate) {
+      return res.status(400).json({ error: 'endDate must be >= startDate' })
+    }
+
+    // Check for overlapping groups with the same projectAssignmentId
+    const overlapping = await db
+      .select()
+      .from(assignmentGroups)
+      .where(
+        and(
+          eq(assignmentGroups.projectAssignmentId, data.projectAssignmentId),
+          lte(assignmentGroups.startDate, data.endDate),
+          gte(assignmentGroups.endDate, data.startDate)
+        )
+      )
+
+    if (overlapping.length > 0) {
+      return res.status(400).json({
+        error: 'Overlapping group exists',
+        existingGroupId: overlapping[0].id
+      })
+    }
+
+    const [group] = await db.insert(assignmentGroups).values(data).returning()
+    res.status(201).json(group)
+  } catch (error) {
+    console.error('Create assignment group error:', error)
+    res.status(400).json({ error: 'Invalid request' })
+  }
+})
+
+// Update assignment group (admin only)
+router.put('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const id = parseInt(req.params.id)
+    const data = updateAssignmentGroupSchema.parse(req.body)
+
+    const updateData: { priority?: 'high' | 'normal' | 'low'; comment?: string | null } = {}
+    if (data.priority !== undefined) updateData.priority = data.priority
+    if (data.comment !== undefined) updateData.comment = data.comment
+
+    const [updated] = await db
+      .update(assignmentGroups)
+      .set(updateData)
+      .where(eq(assignmentGroups.id, id))
+      .returning()
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Assignment group not found' })
+    }
+
+    res.json(updated)
+  } catch (error) {
+    console.error('Update assignment group error:', error)
+    res.status(400).json({ error: 'Invalid request' })
+  }
+})
+
+// Delete assignment group (admin only)
+router.delete('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const id = parseInt(req.params.id)
+    await db.delete(assignmentGroups).where(eq(assignmentGroups.id, id))
+    res.status(204).send()
+  } catch (error) {
+    console.error('Delete assignment group error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })
