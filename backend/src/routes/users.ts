@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { eq } from 'drizzle-orm'
 import { db, users } from '../db/index.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
+import { updateUserRoleSchema } from '../utils/validation.js'
 
 const router = Router()
 
@@ -19,6 +20,48 @@ router.get('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Get users error:', error)
     res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Update user role (admin only)
+router.patch('/:id/role', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id)
+
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' })
+    }
+
+    // Parse and validate request body
+    const { role } = updateUserRoleSchema.parse(req.body)
+
+    // Prevent admin from changing their own role
+    if (req.user && req.user.userId === userId) {
+      return res.status(403).json({ error: 'You cannot change your own role' })
+    }
+
+    // Check if user exists
+    const userToUpdate = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    })
+
+    if (!userToUpdate) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Update user role
+    const [updatedUser] = await db.update(users)
+      .set({ role })
+      .where(eq(users.id, userId))
+      .returning()
+
+    // Don't return password hash
+    const { passwordHash, ...safeUser } = updatedUser
+
+    res.json(safeUser)
+  } catch (error) {
+    console.error('Update user role error:', error)
+    res.status(400).json({ error: 'Invalid request' })
   }
 })
 

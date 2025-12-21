@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Card,
   CardContent,
   CardDescription,
@@ -22,7 +29,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2 } from 'lucide-react'
+import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Invitation {
@@ -46,6 +53,10 @@ export default function UsersPage() {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'user' | 'admin'>('user')
   const [invitationLink, setInvitationLink] = useState<string | null>(null)
+  const [confirmRoleChange, setConfirmRoleChange] = useState<{
+    userId: number
+    newRole: 'user' | 'admin'
+  } | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -85,6 +96,29 @@ export default function UsersPage() {
         description: error.response?.data?.error || 'Something went wrong',
         variant: 'destructive',
       })
+    },
+  })
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: 'user' | 'admin' }) => {
+      const response = await api.patch(`/users/${userId}/role`, { role })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast({
+        title: 'Role updated',
+        description: 'User role has been changed successfully.',
+      })
+      setConfirmRoleChange(null)
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to update role',
+        description: error.response?.data?.error || 'Something went wrong',
+        variant: 'destructive',
+      })
+      setConfirmRoleChange(null)
     },
   })
 
@@ -181,20 +215,44 @@ export default function UsersPage() {
                   <div>
                     <div className="font-medium">{user.email}</div>
                     <div className="text-sm text-muted-foreground">
-                      Role: {user.role} · Joined{' '}
+                      Joined{' '}
                       {new Date(user.createdAt).toLocaleDateString('de-AT')}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'admin'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                      }`}
-                    >
-                      {user.role}
-                    </div>
+                    {currentUser?.id === user.id ? (
+                      <div
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          user.role === 'admin'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}
+                      >
+                        {user.role}
+                      </div>
+                    ) : (
+                      <Select
+                        value={user.role}
+                        onValueChange={(newRole: 'user' | 'admin') => {
+                          setConfirmRoleChange({ userId: user.id, newRole })
+                        }}
+                      >
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">
+                            <span>User</span>
+                          </SelectItem>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-3 w-3" />
+                              <span>Admin</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                     {currentUser?.id !== user.id && (
                       <Button
                         variant="ghost"
@@ -322,6 +380,49 @@ export default function UsersPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Change Confirmation Dialog */}
+      <Dialog open={!!confirmRoleChange} onOpenChange={() => setConfirmRoleChange(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Role Change</DialogTitle>
+            <DialogDescription>
+              {confirmRoleChange && (
+                <>
+                  Are you sure you want to change this user's role to{' '}
+                  <strong>{confirmRoleChange.newRole}</strong>?
+                  {confirmRoleChange.newRole === 'admin' && (
+                    <div className="mt-2 text-amber-600 dark:text-amber-500">
+                      This will grant the user full administrative privileges including user management.
+                    </div>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmRoleChange(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (confirmRoleChange) {
+                  updateRoleMutation.mutate({
+                    userId: confirmRoleChange.userId,
+                    role: confirmRoleChange.newRole,
+                  })
+                }
+              }}
+              disabled={updateRoleMutation.isPending}
+            >
+              {updateRoleMutation.isPending ? 'Updating...' : 'Confirm'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>

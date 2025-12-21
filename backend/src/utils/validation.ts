@@ -54,3 +54,7 @@ export const settingsSchema = z.object({
   key: z.string().min(1),
   value: z.string(),
 })
+
+export const updateUserRoleSchema = z.object({
+  role: z.enum(['user', 'admin']),
+})
