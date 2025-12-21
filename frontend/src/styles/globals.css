@@ -29,7 +29,7 @@
     --weekend: 220 14% 96%;
     --holiday: 250 100% 95%;
     --confirmed: 158 64% 88%;
-    --tentative: 35 100% 90%;
+    --tentative: 212.73 26.83% 83.92%;
     --overlap: 12 100% 92%;
     --day-off: 45 95% 92%;
     --day-off-text: 45 95% 35%;
@@ -73,9 +73,9 @@
     --weekend: 220 14% 14%;
     --holiday: 250 70% 25%;
     --confirmed: 160 55% 38%;
-    --tentative: 38 75% 42%;
+    --tentative: 212.73 26.83% 83.92%;
     --overlap: 12 75% 48%;
-    --day-off: 45.2, 75.5%, 36.9%, 40%;;
+    --day-off: 45.2, 75.5%, 36.9%, 40%;
     --day-off-text: 45 95% 65%;
 
     /* Gradient colors - dark mode */
