@@ -80,7 +80,7 @@ if (process.env.NODE_ENV === 'development') {
           result = await emailService.sendTeamInvite(email, {
             teamMemberName: 'John Doe',
             inviterName: 'Jane Admin',
-            inviteLink: 'http://localhost:3000/register?token=test123',
+            inviteLink: `http://localhost:3000/register?token=test123&email=${encodeURIComponent(email)}`,
             expiresInDays: 7,
           })
           break
@@ -88,7 +88,7 @@ if (process.env.NODE_ENV === 'development') {
         case 'user-invite':
           result = await emailService.sendUserInvite(email, {
             inviterName: 'Jane Admin',
-            inviteLink: 'http://localhost:3000/register?token=test456',
+            inviteLink: `http://localhost:3000/register?token=test456&email=${encodeURIComponent(email)}`,
             expiresInDays: 7,
             role: 'user',
           })

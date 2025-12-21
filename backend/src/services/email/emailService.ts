@@ -63,7 +63,7 @@ class EmailService {
   }
 
   async sendTeamInvite(to: string, data: TeamInviteData): Promise<boolean> {
-    const html = render(TeamInviteEmail(data))
+    const html = await render(TeamInviteEmail(data))
 
     return this.sendEmail({
       to,
@@ -73,7 +73,7 @@ class EmailService {
   }
 
   async sendUserInvite(to: string, data: UserInviteData): Promise<boolean> {
-    const html = render(UserInviteEmail(data))
+    const html = await render(UserInviteEmail(data))
 
     return this.sendEmail({
       to,
@@ -83,7 +83,7 @@ class EmailService {
   }
 
   async sendPasswordReset(to: string, data: PasswordResetData): Promise<boolean> {
-    const html = render(PasswordResetEmail(data))
+    const html = await render(PasswordResetEmail(data))
 
     return this.sendEmail({
       to,

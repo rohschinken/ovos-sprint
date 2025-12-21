@@ -289,7 +289,6 @@ export default function UsersPage() {
                         {invitationLink}
                       </code>
                     </div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
                         onClick={() => copyToClipboard(invitationLink)}
                         className="gap-2"
@@ -298,7 +297,6 @@ export default function UsersPage() {
                         <Copy className="h-4 w-4" />
                         Copy Link
                       </Button>
-                    </motion.div>
                   </div>
                 </div>
               </div>

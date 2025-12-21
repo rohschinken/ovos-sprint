@@ -9,6 +9,7 @@ import { db, teamMembers, invitations, users } from '../db/index.js'
 import { teamMemberSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq, and, isNull } from 'drizzle-orm'
+import { emailService } from '../services/email/emailService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -225,14 +226,29 @@ router.post('/:id/invite', authenticate, requireAdmin, async (req: AuthRequest, 
       expiresAt,
     })
 
-    // In production, send email here
+    // Send invitation email
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
     const inviteLink = `${frontendUrl}/register?token=${token}&email=${encodeURIComponent(member.email)}`
 
-    console.log(`Invitation created for ${member.email}: ${inviteLink}`)
+    const inviterUser = await db.query.users.findFirst({
+      where: eq(users.id, req.user!.userId),
+    })
+
+    const inviterName = inviterUser?.email || 'Admin'
+    const teamMemberName = `${member.firstName} ${member.lastName}`
+
+    // Send team invite email
+    await emailService.sendTeamInvite(member.email, {
+      teamMemberName,
+      inviterName,
+      inviteLink,
+      expiresInDays: 7,
+    })
+
+    console.log(`Invitation sent to ${member.email}: ${inviteLink}`)
 
     res.json({
-      message: 'Invitation created successfully',
+      message: 'Invitation sent successfully',
       email: member.email,
       inviteLink
     })

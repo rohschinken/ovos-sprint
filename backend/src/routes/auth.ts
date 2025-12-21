@@ -6,6 +6,7 @@ import { generateToken } from '../utils/jwt.js'
 import { loginSchema, registerSchema, inviteSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
+import { emailService } from '../services/email/emailService.js'
 
 const router = Router()
 
@@ -152,17 +153,30 @@ router.post('/invite', authenticate, requireAdmin, async (req: AuthRequest, res)
       expiresAt: expiresAt.toISOString(),
     }).returning()
 
-    // In production, send email here
-    // For now, just return the invitation link
+    // Send invitation email
     const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/register?token=${token}&email=${encodeURIComponent(email)}`
 
+    const inviterUser = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, req.user!.userId),
+    })
+
+    const inviterName = inviterUser?.email || 'Admin'
+
+    // Send email
+    await emailService.sendUserInvite(email, {
+      inviterName,
+      inviteLink: invitationLink,
+      expiresInDays: 7,
+      role: role as 'admin' | 'user',
+    })
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📧 Invitation created for:', email)
+    console.log('📧 Invitation sent to:', email)
     console.log('🔗 Invitation link:', invitationLink)
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     res.json({
-      message: 'Invitation sent (check console for link)',
+      message: 'Invitation sent successfully',
       invitationLink,
     })
   } catch (error) {
