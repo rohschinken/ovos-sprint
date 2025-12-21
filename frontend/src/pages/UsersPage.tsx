@@ -364,7 +364,7 @@ export default function UsersPage() {
                       Copy this link and send it to the user via email. The
                       link expires in 7 days.
                     </p>
-                    <div className="bg-white rounded border border-blue-300 p-3 mb-3">
+                    <div className="bg-white dark:text-black rounded border border-blue-300 p-3 mb-3">
                       <code className="text-xs break-all">
                         {invitationLink}
                       </code>

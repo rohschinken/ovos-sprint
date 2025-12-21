@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { db, users, invitations, teamMembers } from '../db/index.js'
+import { db, users, invitations, teamMembers, teamTeamMembers } from '../db/index.js'
 import { generateToken } from '../utils/jwt.js'
 import { loginSchema, registerSchema, inviteSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
@@ -188,20 +188,53 @@ router.post('/invite', authenticate, requireAdmin, async (req: AuthRequest, res)
 // Get current user
 router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
+    const userId = req.user!.userId
+    const includeTeams = req.query.include === 'teams'
+
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, req.user!.userId),
+      where: (users, { eq }) => eq(users.id, userId),
     })
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    res.json({
+    const safeUser = {
       id: user.id,
       email: user.email,
       role: user.role,
       createdAt: user.createdAt,
-    })
+    }
+
+    // Optionally include team member and teams for first-time filter initialization
+    if (includeTeams) {
+      // Find linked team member
+      const member = await db.query.teamMembers.findFirst({
+        where: eq(teamMembers.userId, userId)
+      })
+
+      if (member) {
+        // Get teams for this member
+        const teamLinks = await db.query.teamTeamMembers.findMany({
+          where: eq(teamTeamMembers.teamMemberId, member.id)
+        })
+        const teamIds = teamLinks.map(link => link.teamId)
+
+        // Return enhanced data with team member and teams
+        return res.json({
+          ...safeUser,
+          teamMember: {
+            id: member.id,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: member.email
+          },
+          teams: teamIds
+        })
+      }
+    }
+
+    res.json(safeUser)
   } catch (error) {
     console.error('Get me error:', error)
     res.status(500).json({ error: 'Server error' })

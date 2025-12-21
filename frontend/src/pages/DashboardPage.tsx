@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [viewMode, setViewMode] = useState<TimelineViewMode>('by-member')
   const [prevDays, setPrevDays] = useState(1)
   const [nextDays, setNextDays] = useState(30)
@@ -67,9 +68,9 @@ export default function DashboardPage() {
     },
   })
 
-  // Load user preferences from localStorage
+  // Load user preferences from localStorage on mount
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || prefsLoaded) return
 
     const prefsKey = `dashboard-prefs-${user.id}`
     const savedPrefs = localStorage.getItem(prefsKey)
@@ -87,11 +88,12 @@ export default function DashboardPage() {
         console.error('Failed to load dashboard preferences:', error)
       }
     }
-  }, [user?.id])
+    setPrefsLoaded(true)
+  }, [user?.id, prefsLoaded])
 
-  // Save user preferences to localStorage
+  // Save user preferences to localStorage (only after initial load)
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !prefsLoaded) return
 
     const prefsKey = `dashboard-prefs-${user.id}`
     const prefs = {
@@ -104,7 +106,24 @@ export default function DashboardPage() {
       showOverlaps,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps])
+  }, [user?.id, prefsLoaded, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps])
+
+  // Auto-initialize team filters for first-time users
+  useEffect(() => {
+    if (!user?.id) return
+
+    const prefsKey = `dashboard-prefs-${user.id}`
+    const hasInitializedKey = `dashboard-team-initialized-${user.id}`
+    const hasInitialized = localStorage.getItem(hasInitializedKey)
+
+    // Only auto-initialize if:
+    // 1. Never initialized before (tracked separately from preferences)
+    // 2. User has linked teams
+    if (!hasInitialized && user.teams && user.teams.length > 0) {
+      setSelectedTeamIds(user.teams)
+      localStorage.setItem(hasInitializedKey, 'true')
+    }
+  }, [user?.id, user?.teams])
 
   useEffect(() => {
     if (settings.timelinePrevDays) {

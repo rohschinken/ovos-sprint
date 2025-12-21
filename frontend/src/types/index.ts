@@ -5,6 +5,14 @@ export interface User {
   email: string
   role: UserRole
   createdAt: string
+  // Optional fields for team filter auto-initialization
+  teamMember?: {
+    id: number
+    firstName: string
+    lastName: string
+    email: string | null
+  }
+  teams?: number[]
 }
 
 export interface Team {

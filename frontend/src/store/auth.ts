@@ -53,7 +53,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (!token) return
 
     try {
-      const response = await api.get('/auth/me')
+      // Request user data with teams included for first-time filter initialization
+      const response = await api.get('/auth/me?include=teams')
       set({ user: response.data })
     } catch (error) {
       localStorage.removeItem('token')
