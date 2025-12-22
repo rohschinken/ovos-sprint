@@ -167,6 +167,11 @@ export default function UsersPage() {
         cascadeInfo: response.data,
       })
     } catch (error) {
+      toast({
+        title: 'Failed to load user info',
+        description: 'Proceeding without cascade information',
+        variant: 'destructive',
+      })
       setDeleteDialog({
         userId: user.id,
         userEmail: user.email,

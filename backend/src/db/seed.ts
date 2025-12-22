@@ -1,6 +1,10 @@
 import { db, users } from './index.js'
 import bcrypt from 'bcryptjs'
 import * as readline from 'readline'
+import dotenv from 'dotenv'
+
+// Load environment variables
+dotenv.config()
 
 async function promptForEmail(): Promise<string> {
   const rl = readline.createInterface({
@@ -12,6 +16,20 @@ async function promptForEmail(): Promise<string> {
     rl.question('Enter admin email address: ', (email) => {
       rl.close()
       resolve(email.trim())
+    })
+  })
+}
+
+async function promptForPassword(): Promise<string | null> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  return new Promise((resolve) => {
+    rl.question('Enter admin password (leave empty to auto-generate): ', (password) => {
+      rl.close()
+      resolve(password.trim() || null)
     })
   })
 }
@@ -29,16 +47,57 @@ async function main() {
     return
   }
 
-  // Prompt for admin email
-  const adminEmail = await promptForEmail()
+  // Check for non-interactive mode via environment variables
+  const envEmail = process.env.ADMIN_EMAIL
+  const envPassword = process.env.ADMIN_PASSWORD
+  const isNonInteractive = envEmail !== undefined
 
-  if (!adminEmail || !adminEmail.includes('@')) {
-    console.error('❌ Invalid email address!')
-    process.exit(1)
+  let adminEmail: string
+  let password: string
+  let passwordWasProvided = false
+
+  if (isNonInteractive) {
+    // Non-interactive mode: use environment variables
+    console.log('Running in non-interactive mode (using environment variables)')
+
+    if (!envEmail || !envEmail.includes('@')) {
+      console.error('❌ Invalid ADMIN_EMAIL environment variable!')
+      process.exit(1)
+    }
+
+    adminEmail = envEmail
+
+    if (envPassword && envPassword.length >= 8) {
+      password = envPassword
+      passwordWasProvided = true
+    } else if (envPassword) {
+      console.error('❌ ADMIN_PASSWORD must be at least 8 characters!')
+      process.exit(1)
+    } else {
+      password = generateSecurePassword()
+    }
+  } else {
+    // Interactive mode: prompt for input
+    adminEmail = await promptForEmail()
+
+    if (!adminEmail || !adminEmail.includes('@')) {
+      console.error('❌ Invalid email address!')
+      process.exit(1)
+    }
+
+    const inputPassword = await promptForPassword()
+    if (inputPassword) {
+      if (inputPassword.length < 8) {
+        console.error('❌ Password must be at least 8 characters!')
+        process.exit(1)
+      }
+      password = inputPassword
+      passwordWasProvided = true
+    } else {
+      password = generateSecurePassword()
+    }
   }
 
-  // Generate a secure password
-  const password = generateSecurePassword()
   const passwordHash = await bcrypt.hash(password, 10)
 
   // Create admin user
@@ -51,9 +110,13 @@ async function main() {
   console.log('✅ Admin user created successfully!')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log(`📧 Email: ${adminEmail}`)
-  console.log(`🔑 Password: ${password}`)
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('⚠️  Please save this password securely!')
+  if (passwordWasProvided) {
+    console.log('🔑 Password: (as provided)')
+  } else {
+    console.log(`🔑 Password: ${password}`)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('⚠️  Please save this password securely!')
+  }
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 }
 

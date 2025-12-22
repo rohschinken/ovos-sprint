@@ -361,6 +361,11 @@ export default function MembersPage() {
                             cascadeInfo: response.data,
                           })
                         } catch (error) {
+                          toast({
+                            title: 'Failed to load member info',
+                            description: 'Proceeding without cascade information',
+                            variant: 'destructive',
+                          })
                           setDeleteDialog({
                             memberId: member.id,
                             memberName: `${member.firstName} ${member.lastName}`,
@@ -467,8 +472,13 @@ export default function MembersPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">
-                {editingMember ? 'Update' : 'Add'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? (editingMember ? 'Saving...' : 'Adding...')
+                  : (editingMember ? 'Update' : 'Add')}
               </Button>
             </DialogFooter>
           </form>

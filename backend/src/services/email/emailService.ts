@@ -25,15 +25,24 @@ class EmailService {
 
   private initialize() {
     try {
+      const smtpUser = process.env.SMTP_USER
+      const smtpPassword = process.env.SMTP_PASSWORD
+
       this.transporter = nodemailer.createTransport({
         host: this.config.host,
         port: this.config.port,
         secure: this.config.secure,
-        // For Mailpit, we don't need auth in development
-        // In production, you'd add auth here
+        // Add auth if credentials are provided (required for production SMTP like SparkPost)
+        ...(smtpUser && smtpPassword && {
+          auth: {
+            user: smtpUser,
+            pass: smtpPassword,
+          },
+        }),
       })
 
-      console.log(`📧 Email service initialized (${this.config.host}:${this.config.port})`)
+      const authStatus = smtpUser ? 'with auth' : 'no auth'
+      console.log(`📧 Email service initialized (${this.config.host}:${this.config.port}, ${authStatus})`)
     } catch (error) {
       console.error('❌ Failed to initialize email service:', error)
     }

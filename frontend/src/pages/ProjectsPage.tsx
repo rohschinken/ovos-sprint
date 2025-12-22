@@ -5,6 +5,13 @@ import { Project, ProjectStatus, Customer } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import AssignMemberDialog from '@/components/AssignMemberDialog'
 import {
   Card,
@@ -251,6 +258,11 @@ export default function ProjectsPage() {
                           cascadeInfo: response.data,
                         })
                       } catch (error) {
+                        toast({
+                          title: 'Failed to load project info',
+                          description: 'Proceeding without cascade information',
+                          variant: 'destructive',
+                        })
                         setDeleteDialog({
                           projectId: project.id,
                           projectName: project.name,
@@ -295,20 +307,21 @@ export default function ProjectsPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="customerId">Customer</Label>
-                <select
-                  id="customerId"
-                  value={customerId}
-                  onChange={(e) => setCustomerId(Number(e.target.value))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  required
+                <Select
+                  value={customerId === '' ? undefined : String(customerId)}
+                  onValueChange={(value) => setCustomerId(Number(value))}
                 >
-                  <option value="">Select a customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.icon ? `${customer.icon} ` : ''}{customer.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={String(customer.id)}>
+                        {customer.icon ? `${customer.icon} ` : ''}{customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {customers.length === 0 && (
                   <p className="text-xs text-muted-foreground">
                     No customers available. Create one first in the Customers page.
@@ -326,20 +339,28 @@ export default function ProjectsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
+                <Select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as ProjectStatus)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onValueChange={(value) => setStatus(value as ProjectStatus)}
                 >
-                  <option value="confirmed">Confirmed</option>
-                  <option value="tentative">Tentative</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="tentative">Tentative</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">
-                {editingProject ? 'Update' : 'Create'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? (editingProject ? 'Saving...' : 'Creating...')
+                  : (editingProject ? 'Update' : 'Create')}
               </Button>
             </DialogFooter>
           </form>

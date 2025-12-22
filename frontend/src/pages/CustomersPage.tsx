@@ -118,6 +118,11 @@ export default function CustomersPage() {
         cascadeInfo: response.data,
       })
     } catch (error) {
+      toast({
+        title: 'Failed to load customer info',
+        description: 'Proceeding without cascade information',
+        variant: 'destructive',
+      })
       setDeleteDialog({
         customerId: customer.id,
         customerName: customer.name,
@@ -284,8 +289,13 @@ export default function CustomersPage() {
               <Button type="button" variant="outline" onClick={handleDialogClose}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingCustomer ? 'Update' : 'Create'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? (editingCustomer ? 'Saving...' : 'Creating...')
+                  : (editingCustomer ? 'Update' : 'Create')}
               </Button>
             </DialogFooter>
           </form>

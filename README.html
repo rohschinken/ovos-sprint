@@ -532,7 +532,7 @@ SMTP_HOST=mailpit
 SMTP_PORT=1025
 SMTP_SECURE=false
 SMTP_FROM_EMAIL=noreply@ovos-sprint.local
-SMTP_FROM_NAME=OVOS Sprint</code></div>
+SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️</code></div>
 
             <p><strong>Note</strong>: When using Docker Compose, these environment variables are already configured in <code>docker-compose.yml</code>.</p>
 
@@ -591,10 +591,11 @@ curl -X POST http://localhost:3001/api/test/email \
 
             <h4>Inviting Users</h4>
             <ol>
-                <li>Navigate to the admin dashboard</li>
-                <li>Use the invite function to send invitation links</li>
-                <li>Invitation links are displayed in the console (email integration pending)</li>
-                <li>Share the link with the user</li>
+                <li>Navigate to the Users page from the admin dashboard</li>
+                <li>Click "Invite User" to create an invitation</li>
+                <li>Enter the user's email and select their role</li>
+                <li>The invitation email is sent automatically via SMTP</li>
+                <li>Users can register using the link in their email</li>
             </ol>
 
             <h4>Creating Teams</h4>
@@ -659,27 +660,6 @@ curl -X POST http://localhost:3001/api/test/email \
             <ul>
                 <li><strong>Weekend Assignment Warning</strong>: Enable/disable warnings when assigning work on weekends or holidays</li>
                 <li><strong>Overlap Visualization</strong>: Enable/disable highlighting when team members have multiple assignments on the same day</li>
-            </ul>
-
-            <h2>Austrian Holidays</h2>
-            <p>The following Austrian federal holidays are automatically detected and highlighted:</p>
-            <ul>
-                <li><strong>January 1</strong>: New Year</li>
-                <li><strong>January 6</strong>: Epiphany</li>
-                <li><strong>May 1</strong>: Labour Day</li>
-                <li><strong>August 15</strong>: Assumption</li>
-                <li><strong>October 26</strong>: National Day</li>
-                <li><strong>November 1</strong>: All Saints</li>
-                <li><strong>December 8</strong>: Immaculate Conception</li>
-                <li><strong>December 25</strong>: Christmas</li>
-                <li><strong>December 26</strong>: St. Stephen</li>
-            </ul>
-            <p>Plus Easter-dependent holidays:</p>
-            <ul>
-                <li><strong>Easter Monday</strong></li>
-                <li><strong>Ascension</strong></li>
-                <li><strong>Whit Monday</strong></li>
-                <li><strong>Corpus Christi</strong></li>
             </ul>
 
             <h2>Security Features</h2>
@@ -829,44 +809,117 @@ docker-compose -f docker-compose.prod.yml up</code></div>
                 <li>Open a Pull Request</li>
             </ol>
 
+            <h2>Production Deployment</h2>
+
+            <h3>Environment Variables</h3>
+            <p>For production deployment, configure the following environment variables in <code>backend/.env</code>:</p>
+            <div class="code-block"><code># Required for production
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=./data/ovos-sprint.db
+JWT_SECRET=your-secure-random-string-here
+FRONTEND_URL=https://yourdomain.com
+BACKEND_URL=https://api.yourdomain.com
+
+# Email (SparkPost SMTP Relay)
+SMTP_HOST=smtp.sparkpostmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=SMTP_Injection
+SMTP_PASSWORD=your-sparkpost-api-key
+SMTP_FROM_EMAIL=noreply@yourdomain.com
+SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️</code></div>
+
+            <div class="warning-box">
+                <strong>Important:</strong> The backend will fail to start in production if <code>JWT_SECRET</code>, <code>FRONTEND_URL</code>, or <code>BACKEND_URL</code> are missing or using default values.
+            </div>
+
+            <h3>Non-Interactive Database Seeding</h3>
+            <p>For automated deployments, set these environment variables before running the seed script:</p>
+            <div class="code-block"><code>ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-secure-password npm run db:seed</code></div>
+            <p>If <code>ADMIN_PASSWORD</code> is not provided, a secure password will be auto-generated.</p>
+
+            <h3>Process Management</h3>
+            <p>Use PM2 or systemd to manage the Node.js process:</p>
+            <div class="code-block"><code># Install PM2
+npm install -g pm2
+
+# Start the application
+cd backend
+pm2 start dist/index.js --name ovos-sprint
+
+# Save the process list
+pm2 save
+
+# Set up startup script
+pm2 startup</code></div>
+
+            <h3>Reverse Proxy (nginx)</h3>
+            <p>Example nginx configuration:</p>
+            <div class="code-block"><code>server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    # Frontend (static files)
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket
+    location /socket.io {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+    }
+
+    # Avatars
+    location /avatars {
+        proxy_pass http://localhost:3001;
+    }
+}</code></div>
+
+            <h3>Production Checklist</h3>
+            <ul>
+                <li>Set <code>NODE_ENV=production</code></li>
+                <li>Change <code>JWT_SECRET</code> to a secure random string (32+ characters)</li>
+                <li>Set <code>FRONTEND_URL</code> and <code>BACKEND_URL</code> to your actual domains</li>
+                <li>Configure SMTP for email delivery (SparkPost recommended)</li>
+                <li>Set up reverse proxy (nginx/Caddy) for HTTPS</li>
+                <li>Use PM2 or systemd for process management</li>
+                <li>Configure SQLite backup strategy</li>
+                <li>Build frontend: <code>cd frontend && npm run build</code></li>
+                <li>Build backend: <code>cd backend && npm run build</code></li>
+            </ul>
+
             <h2>License</h2>
             <p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
-
-            <h2>Known Issues & Roadmap</h2>
-
-            <h3>Recently Completed</h3>
-            <ul>
-                <li>Dark mode - Full dark mode support with system preference detection</li>
-                <li>Zoom controls - Four zoom levels (Compact, Narrow, Normal, Wide)</li>
-                <li>User preferences - Persistent settings per user (zoom, collapsed state, filters)</li>
-                <li>English localization - Full UI translation from German to English</li>
-                <li>Quick deletion - CTRL+click and right-click deletion without confirmation</li>
-                <li>Smart filtering - Hide tentative projects, auto-hide empty members/projects</li>
-                <li>Milestone markers - Add flag icons to mark important project dates</li>
-                <li>Avatar upload - Custom avatar support with 5MB upload limit</li>
-                <li>Email infrastructure - Mailpit integration with React Email templates for development testing</li>
-                <li>Docker Compose setup - Fully containerized development environment with database initialization</li>
-            </ul>
-
-            <h3>Roadmap</h3>
-            <ul>
-                <li>Production email integration (SMTP configuration for real email sending)</li>
-                <li>Integrate email sending into invitation workflows</li>
-                <li>Export functionality (PDF, Excel)</li>
-                <li>Advanced filtering and search</li>
-                <li>Capacity planning features</li>
-                <li>Custom working hours per team member</li>
-                <li>Multi-language support</li>
-                <li>Mobile app</li>
-                <li>Bulk assignment operations</li>
-                <li>Assignment templates</li>
-                <li>Resource utilization reports</li>
-            </ul>
 
             <h2>Support</h2>
             <p>For issues, questions, or suggestions:</p>
             <ul>
-                <li><strong>Email</strong>: support@ovos.at</li>
+                <li><strong>Email</strong>: rohschinken@gmail.com</li>
                 <li><strong>GitHub Issues</strong>: <a href="https://github.com/rohschinken/ovos-sprint/issues">https://github.com/rohschinken/ovos-sprint/issues</a></li>
             </ul>
 

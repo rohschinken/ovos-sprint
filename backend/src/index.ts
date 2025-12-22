@@ -24,6 +24,53 @@ import { emailService } from './services/email/emailService.js'
 // Load environment variables
 dotenv.config()
 
+// Environment validation for production
+function validateEnvironment() {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  // Critical in production
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key-change-in-production') {
+    if (isProduction) {
+      errors.push('JWT_SECRET must be set to a secure value in production')
+    } else {
+      warnings.push('JWT_SECRET is using default value - change this for production')
+    }
+  }
+
+  if (!process.env.FRONTEND_URL) {
+    if (isProduction) {
+      errors.push('FRONTEND_URL must be set in production')
+    } else {
+      warnings.push('FRONTEND_URL not set - using default http://localhost:5173')
+    }
+  }
+
+  if (!process.env.BACKEND_URL) {
+    if (isProduction) {
+      errors.push('BACKEND_URL must be set in production (used for avatar URLs)')
+    } else {
+      warnings.push('BACKEND_URL not set - using default http://localhost:3001')
+    }
+  }
+
+  // Print warnings
+  if (warnings.length > 0) {
+    console.log('⚠️  Environment warnings:')
+    warnings.forEach(w => console.log(`   - ${w}`))
+  }
+
+  // Fail fast on errors
+  if (errors.length > 0) {
+    console.error('❌ Environment validation failed:')
+    errors.forEach(e => console.error(`   - ${e}`))
+    process.exit(1)
+  }
+}
+
+validateEnvironment()
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 

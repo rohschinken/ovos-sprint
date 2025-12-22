@@ -262,6 +262,11 @@ export default function TeamsPage() {
                             cascadeInfo: response.data,
                           })
                         } catch (error) {
+                          toast({
+                            title: 'Failed to load team info',
+                            description: 'Proceeding without cascade information',
+                            variant: 'destructive',
+                          })
                           setDeleteDialog({
                             teamId: team.id,
                             teamName: team.name,
@@ -329,8 +334,13 @@ export default function TeamsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">
-                {editingTeam ? 'Update' : 'Create'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? (editingTeam ? 'Saving...' : 'Creating...')
+                  : (editingTeam ? 'Update' : 'Create')}
               </Button>
             </DialogFooter>
           </form>

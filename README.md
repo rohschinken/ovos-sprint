@@ -236,7 +236,7 @@ SMTP_HOST=mailpit
 SMTP_PORT=1025
 SMTP_SECURE=false
 SMTP_FROM_EMAIL=noreply@ovos-sprint.local
-SMTP_FROM_NAME=OVOS Sprint
+SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️
 ```
 
 **Note**: When using Docker Compose, these environment variables are already configured in `docker-compose.yml`.
@@ -301,10 +301,11 @@ During the database seeding process (`npm run db:setup` or Docker setup), you wi
 
 #### Inviting Users
 
-1. Navigate to the admin dashboard
-2. Use the invite function to send invitation links
-3. Invitation links are displayed in the console (email integration pending)
-4. Share the link with the user
+1. Navigate to the Users page from the admin dashboard
+2. Click "Invite User" to create an invitation
+3. Enter the user's email and select their role
+4. The invitation email is sent automatically via SMTP
+5. Users can register using the link in their email
 
 #### Creating Teams
 
@@ -362,27 +363,6 @@ Configure in Settings page:
 
 - **Weekend Assignment Warning**: Enable/disable warnings when assigning work on weekends or holidays
 - **Overlap Visualization**: Enable/disable highlighting when team members have multiple assignments on the same day
-
-## Austrian Holidays
-
-The following Austrian federal holidays are automatically detected and highlighted:
-
-- **January 1**: New Year
-- **January 6**: Epiphany
-- **May 1**: Labour Day
-- **August 15**: Assumption
-- **October 26**: National Day
-- **November 1**: All Saints
-- **December 8**: Immaculate Conception
-- **December 25**: Christmas
-- **December 26**: St. Stephen
-
-Plus Easter-dependent holidays:
-
-- **Easter Monday**
-- **Ascension**
-- **Whit Monday**
-- **Corpus Christi**
 
 ## Security Features
 
@@ -529,54 +509,153 @@ npm start
 docker-compose -f docker-compose.prod.yml up
 ```
 
-## Contributing
+## Production Deployment
 
-Contributions are welcome. Please follow these steps:
+### Environment Variables
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+For production deployment, configure the following environment variables in `backend/.env`:
+
+```env
+# Required for production
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=./data/ovos-sprint.db
+JWT_SECRET=your-secure-random-string-here
+FRONTEND_URL=https://yourdomain.com
+BACKEND_URL=https://api.yourdomain.com
+
+# Email (SparkPost SMTP Relay)
+SMTP_HOST=smtp.sparkpostmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=SMTP_Injection
+SMTP_PASSWORD=your-sparkpost-api-key
+SMTP_FROM_EMAIL=noreply@yourdomain.com
+SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️
+```
+
+**Important**: The backend will fail to start in production if `JWT_SECRET`, `FRONTEND_URL`, or `BACKEND_URL` are missing or using default values.
+
+### Non-Interactive Database Seeding
+
+For automated deployments, set these environment variables before running the seed script:
+
+```bash
+ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-secure-password npm run db:seed
+```
+
+If `ADMIN_PASSWORD` is not provided, a secure password will be auto-generated.
+
+### Process Management
+
+Use PM2 or systemd to manage the Node.js process:
+
+```bash
+# Install PM2
+npm install -g pm2
+
+# Start the application
+cd backend
+pm2 start dist/index.js --name ovos-sprint
+
+# Save the process list
+pm2 save
+
+# Set up startup script
+pm2 startup
+```
+
+### Reverse Proxy (nginx)
+
+Example nginx configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    # Frontend (static files)
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket
+    location /socket.io {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+    }
+
+    # Avatars
+    location /avatars {
+        proxy_pass http://localhost:3001;
+    }
+}
+```
+
+### SQLite Backup Strategy
+
+Set up regular backups of the SQLite database:
+
+```bash
+# Create backup script
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+sqlite3 /path/to/data/ovos-sprint.db ".backup '/path/to/backups/ovos-sprint_$DATE.db'"
+
+# Keep only last 7 days of backups
+find /path/to/backups -name "ovos-sprint_*.db" -mtime +7 -delete
+```
+
+Add to crontab for daily backups:
+
+```bash
+0 2 * * * /path/to/backup-script.sh
+```
+
+### Production Checklist
+
+- [ ] Set `NODE_ENV=production`
+- [ ] Change `JWT_SECRET` to a secure random string (32+ characters)
+- [ ] Set `FRONTEND_URL` and `BACKEND_URL` to your actual domains
+- [ ] Configure SMTP for email delivery (SparkPost recommended)
+- [ ] Set up reverse proxy (nginx/Caddy) for HTTPS
+- [ ] Use PM2 or systemd for process management
+- [ ] Configure SQLite backup strategy
+- [ ] Build frontend: `cd frontend && npm run build`
+- [ ] Build backend: `cd backend && npm run build`
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Known Issues & Roadmap
-
-### Recently Completed
-
-- Dark mode - Full dark mode support with system preference detection
-- Zoom controls - Four zoom levels (Compact, Narrow, Normal, Wide)
-- User preferences - Persistent settings per user (zoom, collapsed state, filters)
-- English localization - Full UI translation from German to English
-- Quick deletion - CTRL+click and right-click deletion without confirmation
-- Smart filtering - Hide tentative projects, auto-hide empty members/projects
-- Milestone markers - Add flag icons to mark important project dates
-- Avatar upload - Custom avatar support with 5MB upload limit
-- Email infrastructure - Mailpit integration with React Email templates for development testing
-- Docker Compose setup - Fully containerized development environment with database initialization
-
-### Roadmap
-
-- Production email integration (SMTP configuration for real email sending)
-- Integrate email sending into invitation workflows
-- Export functionality (PDF, Excel)
-- Advanced filtering and search
-- Capacity planning features
-- Custom working hours per team member
-- Multi-language support
-- Mobile app
-- Bulk assignment operations
-- Assignment templates
-- Resource utilization reports
-
 ## Support
 
 For issues, questions, or suggestions:
 
-- **Email**: support@ovos.at
+- **Email**: rohschinken@gmail.com
 - **GitHub Issues**: [https://github.com/rohschinken/ovos-sprint/issues](https://github.com/rohschinken/ovos-sprint/issues)
 
 _Last Updated: December 2025_
