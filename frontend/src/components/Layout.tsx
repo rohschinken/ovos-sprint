@@ -19,7 +19,7 @@ export default function Layout() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -103,7 +103,7 @@ export default function Layout() {
         </div>
       </header>
       <div className="h-0.5 bg-gradient-primary-via" />
-      <main className="p-4">
+      <main className="p-4 flex-1 overflow-hidden flex flex-col">
         <Outlet />
       </main>
     </div>

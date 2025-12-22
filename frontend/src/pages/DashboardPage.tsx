@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn, Settings, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
+import { LayoutGrid, List, Filter, ZoomIn, Eye, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -169,6 +169,10 @@ export default function DashboardPage() {
     setSelectedTeamIds(teams.map((t) => t.id))
   }
 
+  const selectMyTeams = () => {
+    setSelectedTeamIds(user?.teams || [])
+  }
+
   const toggleExpandAll = () => {
     // Get all IDs based on current view mode
     const allIds = viewMode === 'by-project'
@@ -185,7 +189,7 @@ export default function DashboardPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6"
+      className="space-y-6 flex-1 flex flex-col overflow-hidden"
     >
       <div className="container mx-auto">
         <motion.div
@@ -305,6 +309,16 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-sm">Filter by Team</h4>
                   <div className="flex gap-1">
+                    {user?.teams && user.teams.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={selectMyTeams}
+                        className="h-7 text-xs"
+                      >
+                        Mine
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -323,6 +337,31 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </div>
+                {user?.teams && user.teams.length > 0 && (
+                  <>
+                    <div className="text-xs text-muted-foreground font-medium">My Teams</div>
+                    <div className="space-y-2">
+                      {teams.filter(t => user.teams!.includes(t.id)).map((team) => (
+                        <div key={team.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`my-team-${team.id}`}
+                            checked={selectedTeamIds.includes(team.id)}
+                            onCheckedChange={() => toggleTeam(team.id)}
+                          />
+                          <Label
+                            htmlFor={`my-team-${team.id}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {team.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t pt-2">
+                      <div className="text-xs text-muted-foreground font-medium mb-2">All Teams</div>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {teams.map((team) => (
                     <div key={team.id} className="flex items-center space-x-2">
@@ -353,7 +392,7 @@ export default function DashboardPage() {
             <PopoverTrigger asChild>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button variant="outline" className="gap-2 h-12">
-                  <Settings className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                   Display
                 </Button>
               </motion.div>
@@ -472,9 +511,10 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
+        className="min-h-0 flex-1 overflow-hidden flex flex-col"
       >
         <Card className={cn(
-          "p-4 border-2",
+          "p-4 border-2 min-h-0 max-h-full overflow-hidden flex flex-col",
           viewMode === 'by-member' ? 'border-mode-member' : 'border-mode-project'
         )}>
           <Timeline

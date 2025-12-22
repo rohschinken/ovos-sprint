@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Flag, CheckCircle2, Clock } from 'lucide-react'
-import { AlertDialog } from './ui/alert-dialog'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
 
@@ -51,12 +50,6 @@ export default function Timeline({
     message: string
     onConfirm: () => void
   } | null>(null)
-  const [deleteDayOffDialog, setDeleteDayOffDialog] = useState<{
-    dayOffId: number
-    memberName: string
-    date: string
-  } | null>(null)
-
   const [editPopover, setEditPopover] = useState<{
     open: boolean
     position: { x: number; y: number }
@@ -848,17 +841,11 @@ export default function Timeline({
     // Check if there's already a day-off
     const existingDayOff = getDayOff(memberId, date)
     const dateStr = format(date, 'yyyy-MM-dd')
-    const member = members.find((m) => m.id === memberId)
-    const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
 
     if (existingDayOff) {
       // Delete existing day-off if CTRL/CMD+click or right-click
       if (event.ctrlKey || event.metaKey || event.button === 2) {
-        setDeleteDayOffDialog({
-          dayOffId: existingDayOff.id,
-          memberName,
-          date: dateStr,
-        })
+        deleteDayOffMutation.mutate(existingDayOff.id)
       }
     } else {
       // Create new day-off on normal click
@@ -1006,10 +993,10 @@ export default function Timeline({
   }
 
   const content = viewMode === 'by-project' ? (
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-full">
       <div className="min-w-max">
         {/* Header */}
-        <div className="sticky top-0 bg-background z-10 shadow-sm">
+        <div className="sticky top-0 bg-background z-30 shadow-sm">
           {/* Month labels row */}
           <div className="flex border-b">
               <div className="w-64 border-r bg-muted/30"></div>
@@ -1035,7 +1022,7 @@ export default function Timeline({
             </div>
             {/* Date row */}
             <div className="flex border-b-2">
-            <div className="w-64 p-3 font-semibold border-r bg-muted/30">Project</div>
+            <div className="w-64 p-3 font-semibold border-r bg-muted/30">Projects</div>
             {dates.map((date, dateIndex) => (
               <div
                 key={date.toISOString()}
@@ -1155,7 +1142,7 @@ export default function Timeline({
                       </TooltipTrigger>
                       {isAdmin && (
                         <TooltipContent side="top" className="text-xs">
-                          Add/remove milestone
+                          Add/remove milestone 🚩
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -1282,20 +1269,26 @@ export default function Timeline({
                             }
                           })
                           return commentRanges.map(({ date, comment }) => (
-                            <div
-                              key={`comment-${date.toISOString()}`}
-                              className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-none overflow-hidden"
-                              style={{
-                                left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
-                                width: getCommentOverlayWidth(assignment.id, date),
-                                zIndex: 50
-                              }}
-                            >
-                              <span className="flex-shrink-0">💬</span>
-                              <span className="truncate text-foreground/70 font-medium">
-                                {comment}
-                              </span>
-                            </div>
+                            <Tooltip key={`comment-${date.toISOString()}`}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
+                                  style={{
+                                    left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
+                                    width: getCommentOverlayWidth(assignment.id, date),
+                                  }}
+                                  onClick={(e) => handleAssignmentClick(assignment.id, date, e)}
+                                >
+                                  <span className="flex-shrink-0">💬</span>
+                                  <span className="truncate text-foreground/70 font-medium">
+                                    {comment}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">💬 {comment}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           ))
                         })()}
                       </div>
@@ -1308,10 +1301,10 @@ export default function Timeline({
     </div>
   ) : (
     // By Member view
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-full">
       <div className="min-w-max">
         {/* Header */}
-        <div className="sticky top-0 bg-background z-10 shadow-sm">
+        <div className="sticky top-0 bg-background z-30 shadow-sm">
           {/* Month labels row */}
           <div className="flex border-b">
             <div className="w-64 border-r bg-muted/30"></div>
@@ -1337,7 +1330,7 @@ export default function Timeline({
           </div>
           {/* Date row */}
           <div className="flex border-b-2">
-          <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Member</div>
+          <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Members</div>
           {dates.map((date, dateIndex) => (
             <div
               key={date.toISOString()}
@@ -1452,7 +1445,7 @@ export default function Timeline({
                     </TooltipTrigger>
                     {isAdmin && (
                       <TooltipContent side="top" className="text-xs">
-                        Add/remove day off
+                        Add/remove day off 🏝️
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -1590,20 +1583,26 @@ export default function Timeline({
                           }
                         })
                         return commentRanges.map(({ date, comment }) => (
-                          <div
-                            key={`comment-${date.toISOString()}`}
-                            className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-none overflow-hidden"
-                            style={{
-                              left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
-                              width: getCommentOverlayWidth(assignment.id, date),
-                              zIndex: 50
-                            }}
-                          >
-                            <span className="flex-shrink-0">💬</span>
-                            <span className="truncate text-foreground/70 font-medium">
-                              {comment}
-                            </span>
-                          </div>
+                          <Tooltip key={`comment-${date.toISOString()}`}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
+                                style={{
+                                  left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
+                                  width: getCommentOverlayWidth(assignment.id, date),
+                                }}
+                                onClick={(e) => handleAssignmentClick(assignment.id, date, e)}
+                              >
+                                <span className="flex-shrink-0">💬</span>
+                                <span className="truncate text-foreground/70 font-medium">
+                                  {comment}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">💬 {comment}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         ))
                       })()}
                     </div>
@@ -1630,22 +1629,6 @@ export default function Timeline({
         onConfirm={() => {
           timelineWarning?.onConfirm()
         }}
-      />
-
-      {/* Delete Day-Off Confirmation Dialog */}
-      <AlertDialog
-        open={!!deleteDayOffDialog}
-        onOpenChange={() => setDeleteDayOffDialog(null)}
-        title="Remove Day Off"
-        description={`Remove day off for ${deleteDayOffDialog?.memberName} on ${deleteDayOffDialog?.date}?`}
-        confirmLabel="Remove"
-        onConfirm={() => {
-          if (deleteDayOffDialog) {
-            deleteDayOffMutation.mutate(deleteDayOffDialog.dayOffId)
-            setDeleteDayOffDialog(null)
-          }
-        }}
-        isLoading={deleteDayOffMutation.isPending}
       />
 
       {/* Assignment Edit Popover */}
