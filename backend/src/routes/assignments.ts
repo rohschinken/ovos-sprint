@@ -250,12 +250,28 @@ router.post('/days', authenticate, requireAdminOrProjectManager, async (req: Aut
       return res.status(403).json({ error: 'You can only create day assignments for your own projects' })
     }
 
-    const [dayAssignment] = await db.insert(dayAssignments).values(data).returning()
+    // Check if this day assignment already exists (avoid duplicates)
+    const existing = await db.query.dayAssignments.findFirst({
+      where: (da, { and, eq }) => and(
+        eq(da.projectAssignmentId, data.projectAssignmentId),
+        eq(da.date, data.date)
+      )
+    })
+
+    let dayAssignment
+    if (existing) {
+      // Day already exists, just return it (and still run merge logic below)
+      dayAssignment = existing
+    } else {
+      // Create new day assignment
+      const [created] = await db.insert(dayAssignments).values(data).returning()
+      dayAssignment = created
+    }
 
     // Handle potential group merges when adding a day
     const mergeResult = await handleGroupMergeOnDayAdd(data.projectAssignmentId, data.date)
 
-    res.status(201).json({
+    res.status(existing ? 200 : 201).json({
       ...dayAssignment,
       groupMerge: mergeResult.merged ? mergeResult : undefined
     })

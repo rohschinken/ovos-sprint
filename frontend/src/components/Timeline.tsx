@@ -803,6 +803,21 @@ export default function Timeline({
     return dayIndex * cellWidth
   }
 
+  // Get the date from a click's clientX position (relative to the timeline row)
+  const getDateFromClickX = (clientX: number, rowElement: HTMLElement): Date | null => {
+    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
+    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
+    const sidebarWidth = 256 // w-64 = 256px
+    const rowRect = rowElement.getBoundingClientRect()
+    const xInRow = clientX - rowRect.left - sidebarWidth
+    if (xInRow < 0) return null
+    const dayIndex = Math.floor(xInRow / cellWidth)
+    if (dayIndex >= 0 && dayIndex < dates.length) {
+      return dates[dayIndex]
+    }
+    return null
+  }
+
   // Handle click on assignment bar to open edit popover
   const handleAssignmentClick = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
@@ -1268,6 +1283,12 @@ export default function Timeline({
                                     handleAssignmentClick(assignment.id, date, e)
                                   }
                                 }}
+                                onContextMenu={(e) => {
+                                  e.preventDefault()
+                                  if (isDayAssigned(assignment.id, date)) {
+                                    handleDeleteDayAssignment(assignment.id, date, e)
+                                  }
+                                }}
                                 style={{ pointerEvents: 'auto' }}
                               >
                                 {/* Priority indicators - on last day of range */}
@@ -1310,7 +1331,27 @@ export default function Timeline({
                                     left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
                                     width: getCommentOverlayWidth(assignment.id, date),
                                   }}
-                                  onClick={(e) => handleAssignmentClick(assignment.id, date, e)}
+                                  onClick={(e) => {
+                                    // Find the actual date clicked based on X position
+                                    const row = e.currentTarget.closest('.relative') as HTMLElement
+                                    if (row) {
+                                      const clickedDate = getDateFromClickX(e.clientX, row)
+                                      if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                        handleAssignmentClick(assignment.id, clickedDate, e)
+                                      }
+                                    }
+                                  }}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault()
+                                    // Find the actual date clicked based on X position
+                                    const row = e.currentTarget.closest('.relative') as HTMLElement
+                                    if (row) {
+                                      const clickedDate = getDateFromClickX(e.clientX, row)
+                                      if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                        handleDeleteDayAssignment(assignment.id, clickedDate, e)
+                                      }
+                                    }
+                                  }}
                                 >
                                   <span className="flex-shrink-0">💬</span>
                                   <span className="truncate text-foreground/70 font-medium">
@@ -1592,6 +1633,12 @@ export default function Timeline({
                                   handleAssignmentClick(assignment.id, date, e)
                                 }
                               }}
+                              onContextMenu={(e) => {
+                                e.preventDefault()
+                                if (isDayAssigned(assignment.id, date)) {
+                                  handleDeleteDayAssignment(assignment.id, date, e)
+                                }
+                              }}
                               style={{ pointerEvents: 'auto' }}
                             >
                               {/* Priority indicators - on last day of range */}
@@ -1634,7 +1681,27 @@ export default function Timeline({
                                   left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
                                   width: getCommentOverlayWidth(assignment.id, date),
                                 }}
-                                onClick={(e) => handleAssignmentClick(assignment.id, date, e)}
+                                onClick={(e) => {
+                                  // Find the actual date clicked based on X position
+                                  const row = e.currentTarget.closest('.relative') as HTMLElement
+                                  if (row) {
+                                    const clickedDate = getDateFromClickX(e.clientX, row)
+                                    if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                      handleAssignmentClick(assignment.id, clickedDate, e)
+                                    }
+                                  }
+                                }}
+                                onContextMenu={(e) => {
+                                  e.preventDefault()
+                                  // Find the actual date clicked based on X position
+                                  const row = e.currentTarget.closest('.relative') as HTMLElement
+                                  if (row) {
+                                    const clickedDate = getDateFromClickX(e.clientX, row)
+                                    if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                      handleDeleteDayAssignment(assignment.id, clickedDate, e)
+                                    }
+                                  }
+                                }}
                               >
                                 <span className="flex-shrink-0">💬</span>
                                 <span className="truncate text-foreground/70 font-medium">

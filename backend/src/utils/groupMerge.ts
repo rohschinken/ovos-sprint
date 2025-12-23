@@ -47,15 +47,18 @@ interface ExpandResult {
  * Handle potential group expansion or merges when a new day is added.
  * This should be called after creating a day assignment.
  *
- * 1. If new day is adjacent to an existing group, expand that group to include it
- * 2. If new day connects two existing groups, merge them (shorter group's data is overridden)
+ * 1. If new day falls inside an existing group's range, no change needed
+ * 2. If new day is adjacent to an existing group, expand that group to include it
+ * 3. If new day connects two existing groups, merge them (shorter group's data is overridden)
+ * 4. After expansion, check if any groups now overlap or are adjacent and merge them
+ * 5. Expand group to cover all contiguous day assignments
  */
 export async function handleGroupMergeOnDayAdd(
   projectAssignmentId: number,
   newDate: string
 ): Promise<MergeResult> {
   // Find all groups for this projectAssignment
-  const groups = await db
+  let groups = await db
     .select()
     .from(assignmentGroups)
     .where(eq(assignmentGroups.projectAssignmentId, projectAssignmentId))
@@ -67,7 +70,15 @@ export async function handleGroupMergeOnDayAdd(
   // Sort groups by startDate
   groups.sort((a, b) => a.startDate.localeCompare(b.startDate))
 
-  // First, check if the new day is adjacent to any existing group (expand case)
+  // First check if new day is already inside an existing group - no action needed
+  const containingGroup = groups.find(g => g.startDate <= newDate && g.endDate >= newDate)
+  if (containingGroup) {
+    // Even if day is inside group, expand to cover all contiguous days
+    await expandGroupToContiguousDays(containingGroup.id, projectAssignmentId)
+    return { merged: false }
+  }
+
+  // Check if the new day is adjacent to any existing group (expand case)
   const dayBefore = subtractDay(newDate)
   const dayAfter = addDay(newDate)
 
@@ -103,6 +114,9 @@ export async function handleGroupMergeOnDayAdd(
     // Delete the loser
     await db.delete(assignmentGroups).where(eq(assignmentGroups.id, loser.id))
 
+    // Expand to cover all contiguous days
+    await expandGroupToContiguousDays(survivor.id, projectAssignmentId)
+
     return {
       merged: true,
       survivingGroupId: survivor.id,
@@ -120,6 +134,10 @@ export async function handleGroupMergeOnDayAdd(
       .set({ endDate: newEndDate })
       .where(eq(assignmentGroups.id, adjacentBefore.id))
 
+    // Expand to cover all contiguous days and merge any adjacent groups
+    await expandGroupToContiguousDays(adjacentBefore.id, projectAssignmentId)
+    await mergeAdjacentGroups(projectAssignmentId)
+
     return {
       merged: false,
       survivingGroupId: adjacentBefore.id,
@@ -135,6 +153,10 @@ export async function handleGroupMergeOnDayAdd(
       .set({ startDate: newStartDate })
       .where(eq(assignmentGroups.id, adjacentAfter.id))
 
+    // Expand to cover all contiguous days and merge any adjacent groups
+    await expandGroupToContiguousDays(adjacentAfter.id, projectAssignmentId)
+    await mergeAdjacentGroups(projectAssignmentId)
+
     return {
       merged: false,
       survivingGroupId: adjacentAfter.id,
@@ -144,6 +166,138 @@ export async function handleGroupMergeOnDayAdd(
   }
 
   return { merged: false }
+}
+
+/**
+ * Expand a group to cover all contiguous day assignments.
+ * This ensures that if days exist before or after the group's current range,
+ * the group expands to include them.
+ */
+async function expandGroupToContiguousDays(groupId: number, projectAssignmentId: number): Promise<void> {
+  const group = await db.query.assignmentGroups.findFirst({
+    where: (ag, { eq }) => eq(ag.id, groupId)
+  })
+
+  if (!group) return
+
+  // Get all day assignments for this project assignment, sorted by date
+  const days = await db
+    .select()
+    .from(dayAssignments)
+    .where(eq(dayAssignments.projectAssignmentId, projectAssignmentId))
+
+  if (days.length === 0) return
+
+  // Sort days by date
+  days.sort((a, b) => a.date.localeCompare(b.date))
+
+  // Find the contiguous range that includes any day within the current group range
+  let rangeStart: string | null = null
+  let rangeEnd: string | null = null
+  let inRange = false
+  let lastDate: string | null = null
+
+  for (const day of days) {
+    const isContiguous = lastDate === null || day.date === addDay(lastDate)
+    const isInGroupRange = day.date >= group.startDate && day.date <= group.endDate
+
+    if (isInGroupRange) {
+      // This day is in the group's range
+      if (!inRange) {
+        // Start of contiguous range - go back to find the actual start
+        rangeStart = day.date
+        // Walk backwards through days to find contiguous start
+        for (let i = days.indexOf(day) - 1; i >= 0; i--) {
+          if (days[i].date === subtractDay(rangeStart)) {
+            rangeStart = days[i].date
+          } else {
+            break
+          }
+        }
+        inRange = true
+      }
+      rangeEnd = day.date
+      lastDate = day.date
+    } else if (inRange) {
+      // We're tracking a range and this day might extend it
+      if (isContiguous) {
+        rangeEnd = day.date
+        lastDate = day.date
+      } else {
+        // Gap found, stop extending
+        break
+      }
+    } else {
+      lastDate = day.date
+    }
+  }
+
+  // If we found a range that differs from the current group range, update it
+  if (rangeStart && rangeEnd && (rangeStart !== group.startDate || rangeEnd !== group.endDate)) {
+    await db
+      .update(assignmentGroups)
+      .set({ startDate: rangeStart, endDate: rangeEnd })
+      .where(eq(assignmentGroups.id, groupId))
+  }
+}
+
+/**
+ * Merge any adjacent or overlapping groups for a project assignment.
+ * This consolidates groups that have become adjacent due to day additions.
+ */
+async function mergeAdjacentGroups(projectAssignmentId: number): Promise<void> {
+  let groups = await db
+    .select()
+    .from(assignmentGroups)
+    .where(eq(assignmentGroups.projectAssignmentId, projectAssignmentId))
+
+  if (groups.length <= 1) return
+
+  // Sort by startDate
+  groups.sort((a, b) => a.startDate.localeCompare(b.startDate))
+
+  // Keep merging until no more adjacent/overlapping groups
+  let merged = true
+  while (merged) {
+    merged = false
+    groups = await db
+      .select()
+      .from(assignmentGroups)
+      .where(eq(assignmentGroups.projectAssignmentId, projectAssignmentId))
+
+    if (groups.length <= 1) break
+    groups.sort((a, b) => a.startDate.localeCompare(b.startDate))
+
+    for (let i = 0; i < groups.length - 1; i++) {
+      const current = groups[i]
+      const next = groups[i + 1]
+
+      // Check if adjacent (current.endDate + 1 day = next.startDate) or overlapping
+      const dayAfterCurrent = addDay(current.endDate)
+      if (dayAfterCurrent >= next.startDate) {
+        // Groups are adjacent or overlapping - merge them
+        const countCurrent = dayCount(current.startDate, current.endDate)
+        const countNext = dayCount(next.startDate, next.endDate)
+
+        const survivor = countCurrent >= countNext ? current : next
+        const loser = countCurrent >= countNext ? next : current
+
+        // New range spans both
+        const newStartDate = current.startDate < next.startDate ? current.startDate : next.startDate
+        const newEndDate = current.endDate > next.endDate ? current.endDate : next.endDate
+
+        await db
+          .update(assignmentGroups)
+          .set({ startDate: newStartDate, endDate: newEndDate })
+          .where(eq(assignmentGroups.id, survivor.id))
+
+        await db.delete(assignmentGroups).where(eq(assignmentGroups.id, loser.id))
+
+        merged = true
+        break
+      }
+    }
+  }
 }
 
 interface SplitResult {
