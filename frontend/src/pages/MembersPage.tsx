@@ -22,7 +22,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { useViewMode } from '@/hooks/use-view-mode'
+import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2, Upload, Camera, Mail, UserPlus } from 'lucide-react'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -65,6 +75,7 @@ export default function MembersPage() {
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { viewMode, setViewMode } = useViewMode('members')
 
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
@@ -259,13 +270,17 @@ export default function MembersPage() {
         </motion.div>
       </motion.div>
 
-      <Input
-        placeholder="Search members by name..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="max-w-md"
-      />
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search members by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      </div>
 
+      {viewMode === 'cards' ? (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMembers.map((member, index) => (
           <motion.div
@@ -385,6 +400,131 @@ export default function MembersPage() {
           </motion.div>
         ))}
       </div>
+      ) : (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Avatar</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Schedule</TableHead>
+              <TableHead>Added</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredMembers.map((member) => {
+              const schedule = JSON.parse(member.workSchedule) as WorkSchedule
+              const workDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+                .filter((day) => schedule[day as keyof WorkSchedule])
+                .map((day) => day.charAt(0).toUpperCase() + day.slice(1, 3))
+                .join(', ')
+              return (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={member.avatarUrl || undefined} />
+                      <AvatarFallback
+                        style={{
+                          backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                          color: getAvatarColor(member.firstName, member.lastName).text,
+                        }}
+                      >
+                        {getInitials(member.firstName, member.lastName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {member.firstName} {member.lastName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {member.email || '-'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {workDays || 'No schedule'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(member.createdAt).toLocaleDateString('de-AT')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {member.email && !member.userId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setInviteDialog({
+                              memberId: member.id,
+                              email: member.email || '',
+                            })
+                          }}
+                          disabled={inviteMutation.isPending}
+                          title="Invite User"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUploadingAvatarFor(member)}
+                        title="Upload Avatar"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingMember(member)
+                          setFirstName(member.firstName)
+                          setLastName(member.lastName)
+                          setEmail(member.email || '')
+                          setWorkSchedule(JSON.parse(member.workSchedule))
+                        }}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const response = await api.get(`/members/${member.id}/cascade-info`)
+                            setDeleteDialog({
+                              memberId: member.id,
+                              memberName: `${member.firstName} ${member.lastName}`,
+                              cascadeInfo: response.data,
+                            })
+                          } catch (error) {
+                            toast({
+                              title: 'Failed to load member info',
+                              description: 'Proceeding without cascade information',
+                              variant: 'destructive',
+                            })
+                            setDeleteDialog({
+                              memberId: member.id,
+                              memberName: `${member.firstName} ${member.lastName}`,
+                              cascadeInfo: null,
+                            })
+                          }
+                        }}
+                        className="text-destructive hover:text-destructive"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+      )}
 
       <Dialog
         open={isCreateOpen || !!editingMember}

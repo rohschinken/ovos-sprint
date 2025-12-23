@@ -29,7 +29,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { useViewMode } from '@/hooks/use-view-mode'
+import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2, Users, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getInitials, getAvatarColor } from '@/lib/utils'
@@ -57,6 +67,7 @@ export default function TeamsPage() {
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { viewMode, setViewMode } = useViewMode('teams')
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
@@ -178,6 +189,28 @@ export default function TeamsPage() {
     return team.name.toLowerCase().includes(query)
   })
 
+  const handleDeleteClick = async (team: Team) => {
+    try {
+      const response = await api.get(`/teams/${team.id}/cascade-info`)
+      setDeleteDialog({
+        teamId: team.id,
+        teamName: team.name,
+        cascadeInfo: response.data,
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to load team info',
+        description: 'Proceeding without cascade information',
+        variant: 'destructive',
+      })
+      setDeleteDialog({
+        teamId: team.id,
+        teamName: team.name,
+        cascadeInfo: null,
+      })
+    }
+  }
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -204,100 +237,125 @@ export default function TeamsPage() {
         </motion.div>
       </motion.div>
 
-      <Input
-        placeholder="Search teams by name..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="max-w-md"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTeams.map((team, index) => (
-          <motion.div
-            key={team.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card>
-            <CardHeader>
-              <CardTitle>{team.name}</CardTitle>
-              <CardDescription>
-                Created {new Date(team.createdAt).toLocaleDateString('de-AT')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
-                <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setManagingTeam(team)}
-                    className="gap-2 w-full"
-                  >
-                    <Users className="h-3 w-3" />
-                    Manage Members
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingTeam(team)
-                        setTeamName(team.name)
-                      }}
-                      className="gap-2"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                  </Button>
-                  <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const response = await api.get(`/teams/${team.id}/cascade-info`)
-                          setDeleteDialog({
-                            teamId: team.id,
-                            teamName: team.name,
-                            cascadeInfo: response.data,
-                          })
-                        } catch (error) {
-                          toast({
-                            title: 'Failed to load team info',
-                            description: 'Proceeding without cascade information',
-                            variant: 'destructive',
-                          })
-                          setDeleteDialog({
-                            teamId: team.id,
-                            teamName: team.name,
-                            cascadeInfo: null,
-                          })
-                        }
-                      }}
-                      className="gap-2"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search teams by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
-      {filteredTeams.length === 0 && teams.length > 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>No teams found matching "{searchQuery}".</p>
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTeams.map((team, index) => (
+            <motion.div
+              key={team.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>{team.name}</CardTitle>
+                  <CardDescription>
+                    Created {new Date(team.createdAt).toLocaleDateString('de-AT')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setManagingTeam(team)}
+                      className="gap-2 w-full"
+                    >
+                      <Users className="h-3 w-3" />
+                      Manage Members
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingTeam(team)
+                          setTeamName(team.name)
+                        }}
+                        className="gap-2"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(team)}
+                        className="gap-2"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTeams.map((team) => (
+                <TableRow key={team.id}>
+                  <TableCell className="font-medium">{team.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(team.createdAt).toLocaleDateString('de-AT')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setManagingTeam(team)}>
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingTeam(team)
+                          setTeamName(team.name)
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteClick(team)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
-      {teams.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>No teams yet.</p>
-          <p className="text-sm mt-2">Click "Create Team" to get started.</p>
-        </div>
+      {filteredTeams.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">
+          {teams.length > 0 ? `No teams found matching "${searchQuery}".` : 'No teams yet. Click "Create Team" to get started.'}
+        </p>
       )}
 
       <Dialog

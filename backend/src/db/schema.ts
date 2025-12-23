@@ -5,7 +5,7 @@ export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  role: text('role', { enum: ['admin', 'project_manager', 'user'] }).notNull().default('user'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -23,6 +23,7 @@ export const customers = sqliteTable('customers', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   icon: text('icon'),
+  managerId: integer('manager_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -50,6 +51,7 @@ export const projects = sqliteTable('projects', {
     .references(() => customers.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   status: text('status', { enum: ['confirmed', 'tentative'] }).notNull().default('tentative'),
+  managerId: integer('manager_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -186,10 +188,18 @@ export const projectsRelations = relations(projects, ({ one }) => ({
     fields: [projects.customerId],
     references: [customers.id],
   }),
+  manager: one(users, {
+    fields: [projects.managerId],
+    references: [users.id],
+  }),
 }))
 
-export const customersRelations = relations(customers, ({ many }) => ({
+export const customersRelations = relations(customers, ({ many, one }) => ({
   projects: many(projects),
+  manager: one(users, {
+    fields: [customers.managerId],
+    references: [users.id],
+  }),
 }))
 
 export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
@@ -205,4 +215,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [teamMembers.userId],
   }),
   settings: many(settings),
+  managedProjects: many(projects),
+  managedCustomers: many(customers),
 }))

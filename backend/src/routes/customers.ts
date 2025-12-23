@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { db, customers, projects, projectAssignments, dayAssignments, milestones } from '../db/index.js'
 import { customerSchema } from '../utils/validation.js'
-import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
+import { authenticate, requireAdmin, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
 
 const router = Router()
@@ -11,6 +11,14 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const allCustomers = await db.query.customers.findMany({
       orderBy: (customers, { asc }) => [asc(customers.name)],
+      with: {
+        manager: {
+          columns: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     })
     res.json(allCustomers)
   } catch (error) {
@@ -19,9 +27,9 @@ router.get('/', authenticate, async (req, res) => {
   }
 })
 
-// Get cascade info for customer deletion (admin only)
+// Get cascade info for customer deletion (admin or project manager)
 // MUST be before /:id route to avoid matching "cascade-info" as an ID
-router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+router.get('/:id/cascade-info', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const customerId = parseInt(req.params.id)
 
@@ -70,6 +78,14 @@ router.get('/:id', authenticate, async (req, res) => {
     const customerId = parseInt(req.params.id)
     const customer = await db.query.customers.findFirst({
       where: (customers, { eq }) => eq(customers.id, customerId),
+      with: {
+        manager: {
+          columns: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     })
 
     if (!customer) {
@@ -83,11 +99,21 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 })
 
-// Create customer (admin only)
-router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create customer (admin or project manager)
+router.post('/', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const data = customerSchema.parse(req.body)
-    const [customer] = await db.insert(customers).values(data).returning()
+
+    // If project manager, automatically set self as manager
+    let managerId = data.managerId
+    if (req.user?.role === 'project_manager') {
+      managerId = req.user.userId
+    }
+
+    const [customer] = await db.insert(customers).values({
+      ...data,
+      managerId,
+    }).returning()
     res.status(201).json(customer)
   } catch (error) {
     console.error('Create customer error:', error)
@@ -95,11 +121,21 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   }
 })
 
-// Update customer (admin only)
-router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Update customer (admin or project manager for own customers)
+router.put('/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const customerId = parseInt(req.params.id)
     const data = customerSchema.parse(req.body)
+
+    // Check ownership for project managers
+    if (req.user?.role === 'project_manager') {
+      const existing = await db.query.customers.findFirst({
+        where: eq(customers.id, customerId),
+      })
+      if (!existing || existing.managerId !== req.user.userId) {
+        return res.status(403).json({ error: 'You can only edit your own customers' })
+      }
+    }
 
     const [updated] = await db
       .update(customers)
@@ -118,10 +154,21 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
   }
 })
 
-// Delete customer (admin only)
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete customer (admin or project manager for own customers)
+router.delete('/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const customerId = parseInt(req.params.id)
+
+    // Check ownership for project managers
+    if (req.user?.role === 'project_manager') {
+      const existing = await db.query.customers.findFirst({
+        where: eq(customers.id, customerId),
+      })
+      if (!existing || existing.managerId !== req.user.userId) {
+        return res.status(403).json({ error: 'You can only delete your own customers' })
+      }
+    }
+
     await db.delete(customers).where(eq(customers.id, customerId))
     res.status(204).send()
   } catch (error) {

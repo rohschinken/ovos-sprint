@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'user'
+export type UserRole = 'admin' | 'project_manager' | 'user'
 
 export interface User {
   id: number
@@ -25,6 +25,8 @@ export interface Customer {
   id: number
   name: string
   icon: string | null
+  managerId: number | null
+  manager?: { id: number; email: string }
   createdAt: string
 }
 
@@ -57,6 +59,8 @@ export interface Project {
   customer?: Customer
   name: string
   status: ProjectStatus
+  managerId: number | null
+  manager?: { id: number; email: string }
   createdAt: string
 }
 
@@ -144,6 +148,9 @@ export interface TeamMemberWithProjects extends TeamMember {
 
 // View modes for timeline
 export type TimelineViewMode = 'by-project' | 'by-member'
+
+// View modes for pages (card/list)
+export type PageViewMode = 'cards' | 'list'
 
 // Settings keys
 export type SettingKey =

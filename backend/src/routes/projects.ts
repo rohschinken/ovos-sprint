@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { db, projects, projectAssignments, dayAssignments, milestones } from '../db/index.js'
 import { projectSchema } from '../utils/validation.js'
-import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
+import { authenticate, requireAdmin, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
 
 const router = Router()
@@ -13,6 +13,12 @@ router.get('/', authenticate, async (req, res) => {
       orderBy: (projects, { desc }) => [desc(projects.createdAt)],
       with: {
         customer: true,
+        manager: {
+          columns: {
+            id: true,
+            email: true,
+          },
+        },
       },
     })
     res.json(allProjects)
@@ -22,9 +28,9 @@ router.get('/', authenticate, async (req, res) => {
   }
 })
 
-// Get cascade info for project deletion (admin only)
+// Get cascade info for project deletion (admin or project manager)
 // MUST be before /:id route to avoid matching "cascade-info" as an ID
-router.get('/:id/cascade-info', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+router.get('/:id/cascade-info', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const projectId = parseInt(req.params.id)
 
@@ -70,6 +76,12 @@ router.get('/:id', authenticate, async (req, res) => {
       where: (projects, { eq }) => eq(projects.id, projectId),
       with: {
         customer: true,
+        manager: {
+          columns: {
+            id: true,
+            email: true,
+          },
+        },
       },
     })
 
@@ -84,11 +96,21 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 })
 
-// Create project (admin only)
-router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create project (admin or project manager)
+router.post('/', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const data = projectSchema.parse(req.body)
-    const [project] = await db.insert(projects).values(data).returning()
+
+    // If project manager, automatically set self as manager
+    let managerId = data.managerId
+    if (req.user?.role === 'project_manager') {
+      managerId = req.user.userId
+    }
+
+    const [project] = await db.insert(projects).values({
+      ...data,
+      managerId,
+    }).returning()
     res.status(201).json(project)
   } catch (error) {
     console.error('Create project error:', error)
@@ -96,11 +118,21 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   }
 })
 
-// Update project (admin only)
-router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Update project (admin or project manager for own projects)
+router.put('/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const projectId = parseInt(req.params.id)
     const data = projectSchema.parse(req.body)
+
+    // Check ownership for project managers
+    if (req.user?.role === 'project_manager') {
+      const existing = await db.query.projects.findFirst({
+        where: eq(projects.id, projectId),
+      })
+      if (!existing || existing.managerId !== req.user.userId) {
+        return res.status(403).json({ error: 'You can only edit your own projects' })
+      }
+    }
 
     const [updated] = await db
       .update(projects)
@@ -119,10 +151,21 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
   }
 })
 
-// Delete project (admin only)
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete project (admin or project manager for own projects)
+router.delete('/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const projectId = parseInt(req.params.id)
+
+    // Check ownership for project managers
+    if (req.user?.role === 'project_manager') {
+      const existing = await db.query.projects.findFirst({
+        where: eq(projects.id, projectId),
+      })
+      if (!existing || existing.managerId !== req.user.userId) {
+        return res.status(403).json({ error: 'You can only delete your own projects' })
+      }
+    }
+
     await db.delete(projects).where(eq(projects.id, projectId))
     res.status(204).send()
   } catch (error) {

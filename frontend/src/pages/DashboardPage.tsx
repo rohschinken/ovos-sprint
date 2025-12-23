@@ -443,7 +443,7 @@ export default function DashboardPage() {
                       Show Overlap Indicators
                     </Label>
                   </div>
-                  {user?.role === 'admin' && (
+                  {(user?.role === 'admin' || user?.role === 'project_manager') && (
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="warn-weekends"
@@ -521,7 +521,9 @@ export default function DashboardPage() {
             viewMode={viewMode}
             prevDays={prevDays}
             nextDays={nextDays}
-            isAdmin={user?.role === 'admin'}
+            isAdmin={user?.role === 'admin' || user?.role === 'project_manager'}
+            currentUserId={user?.id}
+            currentUserRole={user?.role}
             selectedTeamIds={selectedTeamIds}
             zoomLevel={zoomLevel}
             expandedItems={expandedItems}

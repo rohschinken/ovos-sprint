@@ -36,6 +36,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function ProjectManagerRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((state) => state.user)
+
+  // Allow admin and project_manager roles
+  if (user?.role !== 'admin' && user?.role !== 'project_manager') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   const { token, fetchUser } = useAuthStore()
   useInitializeTheme()
@@ -81,9 +92,9 @@ function App() {
           <Route
             path="customers"
             element={
-              <AdminRoute>
+              <ProjectManagerRoute>
                 <CustomersPage />
-              </AdminRoute>
+              </ProjectManagerRoute>
             }
           />
           <Route
@@ -97,9 +108,9 @@ function App() {
           <Route
             path="projects"
             element={
-              <AdminRoute>
+              <ProjectManagerRoute>
                 <ProjectsPage />
-              </AdminRoute>
+              </ProjectManagerRoute>
             }
           />
           <Route path="settings" element={<SettingsPage />} />

@@ -5,7 +5,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-change-in-produ
 export interface JWTPayload {
   userId: number
   email: string
-  role: 'admin' | 'user'
+  role: 'admin' | 'project_manager' | 'user'
 }
 
 export function generateToken(payload: JWTPayload): string {

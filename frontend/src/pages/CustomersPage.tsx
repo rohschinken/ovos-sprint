@@ -20,8 +20,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { useViewMode } from '@/hooks/use-view-mode'
+import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/auth'
 import { AlertDialog } from '@/components/ui/alert-dialog'
@@ -48,7 +59,10 @@ export default function CustomersPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const { viewMode, setViewMode } = useViewMode('customers')
+
   const isAdmin = user?.role === 'admin'
+  const isProjectManager = user?.role === 'project_manager'
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -148,6 +162,128 @@ export default function CustomersPage() {
     return customer.name.toLowerCase().includes(query)
   })
 
+  // Split customers for project managers
+  const myCustomers = filteredCustomers.filter((c) => c.managerId === user?.id)
+  const otherCustomers = filteredCustomers.filter((c) => c.managerId !== user?.id)
+
+  const CustomerCard = ({
+    customer,
+    index,
+    canEdit,
+    onEdit,
+    onDelete,
+  }: {
+    customer: Customer
+    index: number
+    canEdit: boolean
+    onEdit: () => void
+    onDelete: () => void
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <Card className={cn('hover:shadow-md transition-shadow', !canEdit && 'opacity-75')}>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              {customer.icon && <div className="text-4xl">{customer.icon}</div>}
+              <div>
+                <CardTitle>{customer.name}</CardTitle>
+                <CardDescription>
+                  Created {new Date(customer.createdAt).toLocaleDateString()}
+                </CardDescription>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        {canEdit ? (
+          <CardContent>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={onEdit} className="flex-1">
+                <Pencil className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDelete}
+                className="flex-1 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </CardContent>
+        ) : (
+          <CardContent>
+            <p className="text-xs text-muted-foreground">View only</p>
+          </CardContent>
+        )}
+      </Card>
+    </motion.div>
+  )
+
+  const CustomerTable = ({
+    customers,
+    canEdit,
+    onEdit,
+    onDelete,
+  }: {
+    customers: Customer[]
+    canEdit: (customer: Customer) => boolean
+    onEdit: (customer: Customer) => void
+    onDelete: (customer: Customer) => void
+  }) => (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Icon</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Manager</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {customers.map((customer) => (
+            <TableRow key={customer.id} className={cn(!canEdit(customer) && 'opacity-75')}>
+              <TableCell className="text-2xl">{customer.icon || '-'}</TableCell>
+              <TableCell className="font-medium">{customer.name}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {customer.manager?.email || '-'}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {new Date(customer.createdAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell className="text-right">
+                {canEdit(customer) ? (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => onEdit(customer)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(customer)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">View only</span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -166,7 +302,7 @@ export default function CustomersPage() {
           <h1 className="text-3xl font-bold">Customers</h1>
           <p className="text-muted-foreground">Manage your customers and clients</p>
         </div>
-        {isAdmin && (
+        {(isAdmin || isProjectManager) && (
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -176,77 +312,112 @@ export default function CustomersPage() {
         )}
       </motion.div>
 
-      <Input
-        placeholder="Search customers by name..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="max-w-md"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCustomers.map((customer, index) => (
-          <motion.div
-            key={customer.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    {customer.icon && (
-                      <div className="text-4xl">{customer.icon}</div>
-                    )}
-                    <div>
-                      <CardTitle>{customer.name}</CardTitle>
-                      <CardDescription>
-                        Created {new Date(customer.createdAt).toLocaleDateString()}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              {isAdmin && (
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(customer)}
-                      className="flex-1"
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(customer)}
-                      className="flex-1 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          </motion.div>
-        ))}
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search customers by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
-      {filteredCustomers.length === 0 && customers.length > 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>No customers found matching "{searchQuery}".</p>
-        </div>
-      )}
+      {/* Project Manager: Show "My Customers" and "Other Customers" sections */}
+      {isProjectManager ? (
+        <>
+          {/* My Customers Section */}
+          {myCustomers.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">My Customers</h2>
+              {viewMode === 'cards' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {myCustomers.map((customer, index) => (
+                    <CustomerCard
+                      key={customer.id}
+                      customer={customer}
+                      index={index}
+                      canEdit={true}
+                      onEdit={() => handleEdit(customer)}
+                      onDelete={() => handleDelete(customer)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <CustomerTable
+                  customers={myCustomers}
+                  canEdit={() => true}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              )}
+            </div>
+          )}
 
-      {customers.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>No customers yet.</p>
-          {isAdmin && <p className="text-sm mt-2">Click "Add Customer" to create one.</p>}
-        </div>
+          {/* Other Customers Section */}
+          {otherCustomers.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-muted-foreground">Other Customers</h2>
+              {viewMode === 'cards' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {otherCustomers.map((customer, index) => (
+                    <CustomerCard
+                      key={customer.id}
+                      customer={customer}
+                      index={index}
+                      canEdit={false}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <CustomerTable
+                  customers={otherCustomers}
+                  canEdit={() => false}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                />
+              )}
+            </div>
+          )}
+
+          {myCustomers.length === 0 && otherCustomers.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              No customers found. Create your first customer!
+            </p>
+          )}
+        </>
+      ) : (
+        /* Admin: Show all customers together */
+        <>
+          {viewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCustomers.map((customer, index) => (
+                <CustomerCard
+                  key={customer.id}
+                  customer={customer}
+                  index={index}
+                  canEdit={true}
+                  onEdit={() => handleEdit(customer)}
+                  onDelete={() => handleDelete(customer)}
+                />
+              ))}
+            </div>
+          ) : (
+            <CustomerTable
+              customers={filteredCustomers}
+              canEdit={() => true}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
+
+          {filteredCustomers.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              {customers.length > 0 ? `No customers found matching "${searchQuery}".` : 'No customers yet. Click "Add Customer" to create one.'}
+            </p>
+          )}
+        </>
       )}
 
       <Dialog open={isCreateOpen || !!editingCustomer} onOpenChange={handleDialogClose}>

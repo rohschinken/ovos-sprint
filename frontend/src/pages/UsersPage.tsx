@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2, Shield } from 'lucide-react'
+import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2, Shield, Briefcase } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 
@@ -57,11 +57,11 @@ interface CascadeInfo {
 export default function UsersPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'user' | 'admin'>('user')
+  const [role, setRole] = useState<'user' | 'project_manager' | 'admin'>('user')
   const [invitationLink, setInvitationLink] = useState<string | null>(null)
   const [confirmRoleChange, setConfirmRoleChange] = useState<{
     userId: number
-    newRole: 'user' | 'admin'
+    newRole: 'user' | 'project_manager' | 'admin'
   } | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     userId: number
@@ -87,7 +87,7 @@ export default function UsersPage() {
   })
 
   const inviteMutation = useMutation({
-    mutationFn: async (data: { email: string; role: 'user' | 'admin' }) => {
+    mutationFn: async (data: { email: string; role: 'user' | 'project_manager' | 'admin' }) => {
       const response = await api.post('/auth/invite', data)
       return response.data
     },
@@ -111,7 +111,7 @@ export default function UsersPage() {
   })
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: number; role: 'user' | 'admin' }) => {
+    mutationFn: async ({ userId, role }: { userId: number; role: 'user' | 'project_manager' | 'admin' }) => {
       const response = await api.patch(`/users/${userId}/role`, { role })
       return response.data
     },
@@ -252,24 +252,32 @@ export default function UsersPage() {
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           user.role === 'admin'
                             ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                            : user.role === 'project_manager'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
                             : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                         }`}
                       >
-                        {user.role}
+                        {user.role === 'project_manager' ? 'PM' : user.role}
                       </div>
                     ) : (
                       <Select
                         value={user.role}
-                        onValueChange={(newRole: 'user' | 'admin') => {
+                        onValueChange={(newRole: 'user' | 'project_manager' | 'admin') => {
                           setConfirmRoleChange({ userId: user.id, newRole })
                         }}
                       >
-                        <SelectTrigger className="w-[120px] h-8">
+                        <SelectTrigger className="w-[140px] h-8">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="user">
                             <span>User</span>
+                          </SelectItem>
+                          <SelectItem value="project_manager">
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="h-3 w-3" />
+                              <span>Project Manager</span>
+                            </div>
                           </SelectItem>
                           <SelectItem value="admin">
                             <div className="flex items-center gap-2">
@@ -327,11 +335,17 @@ export default function UsersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Role</Label>
-                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'user' | 'admin')}>
+                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'user' | 'project_manager' | 'admin')}>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="user" id="role-user" />
                       <Label htmlFor="role-user" className="font-normal cursor-pointer">
                         User - Can view and interact with the timeline
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="project_manager" id="role-pm" />
+                      <Label htmlFor="role-pm" className="font-normal cursor-pointer">
+                        Project Manager - Can manage their own projects and customers
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -419,10 +433,15 @@ export default function UsersPage() {
               {confirmRoleChange && (
                 <>
                   Are you sure you want to change this user's role to{' '}
-                  <strong>{confirmRoleChange.newRole}</strong>?
+                  <strong>{confirmRoleChange.newRole === 'project_manager' ? 'Project Manager' : confirmRoleChange.newRole}</strong>?
                   {confirmRoleChange.newRole === 'admin' && (
                     <div className="mt-2 text-amber-600 dark:text-amber-500">
                       This will grant the user full administrative privileges including user management.
+                    </div>
+                  )}
+                  {confirmRoleChange.newRole === 'project_manager' && (
+                    <div className="mt-2 text-purple-600 dark:text-purple-500">
+                      This will allow the user to create and manage their own projects and customers.
                     </div>
                   )}
                 </>

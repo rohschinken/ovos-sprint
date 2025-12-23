@@ -13,7 +13,7 @@ export const registerSchema = z.object({
 
 export const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['user', 'admin']).default('user'),
+  role: z.enum(['user', 'project_manager', 'admin']).default('user'),
 })
 
 export const teamSchema = z.object({
@@ -23,6 +23,7 @@ export const teamSchema = z.object({
 export const customerSchema = z.object({
   name: z.string().min(1),
   icon: z.string().optional().nullable(),
+  managerId: z.number().int().positive().optional().nullable(),
 })
 
 export const teamMemberSchema = z.object({
@@ -37,6 +38,7 @@ export const projectSchema = z.object({
   customerId: z.number().int().positive(),
   name: z.string().min(1),
   status: z.enum(['confirmed', 'tentative']),
+  managerId: z.number().int().positive().optional().nullable(),
 })
 
 export const projectAssignmentSchema = z.object({
@@ -56,7 +58,7 @@ export const settingsSchema = z.object({
 })
 
 export const updateUserRoleSchema = z.object({
-  role: z.enum(['user', 'admin']),
+  role: z.enum(['user', 'project_manager', 'admin']),
 })
 
 export const assignmentGroupSchema = z.object({

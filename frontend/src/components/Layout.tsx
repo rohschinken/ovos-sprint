@@ -65,6 +65,10 @@ export default function Layout() {
                       Members
                     </Button>
                   </Link>
+                </>
+              )}
+              {(user?.role === 'admin' || user?.role === 'project_manager') && (
+                <>
                   <Link to="/customers">
                     <Button
                       variant={isActive('/customers') ? 'default' : 'ghost'}
@@ -89,7 +93,7 @@ export default function Layout() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground">
-              {user?.email} {user?.role === 'admin' && '(Admin)'}
+              {user?.email} {user?.role === 'admin' && '(Admin)'}{user?.role === 'project_manager' && '(PM)'}
             </span>
             <Link to="/settings">
               <Button variant="ghost" size="icon">

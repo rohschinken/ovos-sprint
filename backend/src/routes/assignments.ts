@@ -1,11 +1,30 @@
 import { Router } from 'express'
 import { db, projectAssignments, dayAssignments, assignmentGroups } from '../db/index.js'
 import { projectAssignmentSchema, dayAssignmentSchema, assignmentGroupSchema, updateAssignmentGroupSchema } from '../utils/validation.js'
-import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
+import { authenticate, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
 import { eq, and, gte, lte } from 'drizzle-orm'
 import { handleGroupMergeOnDayAdd, handleGroupSplitOnDayDelete } from '../utils/groupMerge.js'
 
 const router = Router()
+
+// Helper to check if user can modify a project (admin or project owner)
+async function canModifyProject(userId: number, userRole: string, projectId: number): Promise<boolean> {
+  if (userRole === 'admin') return true
+
+  const project = await db.query.projects.findFirst({
+    where: (projects, { eq }) => eq(projects.id, projectId),
+  })
+
+  return project?.managerId === userId
+}
+
+// Helper to get projectId from a project assignment
+async function getProjectIdFromAssignment(projectAssignmentId: number): Promise<number | null> {
+  const assignment = await db.query.projectAssignments.findFirst({
+    where: (pa, { eq }) => eq(pa.id, projectAssignmentId),
+  })
+  return assignment?.projectId ?? null
+}
 
 // Get all project assignments
 router.get('/projects', authenticate, async (req, res) => {
@@ -110,10 +129,15 @@ router.get('/members/:memberId', authenticate, async (req, res) => {
   }
 })
 
-// Create project assignment (admin only)
-router.post('/projects', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create project assignment (admin or project manager for their own projects)
+router.post('/projects', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const data = projectAssignmentSchema.parse(req.body)
+
+    // Check if user can modify this project
+    if (!await canModifyProject(req.user!.userId, req.user!.role, data.projectId)) {
+      return res.status(403).json({ error: 'You can only assign members to your own projects' })
+    }
 
     // Check if assignment already exists
     const existing = await db.query.projectAssignments.findFirst({
@@ -136,10 +160,25 @@ router.post('/projects', authenticate, requireAdmin, async (req: AuthRequest, re
   }
 })
 
-// Delete project assignment (admin only)
-router.delete('/projects/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete project assignment (admin or project manager for their own projects)
+router.delete('/projects/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const assignmentId = parseInt(req.params.id)
+
+    // Get the assignment to check project ownership
+    const assignment = await db.query.projectAssignments.findFirst({
+      where: (pa, { eq }) => eq(pa.id, assignmentId),
+    })
+
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' })
+    }
+
+    // Check if user can modify this project
+    if (!await canModifyProject(req.user!.userId, req.user!.role, assignment.projectId)) {
+      return res.status(403).json({ error: 'You can only remove assignments from your own projects' })
+    }
+
     await db.delete(projectAssignments).where(eq(projectAssignments.id, assignmentId))
     res.status(204).send()
   } catch (error) {
@@ -200,10 +239,17 @@ router.get('/days', authenticate, async (req, res) => {
   }
 })
 
-// Create day assignment (admin only)
-router.post('/days', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create day assignment (admin or project manager for their own projects)
+router.post('/days', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const data = dayAssignmentSchema.parse(req.body)
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(data.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only create day assignments for your own projects' })
+    }
+
     const [dayAssignment] = await db.insert(dayAssignments).values(data).returning()
 
     // Handle potential group merges when adding a day
@@ -219,21 +265,32 @@ router.post('/days', authenticate, requireAdmin, async (req: AuthRequest, res) =
   }
 })
 
-// Update day assignment (admin only)
-router.put('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Update day assignment (admin or project manager for their own projects)
+router.put('/days/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id)
     const { comment } = req.body
+
+    // Get the day assignment to check ownership
+    const dayAssignment = await db.query.dayAssignments.findFirst({
+      where: (da, { eq }) => eq(da.id, id)
+    })
+
+    if (!dayAssignment) {
+      return res.status(404).json({ error: 'Day assignment not found' })
+    }
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(dayAssignment.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only update day assignments for your own projects' })
+    }
 
     const [updated] = await db
       .update(dayAssignments)
       .set({ comment })
       .where(eq(dayAssignments.id, id))
       .returning()
-
-    if (!updated) {
-      return res.status(404).json({ error: 'Day assignment not found' })
-    }
 
     res.json(updated)
   } catch (error) {
@@ -242,8 +299,8 @@ router.put('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, res
   }
 })
 
-// Delete day assignment (admin only)
-router.delete('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete day assignment (admin or project manager for their own projects)
+router.delete('/days/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id)
 
@@ -254,6 +311,12 @@ router.delete('/days/:id', authenticate, requireAdmin, async (req: AuthRequest, 
 
     if (!dayAssignment) {
       return res.status(404).json({ error: 'Day assignment not found' })
+    }
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(dayAssignment.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only delete day assignments for your own projects' })
     }
 
     // Delete the day assignment
@@ -302,10 +365,16 @@ router.get('/groups', authenticate, async (req, res) => {
   }
 })
 
-// Create assignment group (admin only)
-router.post('/groups', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create assignment group (admin or project manager for their own projects)
+router.post('/groups', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const data = assignmentGroupSchema.parse(req.body)
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(data.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only create assignment groups for your own projects' })
+    }
 
     // Validate that endDate >= startDate
     if (data.endDate < data.startDate) {
@@ -339,11 +408,26 @@ router.post('/groups', authenticate, requireAdmin, async (req: AuthRequest, res)
   }
 })
 
-// Update assignment group (admin only)
-router.put('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Update assignment group (admin or project manager for their own projects)
+router.put('/groups/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id)
     const data = updateAssignmentGroupSchema.parse(req.body)
+
+    // Get the group to check ownership
+    const group = await db.query.assignmentGroups.findFirst({
+      where: (ag, { eq }) => eq(ag.id, id)
+    })
+
+    if (!group) {
+      return res.status(404).json({ error: 'Assignment group not found' })
+    }
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(group.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only update assignment groups for your own projects' })
+    }
 
     const updateData: { priority?: 'high' | 'normal' | 'low'; comment?: string | null } = {}
     if (data.priority !== undefined) updateData.priority = data.priority
@@ -355,10 +439,6 @@ router.put('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, r
       .where(eq(assignmentGroups.id, id))
       .returning()
 
-    if (!updated) {
-      return res.status(404).json({ error: 'Assignment group not found' })
-    }
-
     res.json(updated)
   } catch (error) {
     console.error('Update assignment group error:', error)
@@ -366,10 +446,26 @@ router.put('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, r
   }
 })
 
-// Delete assignment group (admin only)
-router.delete('/groups/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete assignment group (admin or project manager for their own projects)
+router.delete('/groups/:id', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id)
+
+    // Get the group to check ownership
+    const group = await db.query.assignmentGroups.findFirst({
+      where: (ag, { eq }) => eq(ag.id, id)
+    })
+
+    if (!group) {
+      return res.status(404).json({ error: 'Assignment group not found' })
+    }
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(group.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only delete assignment groups for your own projects' })
+    }
+
     await db.delete(assignmentGroups).where(eq(assignmentGroups.id, id))
     res.status(204).send()
   } catch (error) {

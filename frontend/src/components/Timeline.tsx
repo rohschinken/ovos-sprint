@@ -18,6 +18,8 @@ interface TimelineProps {
   prevDays: number
   nextDays: number
   isAdmin: boolean
+  currentUserId?: number
+  currentUserRole?: 'admin' | 'project_manager' | 'user'
   selectedTeamIds: number[]
   zoomLevel: number
   expandedItems: number[]
@@ -32,6 +34,8 @@ export default function Timeline({
   prevDays,
   nextDays,
   isAdmin,
+  currentUserId,
+  currentUserRole,
   selectedTeamIds,
   zoomLevel,
   expandedItems: expandedItemsProp,
@@ -457,6 +461,34 @@ export default function Timeline({
     onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
+  // Check if user is specifically an admin (not PM)
+  const isActualAdmin = currentUserRole === 'admin'
+
+  // Helper function to check if current user can edit a specific project
+  // Admins can edit all projects, PMs can only edit their own projects
+  const canEditProject = (projectId: number): boolean => {
+    if (!isAdmin) return false
+    if (currentUserRole === 'admin') return true
+    if (currentUserRole === 'project_manager' && currentUserId) {
+      const project = projects.find(p => p.id === projectId)
+      return project?.managerId === currentUserId
+    }
+    return false
+  }
+
+  // Helper function to check if current user can edit an assignment (by project assignment ID)
+  const canEditAssignment = (projectAssignmentId: number): boolean => {
+    if (!isAdmin) return false
+    if (currentUserRole === 'admin') return true
+    if (currentUserRole === 'project_manager' && currentUserId) {
+      const assignment = projectAssignments.find((pa: any) => pa.id === projectAssignmentId)
+      if (!assignment) return false
+      const project = projects.find(p => p.id === assignment.projectId)
+      return project?.managerId === currentUserId
+    }
+    return false
+  }
+
   // Helper function to check if a date is a day-off for a specific member
   const isDayOff = (memberId: number, date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd')
@@ -495,7 +527,7 @@ export default function Timeline({
   }
 
   const handleMouseDown = (assignmentId: number, date: Date, event: React.MouseEvent) => {
-    if (!isAdmin) return
+    if (!canEditAssignment(assignmentId)) return
 
     // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
     if (event.button === 2 || event.ctrlKey || event.metaKey) {
@@ -668,7 +700,7 @@ export default function Timeline({
   }
 
   const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
-    if (!isAdmin) return
+    if (!canEditAssignment(assignmentId)) return
 
     event.preventDefault()
     event.stopPropagation()
@@ -773,7 +805,7 @@ export default function Timeline({
 
   // Handle click on assignment bar to open edit popover
   const handleAssignmentClick = (assignmentId: number, date: Date, event: React.MouseEvent) => {
-    if (!isAdmin) return
+    if (!canEditAssignment(assignmentId)) return
     if (event.ctrlKey || event.metaKey) return // Don't interfere with delete action
 
     event.stopPropagation()
@@ -809,7 +841,7 @@ export default function Timeline({
   }
 
   const handleProjectCellClick = (projectId: number, date: Date, event: React.MouseEvent) => {
-    if (!isAdmin || viewMode !== 'by-project') return
+    if (!canEditProject(projectId) || viewMode !== 'by-project') return
 
     event.preventDefault()
     event.stopPropagation()
@@ -833,7 +865,8 @@ export default function Timeline({
   }
 
   const handleMemberCellClick = (memberId: number, date: Date, event: React.MouseEvent) => {
-    if (!isAdmin || viewMode !== 'by-member') return
+    // Day-offs are admin-only (not for PMs)
+    if (!isActualAdmin || viewMode !== 'by-member') return
 
     event.preventDefault()
     event.stopPropagation()
@@ -1109,7 +1142,7 @@ export default function Timeline({
                             isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                             isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                            isAdmin && 'cursor-pointer'
+                            canEditProject(project.id) && 'cursor-pointer'
                           )}
                           onClick={(e) => handleProjectCellClick(project.id, date, e)}
                           onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
@@ -1140,7 +1173,7 @@ export default function Timeline({
                           )}
                         </div>
                       </TooltipTrigger>
-                      {isAdmin && (
+                      {canEditProject(project.id) && (
                         <TooltipContent side="top" className="text-xs">
                           Add/remove milestone 🚩
                         </TooltipContent>
@@ -1287,6 +1320,16 @@ export default function Timeline({
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="max-w-xs">💬 {comment}</p>
+                                {getGroupPriority(assignment.id, date) === 'high' && (
+                                  <p className="max-w-xs">
+                                    {'🔥 high priority'}
+                                  </p>
+                                )}
+                                {getGroupPriority(assignment.id, date) === 'low' && (
+                                  <p className="max-w-xs">
+                                    {'🤷‍♂️ low priority'}
+                                  </p>
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           ))
@@ -1409,7 +1452,7 @@ export default function Timeline({
                           isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
                           isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                           isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                          isAdmin && 'cursor-pointer'
+                          isActualAdmin && 'cursor-pointer'
                         )}
                         onClick={(e) => handleMemberCellClick(member.id, date, e)}
                         onContextMenu={(e) => handleMemberCellClick(member.id, date, e)}
@@ -1443,7 +1486,7 @@ export default function Timeline({
                         )}
                       </div>
                     </TooltipTrigger>
-                    {isAdmin && (
+                    {isActualAdmin && (
                       <TooltipContent side="top" className="text-xs">
                         Add/remove day off 🏝️
                       </TooltipContent>
@@ -1601,6 +1644,16 @@ export default function Timeline({
                             </TooltipTrigger>
                             <TooltipContent>
                               <p className="max-w-xs">💬 {comment}</p>
+                              {getGroupPriority(assignment.id, date) === 'high' && (
+                                <p className="max-w-xs">
+                                  {'🔥 high priority'}
+                                </p>
+                              )}
+                              {getGroupPriority(assignment.id, date) === 'low' && (
+                                <p className="max-w-xs">
+                                  {'🤷‍♂️ low priority'}
+                                </p>
+                              )}
                             </TooltipContent>
                           </Tooltip>
                         ))
