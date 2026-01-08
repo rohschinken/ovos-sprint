@@ -8,21 +8,25 @@ Workload management and resource planning tool for IT project managers.
 ## Features
 
 ### Role-Based Access Control
+
 - Admin role with full CRUD permissions
 - User role with read-only access
 - Invitation-based registration
 
 ### Team & Resource Management
+
 - Create and manage teams
 - Team members with customizable avatars
 - Resource allocation across projects
 
 ### Project Management
+
 - Projects with customer information
 - Confirmed and tentative status types
 - Many-to-many relationships between team members and projects
 
 ### Timeline View
+
 - View by project or by team member
 - Configurable zoom levels
 - Day-by-day workload visualization
@@ -31,16 +35,19 @@ Workload management and resource planning tool for IT project managers.
 - User preference persistence
 
 ### Drag-to-Assign (Admin Only)
+
 - Click-and-drag interface for day assignments
 - Multi-day selection
 - Right-click or CTRL+click to delete
 - Weekend/holiday assignment warnings
 
 ### Real-Time Updates
+
 - WebSocket-based synchronization
 - Instant updates across users
 
 ### UI Features
+
 - Dark mode support
 - Responsive layout
 - Framer Motion animations
@@ -617,22 +624,33 @@ server {
 
 ### SQLite Backup Strategy
 
-Set up regular backups of the SQLite database:
+Use a Bash script to set up regular backups of the SQLite database:
 
 ```bash
-# Create backup script
 #!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-sqlite3 /path/to/data/ovos-sprint.db ".backup '/path/to/backups/ovos-sprint_$DATE.db'"
+set -e  # Exit on error
 
-# Keep only last 7 days of backups
-find /path/to/backups -name "ovos-sprint_*.db" -mtime +7 -delete
+BACKUP_DIR="/backups"
+DB_PATH="/ovos-sprint/backend/data/ovos-sprint.db"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/ovos-sprint_$DATE.db"
+
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
+
+# Create backup
+sqlite3 "$DB_PATH" ".backup '$BACKUP_FILE'"
+
+# Keep only last 30 days of backups
+find "$BACKUP_DIR" -name "ovos-sprint_*.db" -mtime +30 -delete
+
+echo "Backup completed: $BACKUP_FILE"
 ```
 
 Add to crontab for daily backups:
 
 ```bash
-0 2 * * * /path/to/backup-script.sh
+0 2 * * * /backups/backup-script.sh
 ```
 
 ### Production Checklist
