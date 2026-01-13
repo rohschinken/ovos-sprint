@@ -508,9 +508,13 @@ npm run build
 ### Run Production Build
 
 ```bash
-# Backend
+# Backend (runs on PORT from .env, default: 3001)
 cd backend
 npm start
+
+# Frontend: Built static files are served by your web server (Apache/nginx)
+# No Node.js process needed - just serve the frontend/dist/ directory
+# The web server handles ports 80 (HTTP) and 443 (HTTPS)
 
 # Or use Docker Compose with production configuration
 docker-compose -f docker-compose.prod.yml up
@@ -525,7 +529,7 @@ For production deployment, configure the following environment variables in `bac
 ```env
 # Required for production
 NODE_ENV=production
-PORT=3001
+PORT=3001                    # Backend server port (Node.js backend listens on this port)
 DATABASE_URL=./data/ovos-sprint.db
 JWT_SECRET=your-secure-random-string-here
 FRONTEND_URL=https://yourdomain.com
@@ -541,7 +545,11 @@ SMTP_FROM_EMAIL=noreply@yourdomain.com
 SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️
 ```
 
-**Important**: The backend will fail to start in production if `JWT_SECRET`, `FRONTEND_URL`, or `BACKEND_URL` are missing or using default values.
+**Important**:
+
+- The `PORT` variable is for the **backend** server only (Node.js listens on port 3001)
+- The **frontend** in production is built into static files (`frontend/dist/`) and served by your web server (Apache/nginx) on ports 80/443 (HTTP/HTTPS), not by a Node.js process
+- The backend will fail to start in production if `JWT_SECRET`, `FRONTEND_URL`, or `BACKEND_URL` are missing or using default values
 
 ### Non-Interactive Database Seeding
 
