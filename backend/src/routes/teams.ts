@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { db, teams, teamMembers, teamTeamMembers } from '../db/index.js'
 import { teamSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 
 const router = Router()
 
