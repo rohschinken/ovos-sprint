@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
-import { LayoutGrid, List, Filter, ZoomIn, Eye, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
+import { Filter, ZoomIn, Eye, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
 import { TimelineViewMode, Team } from '@/types'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -112,7 +112,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.id) return
 
-    const prefsKey = `dashboard-prefs-${user.id}`
     const hasInitializedKey = `dashboard-team-initialized-${user.id}`
     const hasInitialized = localStorage.getItem(hasInitializedKey)
 

@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
-import { ChevronDown, ChevronRight, Flag, CheckCircle2, Clock } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
 
@@ -530,7 +530,7 @@ export default function Timeline({
     if (!canEditAssignment(assignmentId)) return
 
     // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
-    if (event.button === 2 || event.ctrlKey || event.metaKey) {
+    if (_e.button === 2 || _e.ctrlKey || _e.metaKey) {
       return
     }
 
@@ -858,19 +858,19 @@ export default function Timeline({
   const handleProjectCellClick = (projectId: number, date: Date, _e: React.MouseEvent) => {
     if (!canEditProject(projectId) || viewMode !== 'by-project') return
 
-    event.preventDefault()
-    event.stopPropagation()
+    _e.preventDefault()
+    _e.stopPropagation()
 
     // Check if there's already a milestone
     const milestoneId = getMilestoneId(projectId, date)
     if (milestoneId) {
       // Delete existing milestone if CTRL/CMD+click or right-click
-      if (event.ctrlKey || event.metaKey || event.button === 2) {
+      if (_e.ctrlKey || _e.metaKey || _e.button === 2) {
         deleteMilestoneMutation.mutate(milestoneId)
       }
     } else {
       // Create new milestone on normal click
-      if (!event.ctrlKey && !event.metaKey && event.button === 0) {
+      if (!_e.ctrlKey && !_e.metaKey && _e.button === 0) {
         createMilestoneMutation.mutate({
           projectId,
           date: format(date, 'yyyy-MM-dd'),
@@ -883,8 +883,8 @@ export default function Timeline({
     // Day-offs are admin-only (not for PMs)
     if (!isActualAdmin || viewMode !== 'by-member') return
 
-    event.preventDefault()
-    event.stopPropagation()
+    _e.preventDefault()
+    _e.stopPropagation()
 
     // Check if there's already a day-off
     const existingDayOff = getDayOff(memberId, date)
@@ -892,12 +892,12 @@ export default function Timeline({
 
     if (existingDayOff) {
       // Delete existing day-off if CTRL/CMD+click or right-click
-      if (event.ctrlKey || event.metaKey || event.button === 2) {
+      if (_e.ctrlKey || _e.metaKey || _e.button === 2) {
         deleteDayOffMutation.mutate(existingDayOff.id)
       }
     } else {
       // Create new day-off on normal click
-      if (!event.ctrlKey && !event.metaKey && event.button === 0) {
+      if (!_e.ctrlKey && !_e.metaKey && _e.button === 0) {
         createDayOffMutation.mutate({
           teamMemberId: memberId,
           date: dateStr,

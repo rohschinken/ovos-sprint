@@ -36,13 +36,6 @@ interface MergeResult {
   newEndDate?: string
 }
 
-interface ExpandResult {
-  expanded: boolean
-  groupId?: number
-  newStartDate?: string
-  newEndDate?: string
-}
-
 /**
  * Handle potential group expansion or merges when a new day is added.
  * This should be called after creating a day assignment.

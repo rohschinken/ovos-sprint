@@ -147,7 +147,7 @@ router.post('/invite', authenticate, requireAdmin, async (_req: AuthRequest, res
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // Expires in 7 days
 
-    const [invitation] = await db.insert(invitations).values({
+    await db.insert(invitations).values({
       email,
       role,
       token,

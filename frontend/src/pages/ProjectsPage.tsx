@@ -397,7 +397,7 @@ export default function ProjectsPage() {
                       key={project.id}
                       project={project}
                       index={index}
-                      canEdit={true}
+                      canEdit={isAdmin}
                       onEdit={() => {
                         setEditingProject(project)
                         setCustomerId(project.customerId)
@@ -412,7 +412,7 @@ export default function ProjectsPage() {
               ) : (
                 <ProjectTable
                   projects={myProjects}
-                  canEdit={() => true}
+                  canEdit={() => isAdmin}
                   onEdit={(project) => {
                     setEditingProject(project)
                     setCustomerId(project.customerId)

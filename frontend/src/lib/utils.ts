@@ -61,7 +61,6 @@ export function getAvatarColor(firstName: string, lastName: string): { bg: strin
 }
 
 export function generateAvatarUrl(firstName: string, lastName: string): string {
-  const initials = getInitials(firstName, lastName)
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
     `${firstName}+${lastName}`
   )}&background=random&color=fff&size=128&bold=true&rounded=true`

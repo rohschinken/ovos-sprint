@@ -71,6 +71,12 @@ export interface ProjectAssignment {
   createdAt: string
 }
 
+export interface ProjectAssignmentWithDetails extends ProjectAssignment {
+  project: Project
+  teamMember: TeamMember
+  dayAssignments: DayAssignment[]
+}
+
 export interface DayAssignment {
   id: number
   projectAssignmentId: number

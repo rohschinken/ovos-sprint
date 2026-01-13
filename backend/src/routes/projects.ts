@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { db, projects, projectAssignments, dayAssignments, milestones } from '../db/index.js'
 import { projectSchema } from '../utils/validation.js'
-import { authenticate, requireAdmin, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
+import { authenticate, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
 import { eq } from 'drizzle-orm'
 
 const router = Router()

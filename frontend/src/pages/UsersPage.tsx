@@ -29,18 +29,11 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { UserPlus, Copy, CheckCircle2, Clock, Mail, Trash2, Shield, Briefcase } from 'lucide-react'
+import { UserPlus, Copy, Mail, Trash2, Shield, Briefcase } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 
-interface Invitation {
-  id: number
-  email: string
-  token: string
-  expiresAt: string
-  usedAt: string | null
-  createdAt: string
-}
+
 
 interface User {
   id: number

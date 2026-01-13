@@ -1,7 +1,7 @@
-import { useState } from 'react'
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { Project, TeamMember } from '@/types'
+import { Project, TeamMember, ProjectAssignmentWithDetails } from '@/types'
 import {
   Dialog,
   DialogContent,
@@ -38,16 +38,16 @@ export default function AssignMemberDialog({
     },
   })
 
-  const { data: projectAssignments = [] } = useQuery({
+  const { data: projectAssignments = [] } = useQuery<ProjectAssignmentWithDetails[]>({
     queryKey: ['assignments', 'projects', project.id],
     queryFn: async () => {
       const response = await api.get(`/assignments/projects/${project.id}`)
-      return response.data
+      return response.data as ProjectAssignmentWithDetails[]
     },
   })
 
   const assignedMemberIds = projectAssignments.map(
-    (pa: any) => pa.teamMemberId
+    (pa) => pa.teamMemberId
   )
 
   const assignMutation = useMutation({
@@ -76,7 +76,7 @@ export default function AssignMemberDialog({
 
   const handleToggleAssignment = (member: TeamMember) => {
     const assignment = projectAssignments.find(
-      (pa: any) => pa.teamMemberId === member.id
+      (pa) => pa.teamMemberId === member.id
     )
 
     if (assignment) {

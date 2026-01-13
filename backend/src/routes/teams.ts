@@ -154,8 +154,7 @@ router.delete('/:id/members/:memberId', authenticate, requireAdmin, async (req: 
 
     await db
       .delete(teamTeamMembers)
-      .where(eq(teamTeamMembers.teamId, teamId))
-      .where(eq(teamTeamMembers.teamMemberId, memberId))
+      .where(and(eq(teamTeamMembers.teamId, teamId), eq(teamTeamMembers.teamMemberId, memberId)))
 
     res.status(204).send()
   } catch (error) {

@@ -18,7 +18,7 @@ const router = Router()
 
 // Configure multer for avatar uploads
 const storage = multer.diskStorage({
-  destination: (_req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, './data/avatars')
   },
   filename: (_req, file, cb) => {
