@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm'
 const router = Router()
 
 // Get all teams
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (_req, res) => {
   try {
     const allTeams = await db.query.teams.findMany({
       orderBy: (teams, { desc }) => [desc(teams.createdAt)],
@@ -20,7 +20,7 @@ router.get('/', authenticate, async (req, res) => {
 })
 
 // Get all team-member relationships
-router.get('/members/relationships', authenticate, async (req, res) => {
+router.get('/members/relationships', authenticate, async (_req, res) => {
   try {
     const relationships = await db.select().from(teamTeamMembers)
     res.json(relationships)

@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm'
 const router = Router()
 
 // Get all projects
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (_req, res) => {
   try {
     const allProjects = await db.query.projects.findMany({
       orderBy: (projects, { desc }) => [desc(projects.createdAt)],

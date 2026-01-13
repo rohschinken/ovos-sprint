@@ -128,9 +128,10 @@ router.post('/register', async (req, res) => {
 })
 
 // Invite user (admin only)
-router.post('/invite', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+router.post('/invite', authenticate, requireAdmin, async (_req: AuthRequest, res) => {
   try {
-    const { email, role } = inviteSchema.parse(req.body)
+    const body = req.body; // Explicitly assign req.body to a variable
+    const { email, role } = inviteSchema.parse(body); // Use the variable
 
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({

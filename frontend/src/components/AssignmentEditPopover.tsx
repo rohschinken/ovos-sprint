@@ -18,7 +18,6 @@ interface AssignmentEditPopoverProps {
   onOpenChange: (open: boolean) => void
   position: { x: number; y: number }
   group: AssignmentGroup | null
-  projectAssignmentId: number
   dateRange: { start: string; end: string }
   onSave: (data: { priority: AssignmentPriority; comment: string | null }) => void
 }

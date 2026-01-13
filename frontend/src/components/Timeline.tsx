@@ -526,7 +526,7 @@ export default function Timeline({
     }
   }
 
-  const handleMouseDown = (assignmentId: number, date: Date, event: React.MouseEvent) => {
+  const handleMouseDown = (assignmentId: number, date: Date, _e: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
 
     // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
@@ -855,7 +855,7 @@ export default function Timeline({
     return milestone?.id
   }
 
-  const handleProjectCellClick = (projectId: number, date: Date, event: React.MouseEvent) => {
+  const handleProjectCellClick = (projectId: number, date: Date, _e: React.MouseEvent) => {
     if (!canEditProject(projectId) || viewMode !== 'by-project') return
 
     event.preventDefault()
@@ -879,7 +879,7 @@ export default function Timeline({
     }
   }
 
-  const handleMemberCellClick = (memberId: number, date: Date, event: React.MouseEvent) => {
+  const handleMemberCellClick = (memberId: number, date: Date, _e: React.MouseEvent) => {
     // Day-offs are admin-only (not for PMs)
     if (!isActualAdmin || viewMode !== 'by-member') return
 
@@ -1236,8 +1236,8 @@ export default function Timeline({
                               isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                               isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                             )}
-                            onMouseDown={(e) =>
-                              handleMouseDown(assignment.id, date, e)
+                            onMouseDown={(_e) =>
+                              handleMouseDown(assignment.id, date, _e)
                             }
                             onMouseEnter={() => handleMouseEnter(date)}
                             onClick={(e) => {
@@ -1245,10 +1245,10 @@ export default function Timeline({
                                 handleDeleteDayAssignment(assignment.id, date, e)
                               }
                             }}
-                            onContextMenu={(e) => {
-                              e.preventDefault() // Prevent browser context menu
+                            onContextMenu={(_e) => {
+                              _e.preventDefault() // Prevent browser context menu
                               if (isDayAssigned(assignment.id, date)) {
-                                handleDeleteDayAssignment(assignment.id, date, e)
+                                handleDeleteDayAssignment(assignment.id, date, _e)
                               }
                             }}
                           >
@@ -1584,22 +1584,20 @@ export default function Timeline({
                             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                             isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
                           )}
-                          onMouseDown={(e) =>
-                            handleMouseDown(assignment.id, date, e)
-                          }
+                                                      onMouseDown={(_e) =>
+                                                        handleMouseDown(assignment.id, date, _e)                          }
                           onMouseEnter={() => handleMouseEnter(date)}
                           onClick={(e) => {
                             if ((e.ctrlKey || e.metaKey) && isDayAssigned(assignment.id, date)) {
                               handleDeleteDayAssignment(assignment.id, date, e)
                             }
                           }}
-                          onContextMenu={(e) => {
-                            e.preventDefault() // Prevent browser context menu
-                            if (isDayAssigned(assignment.id, date)) {
-                              handleDeleteDayAssignment(assignment.id, date, e)
-                            }
-                          }}
-                        >
+                                                      onContextMenu={(_e) => {
+                                                        _e.preventDefault() // Prevent browser context menu
+                                                        if (isDayAssigned(assignment.id, date)) {
+                                                          handleDeleteDayAssignment(assignment.id, date, _e)
+                                                        }
+                                                      }}                        >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
                               {format(date, 'EEE', { locale: enGB })}

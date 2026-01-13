@@ -27,7 +27,7 @@ async function getProjectIdFromAssignment(projectAssignmentId: number): Promise<
 }
 
 // Get all project assignments
-router.get('/projects', authenticate, async (req, res) => {
+router.get('/projects', authenticate, async (_req, res) => {
   try {
     const assignments = await db.select().from(projectAssignments)
 

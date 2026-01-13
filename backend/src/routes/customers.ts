@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm'
 const router = Router()
 
 // Get all customers
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (_req, res) => {
   try {
     const allCustomers = await db.query.customers.findMany({
       orderBy: (customers, { asc }) => [asc(customers.name)],

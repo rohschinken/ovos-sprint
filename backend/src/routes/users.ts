@@ -7,7 +7,7 @@ import { updateUserRoleSchema } from '../utils/validation.js'
 const router = Router()
 
 // Get all users (admin only)
-router.get('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+router.get('/', authenticate, requireAdmin, async (_req: AuthRequest, res) => {
   try {
     const allUsers = await db.query.users.findMany({
       orderBy: (users, { desc }) => [desc(users.createdAt)],
