@@ -86,12 +86,27 @@ export const io = setupWebSocket(httpServer)
 
 // Middleware
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}))
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  ...(process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('//www.')
+    ? [process.env.FRONTEND_URL.replace('//', '//www.')]
+    : []),
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS: Blocked origin: ${origin}`);
+      callback(new Error(`Not allowed by CORS. Blocked origin: ${origin}`));
+    }
+  },
   credentials: true,
-}))
+}));
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
