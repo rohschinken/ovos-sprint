@@ -130,7 +130,7 @@ router.post('/register', async (req, res) => {
 // Invite user (admin only)
 router.post('/invite', authenticate, requireAdmin, async (_req: AuthRequest, res) => {
   try {
-    const body = req.body; // Explicitly assign req.body to a variable
+    const body = _req.body; // Explicitly assign _req.body to a variable
     const { email, role } = inviteSchema.parse(body); // Use the variable
 
     // Check if user already exists
@@ -158,7 +158,7 @@ router.post('/invite', authenticate, requireAdmin, async (_req: AuthRequest, res
     const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/register?token=${token}&email=${encodeURIComponent(email)}`
 
     const inviterUser = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, req.user!.userId),
+      where: (users, { eq }) => eq(users.id, _req.user!.userId),
     })
 
     const inviterName = inviterUser?.email || 'Admin'
