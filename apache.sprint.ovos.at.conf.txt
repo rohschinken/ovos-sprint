@@ -1,0 +1,168 @@
+# ============================================================================
+# OVOS Sprint Production Configuration for Apache
+# ============================================================================
+#
+# Port Strategy:
+# - Users access the application via standard ports (80 for HTTP, 443 for HTTPS)
+# - Apache listens on ports 80 and 443 (public-facing)
+# - Apache proxies backend API requests to Node.js running on localhost:3001
+# - Port 3001 should NOT be publicly accessible (firewall it if needed)
+#
+# Architecture:
+# - Frontend: Static React SPA served directly by Apache
+# - Backend: Node.js/Express API proxied through Apache
+# - WebSocket: Socket.IO connections proxied with upgrade support
+#
+# Required Apache Modules:
+# - ssl (HTTPS support)
+# - headers (security headers)
+# - rewrite (SPA routing, WebSocket upgrade)
+# - proxy, proxy_http, proxy_wstunnel (backend proxying)
+#
+# Enable modules: sudo a2enmod ssl headers rewrite proxy proxy_http proxy_wstunnel
+# ============================================================================
+
+# Frontend: sprint.ovos.at
+# Serves the React SPA on standard HTTP/HTTPS ports
+<VirtualHost *:80>
+    ServerName sprint.ovos.at
+    ServerAlias www.sprint.ovos.at
+
+    # Redirect HTTP to HTTPS for security
+    Redirect permanent / https://sprint.ovos.at/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName sprint.ovos.at
+    ServerAlias www.sprint.ovos.at
+    
+    # SSL Configuration
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/sprint.ovos.at/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/sprint.ovos.at/privkey.pem
+    
+    # SSL Protocols
+    SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite HIGH:!aNULL:!MD5
+    
+    # Security Headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Document Root: Serve built React SPA static files
+    DocumentRoot /home/sprinoby/www.sprint.ovos.at/ovos-sprint/frontend/dist
+
+    <Directory /home/sprinoby/www.sprint.ovos.at/ovos-sprint/frontend/dist>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # SPA Routing: Redirect all requests to index.html for client-side routing
+        # This allows React Router to handle routes like /teams, /projects, etc.
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+    
+    # Cache static assets
+    <LocationMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "max-age=31536000, public, immutable"
+    </LocationMatch>
+    
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/sprint.ovos.at_error.log
+    CustomLog ${APACHE_LOG_DIR}/sprint.ovos.at_access.log combined
+</VirtualHost>
+
+# Backend API: api.sprint.ovos.at
+# Proxies requests to Node.js backend running on localhost:3001
+<VirtualHost *:80>
+    ServerName api.sprint.ovos.at
+
+    # Redirect HTTP to HTTPS for security
+    Redirect permanent / https://api.sprint.ovos.at/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName api.sprint.ovos.at
+
+    # SSL Configuration
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/api.sprint.ovos.at/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/api.sprint.ovos.at/privkey.pem
+
+    # SSL Protocols
+    SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite HIGH:!aNULL:!MD5
+
+    # Security Headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # ========================================================================
+    # Backend Proxy Configuration
+    # ========================================================================
+    # All requests to this subdomain are proxied to the Node.js backend
+    # running on localhost:3001 (NOT publicly accessible)
+    #
+    # The frontend (.env.production) should be configured with:
+    #   VITE_API_URL=https://api.sprint.ovos.at
+    #   VITE_WS_URL=wss://api.sprint.ovos.at
+    # ========================================================================
+
+    # REST API routes (e.g., /api/auth, /api/teams, etc.)
+    <Location /api>
+        ProxyPass http://localhost:3001/api
+        ProxyPassReverse http://localhost:3001/api
+        ProxyPreserveHost On
+    </Location>
+    
+    # WebSocket (Socket.IO) - Real-time bidirectional communication
+    # Handles both WebSocket protocol and HTTP long-polling fallback
+    # Frontend connects using: wss://api.sprint.ovos.at
+    <Location /socket.io>
+        ProxyPass http://localhost:3001/socket.io
+        ProxyPassReverse http://localhost:3001/socket.io
+        ProxyPreserveHost On
+
+        # WebSocket Protocol Upgrade Support
+        # Upgrades connection from HTTPS to WSS (secure WebSocket)
+        RewriteEngine on
+        RewriteCond %{HTTP:Upgrade} =websocket [NC]
+        RewriteRule /(.*) ws://localhost:3001/socket.io/$1 [P,L]
+        RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+        RewriteRule /(.*) http://localhost:3001/socket.io/$1 [P,L]
+    </Location>
+
+    # User Avatar Images (served from backend storage)
+    <Location /avatars>
+        ProxyPass http://localhost:3001/avatars
+        ProxyPassReverse http://localhost:3001/avatars
+        ProxyPreserveHost On
+
+        # Cache avatars for 30 days (immutable)
+        Header set Cache-Control "max-age=2592000, public, immutable"
+    </Location>
+
+    # Health Check Endpoint (for monitoring/uptime checks)
+    <Location /health>
+        ProxyPass http://localhost:3001/health
+        ProxyPassReverse http://localhost:3001/health
+        ProxyPreserveHost On
+
+        # Disable verbose logging for health checks to reduce log noise
+        CustomLog ${APACHE_LOG_DIR}/api.sprint.ovos.at_health.log combined env=!dontlog
+        SetEnvIf Request_URI "^/health" dontlog
+    </Location>
+    
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/api.sprint.ovos.at_error.log
+    CustomLog ${APACHE_LOG_DIR}/api.sprint.ovos.at_access.log combined
+</VirtualHost>
