@@ -85,6 +85,53 @@ cd backend && npm run build    # Compiles TypeScript to dist/
 cd ../frontend && npm run build # Compiles TypeScript and builds with Vite to dist/
 ```
 
+### 5. Initialize Database (First Time Only)
+
+After building the application, you need to initialize the database schema and create an admin user.
+
+**Important: This process is interactive**
+
+The database setup involves two steps:
+
+1. **Apply database schema** (`npm run db:push`)
+   - If this is a fresh database, answer "Yes" to apply changes
+   - If renaming columns from an old schema, carefully choose "rename" vs "create" options to preserve data
+
+2. **Seed with admin user** (`npm run db:seed`)
+   - You'll be prompted to enter an admin email address
+   - A secure random password will be generated and displayed
+   - **Save the password immediately** - it won't be shown again
+
+**Run the setup:**
+
+```bash
+cd backend
+
+# Apply database schema (interactive - may ask about column renames)
+npm run db:push
+
+# Seed database with admin user (interactive - asks for email)
+npm run db:seed
+```
+
+**For automated/non-interactive deployment:**
+
+```bash
+# Skip the prompts by providing values via environment variables
+ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-secure-password npm run db:seed
+```
+
+**Expected output:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: admin@yourdomain.com
+Password: [randomly-generated-secure-password]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Please save this password securely!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ## After Building
 
 ### For Production Runtime
@@ -224,16 +271,6 @@ SMTP_FROM_NAME=ovos Sprint 🏃‍♂️‍➡️
 - The backend will fail to start in production if `JWT_SECRET`, `FRONTEND_URL`, or `BACKEND_URL` are missing or using default values
 - Users access the application via standard ports (80/443), which are proxied by Apache/nginx to the backend on port 3001
 
-### Non-Interactive Database Seeding
-
-For automated deployments, set these environment variables before running the seed script:
-
-```bash
-ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-secure-password npm run db:seed
-```
-
-If `ADMIN_PASSWORD` is not provided, a secure password will be auto-generated.
-
 ### Process Management
 
 Use PM2 or systemd to manage the Node.js process:
@@ -347,11 +384,13 @@ Add to crontab for daily backups:
 - [ ] Change `JWT_SECRET` to a secure random string (32+ characters)
 - [ ] Set `FRONTEND_URL` and `BACKEND_URL` in backend `.env` to your actual domains
 - [ ] Configure SMTP for email delivery (SparkPost recommended)
+- [ ] Build frontend: `cd frontend && npm run build`
+- [ ] Build backend: `cd backend && npm run build`
+- [ ] Initialize database: `cd backend && npm run db:push` (first time only)
+- [ ] Seed admin user: `cd backend && npm run db:seed` (first time only)
 - [ ] Set up reverse proxy (Apache/nginx/Caddy) for HTTPS
 - [ ] Use PM2 or systemd for process management
 - [ ] Configure SQLite backup strategy
-- [ ] Build frontend: `cd frontend && npm run build`
-- [ ] Build backend: `cd backend && npm run build`
 
 ## Summary
 
@@ -360,8 +399,10 @@ Add to crontab for daily backups:
 3. ✅ Run `npm install` (WITHOUT --production flag)
 4. ✅ Configure frontend environment variables (`frontend/.env.production`)
 5. ✅ Configure backend environment variables (`backend/.env`)
-6. ✅ Run `npm run build`
-7. ✅ Set up reverse proxy (Apache/nginx)
-8. ✅ Configure process manager (PM2/systemd)
-9. ✅ Set up database backups
-10. ✅ Run the application
+6. ✅ Build: `npm run build`
+7. ✅ Initialize database: `cd backend && npm run db:push` (first time only)
+8. ✅ Seed admin user: `cd backend && npm run db:seed` (first time only)
+9. ✅ Set up reverse proxy (Apache/nginx)
+10. ✅ Configure process manager (PM2/systemd)
+11. ✅ Set up database backups
+12. ✅ Run the application
