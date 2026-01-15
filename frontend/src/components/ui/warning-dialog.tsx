@@ -13,7 +13,7 @@ interface WarningDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
-  message: string
+  message: string | React.ReactNode
   confirmLabel?: string
   cancelLabel?: string
   onConfirm: () => void

@@ -6,9 +6,13 @@
 
 ## Medium Priority
 
-### Fixing Non-Working Day Warning
+### Component Refactoring
 
-- [ ] When Non-Working Day Warning option is enabled no warning is shown when creating assignments on days where the member has the day off (non-working day)
+- [ ] Break down large components into smaller, focused units
+  - Timeline.tsx (76KB) - extract sub-components
+  - DashboardPage.tsx (21KB) - extract sections
+- [ ] Create feature-based component directories with index.ts exports
+- [ ] Move shared types to feature-specific types.ts files
 
 ### Testing Infrastructure
 
@@ -30,7 +34,6 @@
 - [ ] Investigate why invitation emails land in spam folder despite 10/10 score on mailtester.com
 - [ ] Review email content and headers to improve deliverability
 - [ ] Consider adding DMARC policy to DNS records
-- [ ] Test with different email providers (Gmail, Outlook, etc.)
 
 **Note**: Emails are being sent successfully via SparkPost, but may be filtered as spam by some providers.
 
@@ -46,14 +49,6 @@
 
 **Current State**: Application uses German locale (`de-AT`) for date formatting but all UI text is in English.
 
-### Component Refactoring
-
-- [ ] Break down large components into smaller, focused units
-  - Timeline.tsx (76KB) - extract sub-components
-  - DashboardPage.tsx (21KB) - extract sections
-- [ ] Create feature-based component directories with index.ts exports
-- [ ] Move shared types to feature-specific types.ts files
-
 ## Completed Features
 
 - [x] shadcn/ui component library integration (19 components)
@@ -67,3 +62,4 @@
 - [x] Email service with React Email templates
 - [x] SparkPost SMTP integration for production emails
 - [x] Git branching strategy (main/next workflow)
+- [x] Non-working day warning for timeline assignments

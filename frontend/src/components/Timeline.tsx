@@ -51,7 +51,7 @@ export default function Timeline({
   }>({ assignmentId: null, startDate: null, endDate: null })
   const [timelineWarning, setTimelineWarning] = useState<{
     type: 'holiday' | 'non-working-day'
-    message: string
+    message: string | React.ReactNode
     onConfirm: () => void
   } | null>(null)
   const [editPopover, setEditPopover] = useState<{
@@ -534,53 +534,7 @@ export default function Timeline({
       return
     }
 
-    // Find the assignment to get the member
-    const assignment = projectAssignments.find((pa: any) => pa.id === assignmentId)
-    const warnWeekend = settings.warnWeekendAssignments !== 'false'
-
-    if (warnWeekend && assignment) {
-      // Check if it's a holiday
-      if (isHoliday(date)) {
-        const holidayName = getHolidayName(date)
-        const message = holidayName
-          ? `This is a holiday (${holidayName}). Are you sure you want to assign work on this day?`
-          : 'This is a holiday. Are you sure you want to assign work on this day?'
-
-        setTimelineWarning({
-          type: 'holiday',
-          message,
-          onConfirm: () => {
-            setDragState({
-              assignmentId,
-              startDate: date,
-              endDate: date,
-            })
-            setTimelineWarning(null)
-          },
-        })
-        return
-      }
-      // Check if it's a non-working day for this member
-      else if (isNonWorkingDay(assignment.teamMemberId, date)) {
-        const member = members.find((m) => m.id === assignment.teamMemberId)
-        const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
-
-        setTimelineWarning({
-          type: 'non-working-day',
-          message: `This is a non-working day for ${memberName}. Are you sure you want to assign work on this day?`,
-          onConfirm: () => {
-            setDragState({
-              assignmentId,
-              startDate: date,
-              endDate: date,
-            })
-            setTimelineWarning(null)
-          },
-        })
-        return
-      }
-    }
-
+    // Always set drag state - warnings will be checked in handleMouseUp
     setDragState({
       assignmentId,
       startDate: date,
@@ -616,6 +570,71 @@ export default function Timeline({
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
       )
 
+      // Get the assignment to check member and warnings
+      const assignment = projectAssignments.find((pa: any) => pa.id === dragState.assignmentId)
+      const warnWeekend = settings.warnWeekendAssignments !== 'false'
+
+      // Check all dates in the range for holidays and non-working days
+      if (warnWeekend && assignment) {
+        const holidays: string[] = []
+        const nonWorkingDays: string[] = []
+
+        for (let i = 0; i <= daysDiff; i++) {
+          const date = addDays(start, i)
+
+          if (isHoliday(date)) {
+            const holidayName = getHolidayName(date)
+            holidays.push(holidayName || format(date, 'MMM d'))
+          } else if (isNonWorkingDay(assignment.teamMemberId, date)) {
+            nonWorkingDays.push(format(date, 'MMM d'))
+          }
+        }
+
+        // Show warning if there are holidays or non-working days
+        if (holidays.length > 0 || nonWorkingDays.length > 0) {
+          const member = members.find((m) => m.id === assignment.teamMemberId)
+          const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
+
+          // Build message with strong tags for dates
+          const message = (
+            <>
+              {holidays.length > 0 && (
+                <>
+                  The following dates are holidays: <strong>{holidays.join(', ')}</strong>.{' '}
+                </>
+              )}
+              {nonWorkingDays.length > 0 && (
+                <>
+                  The following dates are non-working days for {memberName}: <strong>{nonWorkingDays.join(', ')}</strong>.{' '}
+                </>
+              )}
+              Are you sure you want to assign work on these days?
+            </>
+          )
+
+          setTimelineWarning({
+            type: holidays.length > 0 ? 'holiday' : 'non-working-day',
+            message,
+            onConfirm: () => {
+              // User confirmed, create all assignments
+              for (let i = 0; i <= daysDiff; i++) {
+                const date = addDays(start, i)
+                createDayAssignmentMutation.mutate({
+                  projectAssignmentId: dragState.assignmentId,
+                  date: format(date, 'yyyy-MM-dd'),
+                })
+              }
+              setTimelineWarning(null)
+            },
+          })
+
+          // Clear drag state but don't create assignments yet (waiting for confirmation)
+          setDragState({ assignmentId: null, startDate: null, endDate: null })
+          return
+        }
+      }
+
+      // No warnings needed, create assignments directly
       for (let i = 0; i <= daysDiff; i++) {
         const date = addDays(start, i)
         createDayAssignmentMutation.mutate({
