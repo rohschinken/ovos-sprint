@@ -12,6 +12,42 @@ import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
+import {
+  ZOOM_COLUMN_WIDTHS,
+  DEFAULT_COLUMN_WIDTH,
+  type ZoomLevel
+} from '@/lib/timeline-constants'
+import {
+  getAssignmentRoundedClass,
+  getAssignmentBorderClass,
+  getAssignmentWidthClass,
+  getCollapsedBarRoundedClass,
+  getCollapsedBarBorderClass,
+  getCollapsedBarWidthClass
+} from '@/lib/timeline-styling'
+import {
+  isDayAssigned,
+  isPrevDayAssigned,
+  isNextDayAssigned,
+  getContiguousRangeForDate,
+  isFirstDayOfRange,
+  isLastDayOfRange,
+  getCommentOverlayWidth,
+  getDatePixelOffset,
+  getDateFromClickX,
+  getMemberAssignmentsOnDate,
+  getProjectMembersOnDate,
+  projectHasAssignmentOnDate,
+  memberHasAssignmentOnDate,
+  projectHasAssignmentOnPrevDay,
+  projectHasAssignmentOnNextDay,
+  memberHasAssignmentOnPrevDay,
+  memberHasAssignmentOnNextDay
+} from '@/lib/timeline-helpers'
+import {
+  applyProjectFilters,
+  applyMemberFilters
+} from '@/lib/timeline-filters'
 
 interface TimelineProps {
   viewMode: TimelineViewMode
@@ -72,13 +108,7 @@ export default function Timeline({
   const expandedItemsSet = new Set(expandedItemsProp)
 
   // Column width based on zoom level (1=extra narrow, 2=compact, 3=narrow, 4=normal)
-  const columnWidths = {
-    1: 'w-10', // 40px - Extra Narrow
-    2: 'w-12', // 48px - Compact
-    3: 'w-16', // 64px - Narrow
-    4: 'w-20', // 80px - Normal
-  }
-  const columnWidth = columnWidths[zoomLevel as keyof typeof columnWidths] || 'w-16'
+  const columnWidth = ZOOM_COLUMN_WIDTHS[zoomLevel as ZoomLevel] || DEFAULT_COLUMN_WIDTH
 
   // Generate dates
   const today = startOfDay(new Date())
@@ -224,67 +254,24 @@ export default function Timeline({
     },
   })
 
-  // Filter members based on selected teams
-  const filteredMembers =
-    selectedTeamIds.length === 0
-      ? members
-      : members.filter((member) =>
-          teamMemberRelationships.some(
-            (rel) =>
-              rel.teamMemberId === member.id &&
-              selectedTeamIds.includes(rel.teamId)
-          )
-        )
+  // Apply project and member filters using utility functions
+  const filteredProjects = applyProjectFilters(
+    projects,
+    projectAssignments,
+    members,
+    teamMemberRelationships,
+    selectedTeamIds,
+    showTentative
+  )
 
-  // Filter projects based on selected teams (show only projects with members from selected teams)
-  const filteredProjectsWithTeam =
-    selectedTeamIds.length === 0
-      ? projects
-      : projects.filter((project) => {
-          // Get all assignments for this project
-          const projectAssignmentsForProject = projectAssignments.filter(
-            (pa: any) => pa.projectId === project.id
-          )
-          // Check if any of these assignments have members from the selected teams
-          return projectAssignmentsForProject.some((assignment: any) => {
-            const member = members.find((m) => m.id === assignment.teamMemberId)
-            if (!member) return false
-            return teamMemberRelationships.some(
-              (rel) =>
-                rel.teamMemberId === member.id &&
-                selectedTeamIds.includes(rel.teamId)
-            )
-          })
-        })
-
-  // Filter out projects without members
-  const filteredProjectsWithMembers = filteredProjectsWithTeam.filter((project) => {
-    const assignments = projectAssignments.filter(
-      (pa: any) => pa.projectId === project.id
-    )
-    return assignments.length > 0
-  })
-
-  // Filter out tentative projects if showTentative is false
-  const filteredProjects = showTentative
-    ? filteredProjectsWithMembers
-    : filteredProjectsWithMembers.filter((project) => project.status === 'confirmed')
-
-  // Filter out members without projects
-  const filteredMembersWithProjects = filteredMembers.filter((member) => {
-    const assignments = projectAssignments.filter(
-      (pa: any) => pa.teamMemberId === member.id
-    )
-    // If showTentative is false, only count confirmed project assignments
-    if (!showTentative) {
-      const confirmedAssignments = assignments.filter((pa: any) => {
-        const project = projects.find((p) => p.id === pa.projectId)
-        return project && project.status === 'confirmed'
-      })
-      return confirmedAssignments.length > 0
-    }
-    return assignments.length > 0
-  })
+  const filteredMembersWithProjects = applyMemberFilters(
+    members,
+    teamMemberRelationships,
+    selectedTeamIds,
+    projectAssignments,
+    projects,
+    showTentative
+  )
 
   // Reset initialization flag when view mode changes
   useEffect(() => {
@@ -658,56 +645,6 @@ export default function Timeline({
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
   }, [dragState])
 
-  const isDayAssigned = (assignmentId: number, date: Date) => {
-    return dayAssignments.some(
-      (da: any) =>
-        da.projectAssignment?.id === assignmentId &&
-        isSameDay(new Date(da.date), date)
-    )
-  }
-
-  // Helper functions to determine position in consecutive assignment range
-  const isPrevDayAssigned = (assignmentId: number, date: Date) => {
-    const prevDate = addDays(date, -1)
-    return isDayAssigned(assignmentId, prevDate)
-  }
-
-  const isNextDayAssigned = (assignmentId: number, date: Date) => {
-    const nextDate = addDays(date, 1)
-    return isDayAssigned(assignmentId, nextDate)
-  }
-
-  const getAssignmentRoundedClass = (assignmentId: number, date: Date) => {
-    const hasPrev = isPrevDayAssigned(assignmentId, date)
-    const hasNext = isNextDayAssigned(assignmentId, date)
-
-    if (!hasPrev && !hasNext) return 'rounded' // Single day
-    if (!hasPrev && hasNext) return 'rounded-l' // First day
-    if (hasPrev && hasNext) return 'rounded-none' // Middle day
-    if (hasPrev && !hasNext) return 'rounded-r' // Last day
-    return 'rounded'
-  }
-
-  const getAssignmentBorderClass = (assignmentId: number, date: Date) => {
-    const hasPrev = isPrevDayAssigned(assignmentId, date)
-    const hasNext = isNextDayAssigned(assignmentId, date)
-
-    // For connected assignments, remove borders between consecutive days
-    const classes = ['border-t-2', 'border-b-2']
-
-    if (!hasPrev) classes.push('border-l-2') // Show left border if first day
-    if (!hasNext) classes.push('border-r-2') // Show right border if last day
-
-    return classes.join(' ')
-  }
-
-  const getAssignmentWidthClass = (assignmentId: number, date: Date) => {
-    const hasNext = isNextDayAssigned(assignmentId, date)
-
-    // Extend width slightly to overlap with next cell border for seamless connection
-    if (hasNext) return 'w-[calc(100%+1px)]' // Extend 1px to overlap
-    return 'w-full'
-  }
 
   const getDayAssignmentId = (assignmentId: number, date: Date) => {
     const dayAssignment = dayAssignments.find(
@@ -730,30 +667,6 @@ export default function Timeline({
     deleteDayAssignmentMutation.mutate(dayAssignmentId)
   }
 
-  // Get the contiguous date range containing a specific date for an assignment
-  const getContiguousRangeForDate = (assignmentId: number, date: Date): { start: string; end: string } => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    const dates: string[] = [dateStr]
-
-    // Expand backwards
-    let checkDate = addDays(date, -1)
-    while (isDayAssigned(assignmentId, checkDate)) {
-      dates.unshift(format(checkDate, 'yyyy-MM-dd'))
-      checkDate = addDays(checkDate, -1)
-    }
-
-    // Expand forwards
-    checkDate = addDays(date, 1)
-    while (isDayAssigned(assignmentId, checkDate)) {
-      dates.push(format(checkDate, 'yyyy-MM-dd'))
-      checkDate = addDays(checkDate, 1)
-    }
-
-    return {
-      start: dates[0],
-      end: dates[dates.length - 1]
-    }
-  }
 
   // Get the assignment group for a specific date within an assignment
   const getGroupForDate = (assignmentId: number, date: Date): AssignmentGroup | null => {
@@ -777,65 +690,6 @@ export default function Timeline({
     return group?.comment ?? null
   }
 
-  // Check if this is the first day of a contiguous range (for showing comment indicator)
-  const isFirstDayOfRange = (assignmentId: number, date: Date): boolean => {
-    return !isPrevDayAssigned(assignmentId, date)
-  }
-
-  // Check if this is the last day of a contiguous range (for showing priority indicators)
-  const isLastDayOfRange = (assignmentId: number, date: Date): boolean => {
-    return !isNextDayAssigned(assignmentId, date)
-  }
-
-  // Get the number of visible days in the contiguous range containing a date
-  // This counts only days that are in the filtered `dates` array (respects showWeekends setting)
-  const getVisibleRangeLengthInDays = (assignmentId: number, startDate: Date): number => {
-    const range = getContiguousRangeForDate(assignmentId, startDate)
-    const rangeStart = new Date(range.start)
-    const rangeEnd = new Date(range.end)
-
-    // Count visible days in the range
-    let count = 1
-    for (const d of dates) {
-      if (d >= rangeStart && d <= rangeEnd) {
-        count++
-      }
-    }
-    return count
-  }
-
-  // Get the pixel width for the comment text overlay based on visible range length and zoom
-  const getCommentOverlayWidth = (assignmentId: number, date: Date): number => {
-    const visibleRangeLength = getVisibleRangeLengthInDays(assignmentId, date)
-    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
-    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
-    // Reserve space for priority indicator (24px) at end only - emoji is inside the width
-    return visibleRangeLength * cellWidth - 24
-  }
-
-  // Get the pixel offset from the start of the dates grid for a specific date
-  const getDatePixelOffset = (targetDate: Date): number => {
-    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
-    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
-    const dayIndex = dates.findIndex(d => isSameDay(d, targetDate))
-    if (dayIndex === -1) return 0
-    return dayIndex * cellWidth
-  }
-
-  // Get the date from a click's clientX position (relative to the timeline row)
-  const getDateFromClickX = (clientX: number, rowElement: HTMLElement): Date | null => {
-    const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
-    const cellWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
-    const sidebarWidth = 256 // w-64 = 256px
-    const rowRect = rowElement.getBoundingClientRect()
-    const xInRow = clientX - rowRect.left - sidebarWidth
-    if (xInRow < 0) return null
-    const dayIndex = Math.floor(xInRow / cellWidth)
-    if (dayIndex >= 0 && dayIndex < dates.length) {
-      return dates[dayIndex]
-    }
-    return null
-  }
 
   // Handle click on assignment bar to open edit popover
   const handleAssignmentClick = (assignmentId: number, date: Date, event: React.MouseEvent) => {
@@ -844,7 +698,7 @@ export default function Timeline({
 
     event.stopPropagation()
 
-    const range = getContiguousRangeForDate(assignmentId, date)
+    const range = getContiguousRangeForDate(dayAssignments, assignmentId, date)
     const group = getGroupForDate(assignmentId, date)
 
     setEditPopover({
@@ -963,78 +817,6 @@ export default function Timeline({
     return date >= start && date <= end
   }
 
-  // Check if a member has overlapping assignments on a date (for by-member view)
-  const getMemberAssignmentsOnDate = (memberId: number, date: Date) => {
-    const memberAssignments = projectAssignments.filter(
-      (pa: any) => pa.teamMemberId === memberId
-    )
-
-    return memberAssignments.filter((assignment: any) =>
-      isDayAssigned(assignment.id, date)
-    ).length
-  }
-
-  // Check if a project has overlapping members on a date (for by-project view)
-  const getProjectMembersOnDate = (projectId: number, date: Date) => {
-    const projAssignments = projectAssignments.filter(
-      (pa: any) => pa.projectId === projectId
-    )
-
-    return projAssignments.filter((assignment: any) =>
-      isDayAssigned(assignment.id, date)
-    ).length
-  }
-
-  // Check if a project has ANY assignments on a date (for collapsed view)
-  const projectHasAssignmentOnDate = (projectId: number, date: Date) => {
-    return getProjectMembersOnDate(projectId, date) > 0
-  }
-
-  // Check if a member has ANY assignments on a date (for collapsed view)
-  const memberHasAssignmentOnDate = (memberId: number, date: Date) => {
-    return getMemberAssignmentsOnDate(memberId, date) > 0
-  }
-
-  // Helper functions for collapsed row assignment bar connections
-  const projectHasAssignmentOnPrevDay = (projectId: number, date: Date) => {
-    const prevDate = addDays(date, -1)
-    return projectHasAssignmentOnDate(projectId, prevDate)
-  }
-
-  const projectHasAssignmentOnNextDay = (projectId: number, date: Date) => {
-    const nextDate = addDays(date, 1)
-    return projectHasAssignmentOnDate(projectId, nextDate)
-  }
-
-  const memberHasAssignmentOnPrevDay = (memberId: number, date: Date) => {
-    const prevDate = addDays(date, -1)
-    return memberHasAssignmentOnDate(memberId, prevDate)
-  }
-
-  const memberHasAssignmentOnNextDay = (memberId: number, date: Date) => {
-    const nextDate = addDays(date, 1)
-    return memberHasAssignmentOnDate(memberId, nextDate)
-  }
-
-  const getCollapsedBarRoundedClass = (hasPrev: boolean, hasNext: boolean) => {
-    if (!hasPrev && !hasNext) return 'rounded' // Single day
-    if (!hasPrev && hasNext) return 'rounded-l' // First day
-    if (hasPrev && hasNext) return 'rounded-none' // Middle day
-    if (hasPrev && !hasNext) return 'rounded-r' // Last day
-    return 'rounded'
-  }
-
-  const getCollapsedBarBorderClass = (hasPrev: boolean, hasNext: boolean) => {
-    const classes = ['border-t-2', 'border-b-2']
-    if (!hasPrev) classes.push('border-l-2')
-    if (!hasNext) classes.push('border-r-2')
-    return classes.join(' ')
-  }
-
-  const getCollapsedBarWidthClass = (hasNext: boolean) => {
-    if (hasNext) return 'w-[calc(100%+1px)]'
-    return 'w-full'
-  }
 
   // Check if a member has ANY assignments on a date (for collapsed view)
   const memberHasConfirmedAssignmentOnDate = (memberId: number, date: Date) => {
@@ -1043,7 +825,7 @@ export default function Timeline({
     )
 
     return memberAssignments.some((assignment: any) => {
-      if (!isDayAssigned(assignment.id, date)) return false
+      if (!isDayAssigned(dayAssignments, assignment.id, date)) return false
       const project = projects.find((p) => p.id === assignment.projectId)
       return project && project.status === 'confirmed'
     })
@@ -1053,8 +835,8 @@ export default function Timeline({
     if (!showOverlaps) return false
 
     const count = mode === 'member'
-      ? getMemberAssignmentsOnDate(id, date)
-      : getProjectMembersOnDate(id, date)
+      ? getMemberAssignmentsOnDate(projectAssignments, dayAssignments, id, date)
+      : getProjectMembersOnDate(projectAssignments, dayAssignments, id, date)
 
     return count > 1
   }
@@ -1186,18 +968,18 @@ export default function Timeline({
                             🚩
                             </div>
                           )}
-                          {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(project.id, date) && (
+                          {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(projectAssignments, dayAssignments, project.id, date) && (
                             <div
                               className={cn(
                                 'h-3 shadow-sm',
-                                getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(project.id, date)),
+                                getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)),
                                 getCollapsedBarRoundedClass(
-                                  projectHasAssignmentOnPrevDay(project.id, date),
-                                  projectHasAssignmentOnNextDay(project.id, date)
+                                  projectHasAssignmentOnPrevDay(projectAssignments, dayAssignments, project.id, date),
+                                  projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)
                                 ),
                                 getCollapsedBarBorderClass(
-                                  projectHasAssignmentOnPrevDay(project.id, date),
-                                  projectHasAssignmentOnNextDay(project.id, date)
+                                  projectHasAssignmentOnPrevDay(projectAssignments, dayAssignments, project.id, date),
+                                  projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)
                                 ),
                                 // Always green for collapsed projects (with opacity for tentative)
                                 'bg-confirmed border-emerald-400',
@@ -1260,13 +1042,13 @@ export default function Timeline({
                             }
                             onMouseEnter={() => handleMouseEnter(date)}
                             onClick={(e) => {
-                              if ((e.ctrlKey || e.metaKey) && isDayAssigned(assignment.id, date)) {
+                              if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
                                 handleDeleteDayAssignment(assignment.id, date, e)
                               }
                             }}
                             onContextMenu={(_e) => {
                               _e.preventDefault() // Prevent browser context menu
-                              if (isDayAssigned(assignment.id, date)) {
+                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                 handleDeleteDayAssignment(assignment.id, date, _e)
                               }
                             }}
@@ -1276,14 +1058,20 @@ export default function Timeline({
                                 {format(date, 'EEE', { locale: enGB })}
                               </span>
                             </div>
-                            {(isDayAssigned(assignment.id, date) ||
+                            {(isDayAssigned(dayAssignments, assignment.id, date) ||
                               isDayInDragRange(assignment.id, date)) && (
                               <div
                                 className={cn(
                                   'h-5 shadow-sm relative z-20',
-                                  getAssignmentWidthClass(assignment.id, date),
-                                  getAssignmentRoundedClass(assignment.id, date),
-                                  getAssignmentBorderClass(assignment.id, date),
+                                  getAssignmentWidthClass(isNextDayAssigned(dayAssignments, assignment.id, date)),
+                                  getAssignmentRoundedClass(
+                                    isPrevDayAssigned(dayAssignments, assignment.id, date),
+                                    isNextDayAssigned(dayAssignments, assignment.id, date)
+                                  ),
+                                  getAssignmentBorderClass(
+                                    isPrevDayAssigned(dayAssignments, assignment.id, date),
+                                    isNextDayAssigned(dayAssignments, assignment.id, date)
+                                  ),
                                   // Color orange if overlap, otherwise green
                                   hasOverlap(member.id, date, 'member')
                                     ? 'bg-orange-500/40 border-orange-400'
@@ -1298,20 +1086,20 @@ export default function Timeline({
                                   e.stopPropagation()
                                 }}
                                 onClick={(e) => {
-                                  if (isDayAssigned(assignment.id, date)) {
+                                  if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                     handleAssignmentClick(assignment.id, date, e)
                                   }
                                 }}
                                 onContextMenu={(e) => {
                                   e.preventDefault()
-                                  if (isDayAssigned(assignment.id, date)) {
+                                  if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                     handleDeleteDayAssignment(assignment.id, date, e)
                                   }
                                 }}
                                 style={{ pointerEvents: 'auto' }}
                               >
                                 {/* Priority indicators - on last day of range */}
-                                {isDayAssigned(assignment.id, date) && isLastDayOfRange(assignment.id, date) && (
+                                {isDayAssigned(dayAssignments, assignment.id, date) && isLastDayOfRange(dayAssignments, assignment.id, date) && (
                                   <>
                                     {getGroupPriority(assignment.id, date) === 'high' && (
                                       <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
@@ -1334,7 +1122,7 @@ export default function Timeline({
                           // Find all contiguous ranges with comments for this assignment
                           const commentRanges: { date: Date; comment: string }[] = []
                           dates.forEach(date => {
-                            if (isDayAssigned(assignment.id, date) && isFirstDayOfRange(assignment.id, date)) {
+                            if (isDayAssigned(dayAssignments, assignment.id, date) && isFirstDayOfRange(dayAssignments, assignment.id, date)) {
                               const comment = getGroupComment(assignment.id, date)
                               if (comment) {
                                 commentRanges.push({ date, comment })
@@ -1347,15 +1135,15 @@ export default function Timeline({
                                 <div
                                   className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
                                   style={{
-                                    left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
-                                    width: getCommentOverlayWidth(assignment.id, date),
+                                    left: 256 + getDatePixelOffset(dates, date, zoomLevel as ZoomLevel) + 4, // 256px = w-64 sidebar, +4 for padding
+                                    width: getCommentOverlayWidth(dayAssignments, dates, assignment.id, date, zoomLevel as ZoomLevel),
                                   }}
                                   onClick={(e) => {
                                     // Find the actual date clicked based on X position
                                     const row = e.currentTarget.closest('.relative') as HTMLElement
                                     if (row) {
-                                      const clickedDate = getDateFromClickX(e.clientX, row)
-                                      if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                      const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
+                                      if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
                                         handleAssignmentClick(assignment.id, clickedDate, e)
                                       }
                                     }
@@ -1365,8 +1153,8 @@ export default function Timeline({
                                     // Find the actual date clicked based on X position
                                     const row = e.currentTarget.closest('.relative') as HTMLElement
                                     if (row) {
-                                      const clickedDate = getDateFromClickX(e.clientX, row)
-                                      if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                      const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
+                                      if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
                                         handleDeleteDayAssignment(assignment.id, clickedDate, e)
                                       }
                                     }
@@ -1522,18 +1310,18 @@ export default function Timeline({
                             vac. 🏝️
                           </div>
                         )}
-                        {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(member.id, date) && (
+                        {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(projectAssignments, dayAssignments, member.id, date) && (
                           <div
                             className={cn(
                               'h-3 shadow-sm',
-                              getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(member.id, date)),
+                              getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)),
                               getCollapsedBarRoundedClass(
-                                memberHasAssignmentOnPrevDay(member.id, date),
-                                memberHasAssignmentOnNextDay(member.id, date)
+                                memberHasAssignmentOnPrevDay(projectAssignments, dayAssignments, member.id, date),
+                                memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)
                               ),
                               getCollapsedBarBorderClass(
-                                memberHasAssignmentOnPrevDay(member.id, date),
-                                memberHasAssignmentOnNextDay(member.id, date)
+                                memberHasAssignmentOnPrevDay(projectAssignments, dayAssignments, member.id, date),
+                                memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)
                               ),
                               // Color orange if overlap, otherwise green (with opacity for tentative)
                               hasOverlap(member.id, date, 'member')
@@ -1607,13 +1395,13 @@ export default function Timeline({
                                                         handleMouseDown(assignment.id, date, _e)                          }
                           onMouseEnter={() => handleMouseEnter(date)}
                           onClick={(e) => {
-                            if ((e.ctrlKey || e.metaKey) && isDayAssigned(assignment.id, date)) {
+                            if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
                               handleDeleteDayAssignment(assignment.id, date, e)
                             }
                           }}
                                                       onContextMenu={(_e) => {
                                                         _e.preventDefault() // Prevent browser context menu
-                                                        if (isDayAssigned(assignment.id, date)) {
+                                                        if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                                           handleDeleteDayAssignment(assignment.id, date, _e)
                                                         }
                                                       }}                        >
@@ -1627,14 +1415,20 @@ export default function Timeline({
                             🚩
                             </div>
                           )}
-                          {(isDayAssigned(assignment.id, date) ||
+                          {(isDayAssigned(dayAssignments, assignment.id, date) ||
                             isDayInDragRange(assignment.id, date)) && (
                             <div
                               className={cn(
                                 'h-5 shadow-sm relative z-20',
-                                getAssignmentWidthClass(assignment.id, date),
-                                getAssignmentRoundedClass(assignment.id, date),
-                                getAssignmentBorderClass(assignment.id, date),
+                                getAssignmentWidthClass(isNextDayAssigned(dayAssignments, assignment.id, date)),
+                                getAssignmentRoundedClass(
+                                  isPrevDayAssigned(dayAssignments, assignment.id, date),
+                                  isNextDayAssigned(dayAssignments, assignment.id, date)
+                                ),
+                                getAssignmentBorderClass(
+                                  isPrevDayAssigned(dayAssignments, assignment.id, date),
+                                  isNextDayAssigned(dayAssignments, assignment.id, date)
+                                ),
                                 'bg-confirmed border-emerald-400',
                                 project.status === 'tentative' && 'opacity-60',
                                 isDayInDragRange(assignment.id, date) &&
@@ -1646,20 +1440,20 @@ export default function Timeline({
                                 e.stopPropagation()
                               }}
                               onClick={(e) => {
-                                if (isDayAssigned(assignment.id, date)) {
+                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                   handleAssignmentClick(assignment.id, date, e)
                                 }
                               }}
                               onContextMenu={(e) => {
                                 e.preventDefault()
-                                if (isDayAssigned(assignment.id, date)) {
+                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
                                   handleDeleteDayAssignment(assignment.id, date, e)
                                 }
                               }}
                               style={{ pointerEvents: 'auto' }}
                             >
                               {/* Priority indicators - on last day of range */}
-                              {isDayAssigned(assignment.id, date) && isLastDayOfRange(assignment.id, date) && (
+                              {isDayAssigned(dayAssignments, assignment.id, date) && isLastDayOfRange(dayAssignments, assignment.id, date) && (
                                 <>
                                   {getGroupPriority(assignment.id, date) === 'high' && (
                                     <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
@@ -1682,7 +1476,7 @@ export default function Timeline({
                         // Find all contiguous ranges with comments for this assignment
                         const commentRanges: { date: Date; comment: string }[] = []
                         dates.forEach(date => {
-                          if (isDayAssigned(assignment.id, date) && isFirstDayOfRange(assignment.id, date)) {
+                          if (isDayAssigned(dayAssignments, assignment.id, date) && isFirstDayOfRange(dayAssignments, assignment.id, date)) {
                             const comment = getGroupComment(assignment.id, date)
                             if (comment) {
                               commentRanges.push({ date, comment })
@@ -1695,15 +1489,15 @@ export default function Timeline({
                               <div
                                 className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
                                 style={{
-                                  left: 256 + getDatePixelOffset(date) + 4, // 256px = w-64 sidebar, +4 for padding
-                                  width: getCommentOverlayWidth(assignment.id, date),
+                                  left: 256 + getDatePixelOffset(dates, date, zoomLevel as ZoomLevel) + 4, // 256px = w-64 sidebar, +4 for padding
+                                  width: getCommentOverlayWidth(dayAssignments, dates, assignment.id, date, zoomLevel as ZoomLevel),
                                 }}
                                 onClick={(e) => {
                                   // Find the actual date clicked based on X position
                                   const row = e.currentTarget.closest('.relative') as HTMLElement
                                   if (row) {
-                                    const clickedDate = getDateFromClickX(e.clientX, row)
-                                    if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                    const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
+                                    if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
                                       handleAssignmentClick(assignment.id, clickedDate, e)
                                     }
                                   }
@@ -1713,8 +1507,8 @@ export default function Timeline({
                                   // Find the actual date clicked based on X position
                                   const row = e.currentTarget.closest('.relative') as HTMLElement
                                   if (row) {
-                                    const clickedDate = getDateFromClickX(e.clientX, row)
-                                    if (clickedDate && isDayAssigned(assignment.id, clickedDate)) {
+                                    const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
+                                    if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
                                       handleDeleteDayAssignment(assignment.id, clickedDate, e)
                                     }
                                   }
