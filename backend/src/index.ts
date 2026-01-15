@@ -85,13 +85,14 @@ const httpServer = createServer(app)
 export const io = setupWebSocket(httpServer)
 
 // Middleware
-// Helmet for security headers (explicitly disable CORS handling)
+// Helmet for security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-  // Let the cors() middleware handle CORS, not Helmet
   crossOriginEmbedderPolicy: false,
 }));
+
+// CORS: Backend handles CORS in all environments
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
   ...(process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('//www.')
@@ -116,6 +117,9 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+console.log(`🔒 CORS enabled. Allowed origins: ${allowedOrigins.join(', ')}`);
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
