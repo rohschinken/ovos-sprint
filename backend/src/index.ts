@@ -85,9 +85,12 @@ const httpServer = createServer(app)
 export const io = setupWebSocket(httpServer)
 
 // Middleware
+// Helmet for security headers (explicitly disable CORS handling)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  // Let the cors() middleware handle CORS, not Helmet
+  crossOriginEmbedderPolicy: false,
 }));
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -98,10 +101,16 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`CORS: Blocked origin: ${origin}`);
+      console.warn(`CORS: Blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
       callback(new Error(`Not allowed by CORS. Blocked origin: ${origin}`));
     }
   },
