@@ -186,6 +186,8 @@ export default function Timeline({
     deleteDayAssignmentMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
+    createDayOffMutation,
+    deleteDayOffMutation,
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
@@ -300,6 +302,40 @@ export default function Timeline({
     }
   }
 
+  // Helper function to get day-off ID for deletion
+  const getDayOffId = (memberId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const dayOff = dayOffs.find(
+      (d) => d.teamMemberId === memberId && d.date === dateStr
+    )
+    return dayOff?.id
+  }
+
+  // Handle member cell click for day-off management
+  const handleMemberCellClick = (memberId: number, date: Date, _e: React.MouseEvent) => {
+    if (!isAdmin || viewMode !== 'by-member') return
+
+    _e.preventDefault()
+    _e.stopPropagation()
+
+    // Check if there's already a day-off
+    const dayOffId = getDayOffId(memberId, date)
+    if (dayOffId) {
+      // Delete existing day-off if right-click
+      if (_e.button === 2) {
+        deleteDayOffMutation.mutate(dayOffId)
+      }
+    } else {
+      // Create new day-off on normal click
+      if (_e.button === 0) {
+        createDayOffMutation.mutate({
+          teamMemberId: memberId,
+          date: format(date, 'yyyy-MM-dd'),
+        })
+      }
+    }
+  }
+
   const isDayInDragRange = (assignmentId: number, date: Date) => {
     if (
       dragState.assignmentId !== assignmentId ||
@@ -360,6 +396,7 @@ export default function Timeline({
       handleAssignmentClick={handleAssignmentClick}
       handleDeleteDayAssignment={handleDeleteDayAssignment}
       handleProjectCellClick={handleProjectCellClick}
+      handleMemberCellClick={handleMemberCellClick}
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}
@@ -395,6 +432,7 @@ export default function Timeline({
       handleAssignmentClick={handleAssignmentClick}
       handleDeleteDayAssignment={handleDeleteDayAssignment}
       handleProjectCellClick={handleProjectCellClick}
+      handleMemberCellClick={handleMemberCellClick}
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}

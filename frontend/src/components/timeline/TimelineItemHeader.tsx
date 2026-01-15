@@ -4,7 +4,7 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { isWeekend, isHoliday } from '@/lib/holidays'
 import { MilestoneIndicator } from './MilestoneIndicator'
-import type { Project, TeamMember, Milestone } from '@/types'
+import type { Project, TeamMember, Milestone, DayOff } from '@/types'
 
 /**
  * Props for TimelineItemHeader component
@@ -20,6 +20,9 @@ interface TimelineItemHeaderProps {
   // Only for projects:
   milestones?: Milestone[]
   onMilestoneToggle?: (projectId: number, date: Date, event: React.MouseEvent) => void
+  // Only for members:
+  dayOffs?: DayOff[]
+  onDayOffToggle?: (memberId: number, date: Date, event: React.MouseEvent) => void
 }
 
 /**
@@ -59,6 +62,8 @@ export function TimelineItemHeader({
   columnWidth,
   milestones,
   onMilestoneToggle,
+  dayOffs,
+  onDayOffToggle,
 }: TimelineItemHeaderProps) {
   const today = new Date()
 
@@ -137,6 +142,17 @@ export function TimelineItemHeader({
   }
 
   /**
+   * Check if a date is a day-off for the member
+   */
+  const isDayOff = (date: Date): boolean => {
+    if (type !== 'member' || !dayOffs) return false
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return dayOffs.some(
+      (dayOff) => dayOff.teamMemberId === (item as TeamMember).id && dayOff.date === dateStr
+    )
+  }
+
+  /**
    * Render date cells
    */
   const renderDateCells = () => {
@@ -144,30 +160,36 @@ export function TimelineItemHeader({
       const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
       const isWeekendDay = isWeekend(date)
       const isHolidayDay = isHoliday(date)
+      const isDayOffDay = isDayOff(date)
 
       return (
         <div
           key={date.toISOString()}
           className={cn(
             columnWidth,
-            'border-r relative flex items-center justify-center',
+            'border-r relative flex items-center justify-center text-[10px]',
             isWeekendDay && 'bg-weekend',
             isHolidayDay && 'bg-holiday',
+            isDayOffDay && 'bg-dayOff',
             isToday && 'bg-primary/10 border-x-2 border-x-primary',
             isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
             isWeekStart(date, dateIndex) &&
               !isFirstDayOfMonth(date) &&
               'border-l-4 border-l-muted-foreground',
-            canEdit && type === 'project' && 'cursor-pointer'
+            canEdit && (type === 'project' || type === 'member') && 'cursor-pointer'
           )}
           onClick={
             type === 'project' && onMilestoneToggle
               ? (e) => onMilestoneToggle((item as Project).id, date, e)
+              : type === 'member' && onDayOffToggle
+              ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
               : undefined
           }
           onContextMenu={
             type === 'project' && onMilestoneToggle
               ? (e) => onMilestoneToggle((item as Project).id, date, e)
+              : type === 'member' && onDayOffToggle
+              ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
               : undefined
           }
         >
@@ -179,6 +201,9 @@ export function TimelineItemHeader({
               canEdit={canEdit}
               onToggle={onMilestoneToggle}
             />
+          )}
+          {type === 'member' && isDayOffDay && (
+            <span className="text-dayOff-foreground font-medium">Day Off</span>
           )}
         </div>
       )
