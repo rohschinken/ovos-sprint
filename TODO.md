@@ -33,8 +33,8 @@
 
 ### Improve UX of Timeline view
 
-- [ ] First column (containing members and projects) should be fixed when scrolling horizontally. Especially when showing a lot of upcoming days and when scrolling all the way to the right, the first column disappears and it's hard to guess which row belongs to which person or project.
-- [ ] New Option in Display Settings: Hide empty rows (default: enabled) - when enabled rows that do not have assignments _in the currently shown day-range_(!) should not be rendered. The idea of this feature is to reduce visual clutter and hide unnecessary rows.
+- [x] First column (containing members and projects) should be fixed when scrolling horizontally. Especially when showing a lot of upcoming days and when scrolling all the way to the right, the first column disappears and it's hard to guess which row belongs to which person or project.
+- [x] New Option in Display Settings: Hide empty rows (default: enabled) - when enabled rows that do not have assignments _in the currently shown day-range_(!) should not be rendered. The idea of this feature is to reduce visual clutter and hide unnecessary rows.
 
 ### PW Reset form for users
 

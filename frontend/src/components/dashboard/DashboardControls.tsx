@@ -54,7 +54,7 @@ export function DashboardControls({
   const allExpanded = totalItemsCount > 0 && expandedItemsCount === totalItemsCount
 
   // Zoom level labels
-  const zoomLabels = ['Extra Narrow', 'Narrow', 'Compact', 'Normal']
+  const zoomLabels = ['Narrow', 'Compact', 'Normal', 'Wide']
 
   return (
     <div className="flex gap-3">
