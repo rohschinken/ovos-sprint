@@ -2,9 +2,7 @@
 
 ## High Priority
 
-### Implementing Sparkpost SMTP service for PROD environments
-
-- [ ] currenty emails are not being sent. Check why that is and fix errors.
+(No high priority items at this time)
 
 ## Medium Priority
 
@@ -26,6 +24,15 @@
 **Commands**: `npm test` (frontend/backend)
 
 ## Low Priority
+
+### Email Spam Filter Investigation
+
+- [ ] Investigate why invitation emails land in spam folder despite 10/10 score on mailtester.com
+- [ ] Review email content and headers to improve deliverability
+- [ ] Consider adding DMARC policy to DNS records
+- [ ] Test with different email providers (Gmail, Outlook, etc.)
+
+**Note**: Emails are being sent successfully via SparkPost, but may be filtered as spam by some providers.
 
 ### Internationalization (i18n)
 
@@ -58,3 +65,5 @@
 - [x] JWT authentication with role-based access control
 - [x] Docker Compose development environment
 - [x] Email service with React Email templates
+- [x] SparkPost SMTP integration for production emails
+- [x] Git branching strategy (main/next workflow)
