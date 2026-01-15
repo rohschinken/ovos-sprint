@@ -71,7 +71,18 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // Load environment variables with explicit path (needed when running from dist/)
-dotenv.config({ path: path.join(__dirname, '../.env') })
+const envPath = path.join(__dirname, '../.env')
+const result = dotenv.config({ path: envPath })
+
+// Debug: Log environment loading result
+if (result.error) {
+  console.error(`❌ Failed to load .env file from: ${envPath}`)
+  console.error(`   Error: ${result.error.message}`)
+} else {
+  console.log(`✅ Environment loaded from: ${envPath}`)
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV}`)
+  console.log(`   SMTP_HOST: ${process.env.SMTP_HOST || '(not set)'}`)
+}
 
 // Validate environment after loading .env
 validateEnvironment()
