@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "a77f80ce-3b7e-4baf-9cc1-4fea784ff256",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "day_assignments": {
       "name": "day_assignments",
@@ -49,19 +47,20 @@
         "day_assignments_project_assignment_id_project_assignments_id_fk": {
           "name": "day_assignments_project_assignment_id_project_assignments_id_fk",
           "tableFrom": "day_assignments",
-          "tableTo": "project_assignments",
           "columnsFrom": [
             "project_assignment_id"
           ],
+          "tableTo": "project_assignments",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "invitations": {
       "name": "invitations",
@@ -121,7 +120,8 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "project_assignments": {
       "name": "project_assignments",
@@ -161,32 +161,33 @@
         "project_assignments_project_id_projects_id_fk": {
           "name": "project_assignments_project_id_projects_id_fk",
           "tableFrom": "project_assignments",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "project_assignments_team_member_id_team_members_id_fk": {
           "name": "project_assignments_team_member_id_team_members_id_fk",
           "tableFrom": "project_assignments",
-          "tableTo": "team_members",
           "columnsFrom": [
             "team_member_id"
           ],
+          "tableTo": "team_members",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "projects": {
       "name": "projects",
@@ -232,7 +233,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "settings": {
       "name": "settings",
@@ -279,19 +281,20 @@
         "settings_user_id_users_id_fk": {
           "name": "settings_user_id_users_id_fk",
           "tableFrom": "settings",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "team_members": {
       "name": "team_members",
@@ -336,7 +339,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "team_team_members": {
       "name": "team_team_members",
@@ -361,28 +365,28 @@
         "team_team_members_team_id_teams_id_fk": {
           "name": "team_team_members_team_id_teams_id_fk",
           "tableFrom": "team_team_members",
-          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
+          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "team_team_members_team_member_id_team_members_id_fk": {
           "name": "team_team_members_team_member_id_team_members_id_fk",
           "tableFrom": "team_team_members",
-          "tableTo": "team_members",
           "columnsFrom": [
             "team_member_id"
           ],
+          "tableTo": "team_members",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -394,7 +398,8 @@
           "name": "team_team_members_team_id_team_member_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "teams": {
       "name": "teams",
@@ -425,7 +430,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "users": {
       "name": "users",
@@ -479,13 +485,16 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "a77f80ce-3b7e-4baf-9cc1-4fea784ff256",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "views": {}
 }

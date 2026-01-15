@@ -38,7 +38,7 @@
 
 ### PW Reset form for users
 
-- [ ] users must be able to rest their pw if they are logged out of the platform
+- [x] users must be able to rest their pw if they are logged out of the platform
 
 ### Archived Projects
 

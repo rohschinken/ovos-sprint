@@ -121,6 +121,18 @@ export const invitations = sqliteTable('invitations', {
     .default(sql`(CURRENT_TIMESTAMP)`),
 })
 
+export const passwordResets = sqliteTable('password_resets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 export const settings = sqliteTable('settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id')
@@ -171,6 +183,8 @@ export type DayAssignment = typeof dayAssignments.$inferSelect
 export type NewDayAssignment = typeof dayAssignments.$inferInsert
 export type Invitation = typeof invitations.$inferSelect
 export type NewInvitation = typeof invitations.$inferInsert
+export type PasswordReset = typeof passwordResets.$inferSelect
+export type NewPasswordReset = typeof passwordResets.$inferInsert
 export type Settings = typeof settings.$inferSelect
 export type NewSettings = typeof settings.$inferInsert
 export type Milestone = typeof milestones.$inferSelect

@@ -10,6 +10,8 @@ interface AuthState {
   register: (email: string, password: string, token: string) => Promise<void>
   logout: () => void
   fetchUser: () => Promise<void>
+  forgotPassword: (email: string) => Promise<void>
+  resetPassword: (token: string, password: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -59,6 +61,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       localStorage.removeItem('token')
       set({ token: null, user: null })
+    }
+  },
+
+  forgotPassword: async (email: string) => {
+    set({ isLoading: true })
+    try {
+      await api.post('/auth/forgot-password', { email })
+      set({ isLoading: false })
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    set({ isLoading: true })
+    try {
+      await api.post('/auth/reset-password', { token, password })
+      set({ isLoading: false })
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
     }
   },
 }))

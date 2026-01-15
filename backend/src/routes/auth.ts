@@ -1,12 +1,18 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { db, users, invitations, teamMembers, teamTeamMembers } from '../db/index.js'
+import { db, users, invitations, teamMembers, teamTeamMembers, passwordResets } from '../db/index.js'
 import { generateToken } from '../utils/jwt.js'
-import { loginSchema, registerSchema, inviteSchema } from '../utils/validation.js'
+import { loginSchema, registerSchema, inviteSchema, forgotPasswordSchema, resetPasswordSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq } from 'drizzle-orm'
+import { eq, gt } from 'drizzle-orm'
 import { emailService } from '../services/email/emailService.js'
+import {
+  generatePasswordResetToken,
+  verifyPasswordResetToken,
+  getPasswordResetExpiry
+} from '../utils/passwordReset.js'
+import { rateLimiter } from '../middleware/rateLimiter.js'
 
 const router = Router()
 
@@ -123,6 +129,116 @@ router.post('/register', async (req, res) => {
     })
   } catch (error) {
     console.error('Register error:', error)
+    res.status(400).json({ error: 'Invalid request' })
+  }
+})
+
+// Forgot password
+router.post('/forgot-password', rateLimiter(3, 15 * 60 * 1000), async (req, res) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body)
+
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.email, email),
+    })
+
+    // Always return success (don't reveal if email exists - security)
+    if (!user) {
+      console.log(`Password reset requested for non-existent email: ${email}`)
+      return res.json({
+        message: 'If that email exists, a password reset link has been sent'
+      })
+    }
+
+    const { token, tokenHash } = generatePasswordResetToken()
+    const expiresAt = getPasswordResetExpiry()
+
+    // Delete existing tokens for this user
+    await db.delete(passwordResets)
+      .where(eq(passwordResets.userId, user.id))
+
+    // Create new token
+    await db.insert(passwordResets).values({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    })
+
+    // Send email
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`
+
+    await emailService.sendPasswordReset(email, {
+      userName: email.split('@')[0],
+      resetLink,
+      expiresInHours: 1,
+    })
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔐 Password reset email sent to:', email)
+    console.log('🔗 Reset link:', resetLink)
+    console.log('⏰ Expires at:', expiresAt)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+    res.json({
+      message: 'If that email exists, a password reset link has been sent'
+    })
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    res.status(400).json({ error: 'Invalid request' })
+  }
+})
+
+// Reset password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body)
+
+    // Find all non-expired tokens
+    const now = new Date().toISOString()
+    const allResets = await db.query.passwordResets.findMany({
+      where: (passwordResets, { gt }) => gt(passwordResets.expiresAt, now),
+    })
+
+    // Find matching token by verifying hash
+    let matchingReset = null
+    for (const reset of allResets) {
+      if (verifyPasswordResetToken(token, reset.tokenHash)) {
+        matchingReset = reset
+        break
+      }
+    }
+
+    if (!matchingReset) {
+      return res.status(400).json({
+        error: 'Invalid or expired reset token'
+      })
+    }
+
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, matchingReset.userId),
+    })
+
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' })
+    }
+
+    // Update password
+    const passwordHash = await bcrypt.hash(password, 10)
+    await db.update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, user.id))
+
+    // Delete the used token (single-use)
+    await db.delete(passwordResets)
+      .where(eq(passwordResets.id, matchingReset.id))
+
+    console.log(`✅ Password reset successful for user: ${user.email}`)
+
+    res.json({
+      message: 'Password reset successful. You can now log in with your new password.'
+    })
+  } catch (error) {
+    console.error('Reset password error:', error)
     res.status(400).json({ error: 'Invalid request' })
   }
 })
