@@ -27,9 +27,19 @@
 **Location**: `src/**/tests/*.test.tsx` (as per original plan)
 **Commands**: `npm test` (frontend/backend)
 
+### Improve UX of Timeline view
+
+- [ ] First column (containing members and projects) should be fixed when scrolling horizontally. Especially when showing a lot of upcoming days and when scrolling all the way to the right, the first column disappears and it's hard to guess which row belongs to which person or project.
+- [ ] New Option in Display Settings: Hide empty rows (default: enabled) - when enabled rows that do not have assignments _in the currently shown day-range_(!) should not be rendered. The idea of this feature is to reduce visual clutter and hide unnecessary rows.
+
 ### PW Reset form for users
 
 - [ ] users must be able to rest their pw if they are logged out of the platform
+
+### Archived Projects
+
+- [ ] New Status for Projects: "Archived" - Projects with this status should never appear in the Timeline View. Use a fitting icon and color code for this status. Total project statuses: Confirmed, Tentative, Archived
+- [ ] Allow changing the project status in /projects View from both the card view and list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
 
 ## Low Priority
 

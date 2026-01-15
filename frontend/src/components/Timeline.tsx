@@ -14,36 +14,23 @@ import { useTimelineWarning } from '@/hooks/useTimelineWarning'
 import { useEditPopover } from '@/hooks/useEditPopover'
 import { useTimelineData } from '@/hooks/useTimelineData'
 import { useTimelineMutations } from '@/hooks/useTimelineMutations'
+import { MilestoneIndicator } from './timeline/MilestoneIndicator'
+import { DayOffIndicator } from './timeline/DayOffIndicator'
+import { CollapsedAssignmentBar } from './timeline/CollapsedAssignmentBar'
+import { ExpandedAssignmentBar } from './timeline/ExpandedAssignmentBar'
 import {
   ZOOM_COLUMN_WIDTHS,
   DEFAULT_COLUMN_WIDTH,
   type ZoomLevel
 } from '@/lib/timeline-constants'
 import {
-  getAssignmentRoundedClass,
-  getAssignmentBorderClass,
-  getAssignmentWidthClass,
-  getCollapsedBarRoundedClass,
-  getCollapsedBarBorderClass,
-  getCollapsedBarWidthClass
-} from '@/lib/timeline-styling'
-import {
   isDayAssigned,
-  isPrevDayAssigned,
-  isNextDayAssigned,
   isFirstDayOfRange,
-  isLastDayOfRange,
   getCommentOverlayWidth,
   getDatePixelOffset,
   getDateFromClickX,
   getMemberAssignmentsOnDate,
-  getProjectMembersOnDate,
-  projectHasAssignmentOnDate,
-  memberHasAssignmentOnDate,
-  projectHasAssignmentOnPrevDay,
-  projectHasAssignmentOnNextDay,
-  memberHasAssignmentOnPrevDay,
-  memberHasAssignmentOnNextDay
+  getProjectMembersOnDate
 } from '@/lib/timeline-helpers'
 
 interface TimelineProps {
@@ -308,14 +295,6 @@ export default function Timeline({
   }
 
   // Milestone helper functions
-  const hasMilestone = (projectId: number, date: Date) => {
-    return milestones.some(
-      (m: Milestone) =>
-        m.projectId === projectId &&
-        isSameDay(new Date(m.date), date)
-    )
-  }
-
   const getMilestoneId = (projectId: number, date: Date) => {
     const milestone = milestones.find(
       (m: Milestone) =>
@@ -414,19 +393,6 @@ export default function Timeline({
     return date >= start && date <= end
   }
 
-
-  // Check if a member has ANY assignments on a date (for collapsed view)
-  const memberHasConfirmedAssignmentOnDate = (memberId: number, date: Date) => {
-    const memberAssignments = projectAssignments.filter(
-      (pa: any) => pa.teamMemberId === memberId
-    )
-
-    return memberAssignments.some((assignment: any) => {
-      if (!isDayAssigned(dayAssignments, assignment.id, date)) return false
-      const project = projects.find((p) => p.id === assignment.projectId)
-      return project && project.status === 'confirmed'
-    })
-  }
 
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
     if (!showOverlaps) return false
@@ -560,28 +526,23 @@ export default function Timeline({
                           onClick={(e) => handleProjectCellClick(project.id, date, e)}
                           onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
                         >
-                          {hasMilestone(project.id, date) && (
-                            <div className="absolute top-0 bottom-0 right-0 left-0 text-sm text-center font-medium pointer-events-none">
-                            🚩
-                            </div>
-                          )}
-                          {!expandedItemsSet.has(project.id) && projectHasAssignmentOnDate(projectAssignments, dayAssignments, project.id, date) && (
-                            <div
-                              className={cn(
-                                'h-3 shadow-sm',
-                                getCollapsedBarWidthClass(projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)),
-                                getCollapsedBarRoundedClass(
-                                  projectHasAssignmentOnPrevDay(projectAssignments, dayAssignments, project.id, date),
-                                  projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)
-                                ),
-                                getCollapsedBarBorderClass(
-                                  projectHasAssignmentOnPrevDay(projectAssignments, dayAssignments, project.id, date),
-                                  projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, project.id, date)
-                                ),
-                                // Always green for collapsed projects (with opacity for tentative)
-                                'bg-confirmed border-emerald-400',
-                                project.status === 'tentative' && 'opacity-60'
-                              )}
+                          <MilestoneIndicator
+                            projectId={project.id}
+                            date={date}
+                            milestones={milestones}
+                            canEdit={canEditProject(project.id)}
+                            onToggle={handleProjectCellClick}
+                          />
+                          {!expandedItemsSet.has(project.id) && (
+                            <CollapsedAssignmentBar
+                              type="project"
+                              id={project.id}
+                              date={date}
+                              projectAssignments={projectAssignments}
+                              dayAssignments={dayAssignments}
+                              isTentative={project.status === 'tentative'}
+                              hasOverlap={false}
+                              showOverlaps={false}
                             />
                           )}
                         </div>
@@ -655,63 +616,29 @@ export default function Timeline({
                                 {format(date, 'EEE', { locale: enGB })}
                               </span>
                             </div>
-                            {(isDayAssigned(dayAssignments, assignment.id, date) ||
-                              isDayInDragRange(assignment.id, date)) && (
-                              <div
-                                className={cn(
-                                  'h-5 shadow-sm relative z-20',
-                                  getAssignmentWidthClass(isNextDayAssigned(dayAssignments, assignment.id, date)),
-                                  getAssignmentRoundedClass(
-                                    isPrevDayAssigned(dayAssignments, assignment.id, date),
-                                    isNextDayAssigned(dayAssignments, assignment.id, date)
-                                  ),
-                                  getAssignmentBorderClass(
-                                    isPrevDayAssigned(dayAssignments, assignment.id, date),
-                                    isNextDayAssigned(dayAssignments, assignment.id, date)
-                                  ),
-                                  // Color orange if overlap, otherwise green
-                                  hasOverlap(member.id, date, 'member')
-                                    ? 'bg-orange-500/40 border-orange-400'
-                                    : 'bg-confirmed border-emerald-400',
-                                  project.status === 'tentative' && !hasOverlap(member.id, date, 'member') && 'opacity-60',
-                                  isDayInDragRange(assignment.id, date) &&
-                                    'opacity-50',
-                                  isAdmin && 'cursor-pointer'
-                                )}
-                                onMouseDown={(e) => {
-                                  // Stop propagation to prevent parent cell from starting drag
-                                  e.stopPropagation()
-                                }}
-                                onClick={(e) => {
-                                  if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                    handleAssignmentClick(assignment.id, date, e)
-                                  }
-                                }}
-                                onContextMenu={(e) => {
-                                  e.preventDefault()
-                                  if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                    handleDeleteDayAssignment(assignment.id, date, e)
-                                  }
-                                }}
-                                style={{ pointerEvents: 'auto' }}
-                              >
-                                {/* Priority indicators - on last day of range */}
-                                {isDayAssigned(dayAssignments, assignment.id, date) && isLastDayOfRange(dayAssignments, assignment.id, date) && (
-                                  <>
-                                    {getGroupPriority(assignment.id, date) === 'high' && (
-                                      <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
-                                        {'🔥'}
-                                      </span>
-                                    )}
-                                    {getGroupPriority(assignment.id, date) === 'low' && (
-                                      <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
-                                        {'🤷‍♂️'}
-                                      </span>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            )}
+                            <ExpandedAssignmentBar
+                              assignmentId={assignment.id}
+                              date={date}
+                              projectAssignments={projectAssignments}
+                              dayAssignments={dayAssignments}
+                              project={project}
+                              isDayInDragRange={isDayInDragRange(assignment.id, date)}
+                              isAdmin={isAdmin}
+                              hasOverlap={hasOverlap(member.id, date, 'member')}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
+                                  handleAssignmentClick(assignment.id, date, e)
+                                }
+                              }}
+                              onContextMenu={(e) => {
+                                e.preventDefault()
+                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
+                                  handleDeleteDayAssignment(assignment.id, date, e)
+                                }
+                              }}
+                              getGroupPriority={getGroupPriority}
+                            />
                           </div>
                         ))}
                         {/* Comment overlay rendered at row level to appear above all bar segments */}
@@ -902,31 +829,21 @@ export default function Timeline({
                         onClick={(e) => handleMemberCellClick(member.id, date, e)}
                         onContextMenu={(e) => handleMemberCellClick(member.id, date, e)}
                       >
-                        {isDayOff(member.id, date) && (
-                          <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
-                            vac. 🏝️
-                          </div>
-                        )}
-                        {!expandedItemsSet.has(member.id) && memberHasAssignmentOnDate(projectAssignments, dayAssignments, member.id, date) && (
-                          <div
-                            className={cn(
-                              'h-3 shadow-sm',
-                              getCollapsedBarWidthClass(memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)),
-                              getCollapsedBarRoundedClass(
-                                memberHasAssignmentOnPrevDay(projectAssignments, dayAssignments, member.id, date),
-                                memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)
-                              ),
-                              getCollapsedBarBorderClass(
-                                memberHasAssignmentOnPrevDay(projectAssignments, dayAssignments, member.id, date),
-                                memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, member.id, date)
-                              ),
-                              // Color orange if overlap, otherwise green (with opacity for tentative)
-                              hasOverlap(member.id, date, 'member')
-                                ? 'bg-orange-500/40 border-orange-400'
-                                : 'bg-confirmed border-emerald-400',
-                              // Reduce opacity for tentative (when not all assignments are confirmed)
-                              !hasOverlap(member.id, date, 'member') && !memberHasConfirmedAssignmentOnDate(member.id, date) && 'opacity-60'
-                            )}
+                        <DayOffIndicator
+                          memberId={member.id}
+                          date={date}
+                          dayOffs={dayOffs}
+                        />
+                        {!expandedItemsSet.has(member.id) && (
+                          <CollapsedAssignmentBar
+                            type="member"
+                            id={member.id}
+                            date={date}
+                            projectAssignments={projectAssignments}
+                            dayAssignments={dayAssignments}
+                            projects={projects}
+                            hasOverlap={hasOverlap(member.id, date, 'member')}
+                            showOverlaps={showOverlaps}
                           />
                         )}
                       </div>
@@ -1007,65 +924,36 @@ export default function Timeline({
                               {format(date, 'EEE', { locale: enGB })}
                             </span>
                           </div>
-                          {hasMilestone(project.id, date) && (
-                            <div className="absolute top-0 right-0 left-0 text-[10px] text-center font-medium pointer-events-none">
-                            🚩
-                            </div>
-                          )}
-                          {(isDayAssigned(dayAssignments, assignment.id, date) ||
-                            isDayInDragRange(assignment.id, date)) && (
-                            <div
-                              className={cn(
-                                'h-5 shadow-sm relative z-20',
-                                getAssignmentWidthClass(isNextDayAssigned(dayAssignments, assignment.id, date)),
-                                getAssignmentRoundedClass(
-                                  isPrevDayAssigned(dayAssignments, assignment.id, date),
-                                  isNextDayAssigned(dayAssignments, assignment.id, date)
-                                ),
-                                getAssignmentBorderClass(
-                                  isPrevDayAssigned(dayAssignments, assignment.id, date),
-                                  isNextDayAssigned(dayAssignments, assignment.id, date)
-                                ),
-                                'bg-confirmed border-emerald-400',
-                                project.status === 'tentative' && 'opacity-60',
-                                isDayInDragRange(assignment.id, date) &&
-                                  'opacity-50',
-                                isAdmin && 'cursor-pointer'
-                              )}
-                              onMouseDown={(e) => {
-                                // Stop propagation to prevent parent cell from starting drag
-                                e.stopPropagation()
-                              }}
-                              onClick={(e) => {
-                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                  handleAssignmentClick(assignment.id, date, e)
-                                }
-                              }}
-                              onContextMenu={(e) => {
-                                e.preventDefault()
-                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                  handleDeleteDayAssignment(assignment.id, date, e)
-                                }
-                              }}
-                              style={{ pointerEvents: 'auto' }}
-                            >
-                              {/* Priority indicators - on last day of range */}
-                              {isDayAssigned(dayAssignments, assignment.id, date) && isLastDayOfRange(dayAssignments, assignment.id, date) && (
-                                <>
-                                  {getGroupPriority(assignment.id, date) === 'high' && (
-                                    <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
-                                      {'🔥'}
-                                    </span>
-                                  )}
-                                  {getGroupPriority(assignment.id, date) === 'low' && (
-                                    <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
-                                      {'🤷‍♂️'}
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          )}
+                          <MilestoneIndicator
+                            projectId={project.id}
+                            date={date}
+                            milestones={milestones}
+                            canEdit={canEditProject(project.id)}
+                            onToggle={handleProjectCellClick}
+                          />
+                          <ExpandedAssignmentBar
+                            assignmentId={assignment.id}
+                            date={date}
+                            projectAssignments={projectAssignments}
+                            dayAssignments={dayAssignments}
+                            project={project}
+                            isDayInDragRange={isDayInDragRange(assignment.id, date)}
+                            isAdmin={isAdmin}
+                            hasOverlap={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
+                                handleAssignmentClick(assignment.id, date, e)
+                              }
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault()
+                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
+                                handleDeleteDayAssignment(assignment.id, date, e)
+                              }
+                            }}
+                            getGroupPriority={getGroupPriority}
+                          />
                         </div>
                       ))}
                       {/* Comment overlay rendered at row level to appear above all bar segments */}
