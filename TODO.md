@@ -27,7 +27,15 @@
 **Location**: `src/**/tests/*.test.tsx` (as per original plan)
 **Commands**: `npm test` (frontend/backend)
 
+### PW Reset form for users
+
+- [ ] users must be able to rest their pw if they are logged out of the platform
+
 ## Low Priority
+
+### Disclaimer on login page
+
+- [ ] Add a small disclaimer on the login page "Made with 💚 by ovos and Claude"
 
 ### Email Spam Filter Investigation
 

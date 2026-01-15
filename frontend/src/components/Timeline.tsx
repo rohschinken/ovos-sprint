@@ -1,17 +1,19 @@
-import { useState, useRef, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/api/client'
-import { TimelineViewMode, Project, TeamMember, Milestone, DayOff, AssignmentGroup, AssignmentPriority } from '@/types'
+import { useRef, useEffect } from 'react'
+import { TimelineViewMode, Milestone, DayOff, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
-import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
+import { useDragAssignment } from '@/hooks/useDragAssignment'
+import { useTimelineWarning } from '@/hooks/useTimelineWarning'
+import { useEditPopover } from '@/hooks/useEditPopover'
+import { useTimelineData } from '@/hooks/useTimelineData'
+import { useTimelineMutations } from '@/hooks/useTimelineMutations'
 import {
   ZOOM_COLUMN_WIDTHS,
   DEFAULT_COLUMN_WIDTH,
@@ -29,7 +31,6 @@ import {
   isDayAssigned,
   isPrevDayAssigned,
   isNextDayAssigned,
-  getContiguousRangeForDate,
   isFirstDayOfRange,
   isLastDayOfRange,
   getCommentOverlayWidth,
@@ -44,10 +45,6 @@ import {
   memberHasAssignmentOnPrevDay,
   memberHasAssignmentOnNextDay
 } from '@/lib/timeline-helpers'
-import {
-  applyProjectFilters,
-  applyMemberFilters
-} from '@/lib/timeline-filters'
 
 interface TimelineProps {
   viewMode: TimelineViewMode
@@ -80,29 +77,8 @@ export default function Timeline({
   showWeekends,
   showOverlaps,
 }: TimelineProps) {
-  const [dragState, setDragState] = useState<{
-    assignmentId: number | null
-    startDate: Date | null
-    endDate: Date | null
-  }>({ assignmentId: null, startDate: null, endDate: null })
-  const [timelineWarning, setTimelineWarning] = useState<{
-    type: 'holiday' | 'non-working-day'
-    message: string | React.ReactNode
-    onConfirm: () => void
-  } | null>(null)
-  const [editPopover, setEditPopover] = useState<{
-    open: boolean
-    position: { x: number; y: number }
-    projectAssignmentId: number
-    dateRange: { start: string; end: string }
-    group: AssignmentGroup | null
-  } | null>(null)
-
   // Track if initial expansion has been done to prevent re-expanding when user collapses all
   const hasInitializedExpansion = useRef(false)
-
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
 
   // Convert expandedItems array to Set for easier manipulation
   const expandedItemsSet = new Set(expandedItemsProp)
@@ -144,133 +120,108 @@ export default function Timeline({
     monthGroups.push({ month: currentMonth, count: currentCount, firstDate: currentFirstDate! })
   }
 
-  // Fetch data
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await api.get('/projects')
-      return response.data as Project[]
-    },
-  })
-
-  const { data: members = [] } = useQuery({
-    queryKey: ['members'],
-    queryFn: async () => {
-      const response = await api.get('/members')
-      return response.data as TeamMember[]
-    },
-  })
-
-  const { data: projectAssignments = [] } = useQuery({
-    queryKey: ['assignments', 'projects'],
-    queryFn: async () => {
-      const response = await api.get('/assignments/projects')
-      return response.data
-    },
-  })
-
-  const { data: dayAssignments = [] } = useQuery({
-    queryKey: [
-      'assignments',
-      'days',
-      format(startDate, 'yyyy-MM-dd'),
-      format(dates[dates.length - 1], 'yyyy-MM-dd'),
-    ],
-    queryFn: async () => {
-      const response = await api.get('/assignments/days', {
-        params: {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
-        },
-      })
-      return response.data
-    },
-  })
-
-  const { data: milestones = [] } = useQuery({
-    queryKey: [
-      'milestones',
-      format(startDate, 'yyyy-MM-dd'),
-      format(dates[dates.length - 1], 'yyyy-MM-dd'),
-    ],
-    queryFn: async () => {
-      const response = await api.get('/milestones', {
-        params: {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
-        },
-      })
-      return response.data as Milestone[]
-    },
-  })
-
-  const { data: dayOffs = [] } = useQuery({
-    queryKey: [
-      'day-offs',
-      format(startDate, 'yyyy-MM-dd'),
-      format(dates[dates.length - 1], 'yyyy-MM-dd'),
-    ],
-    queryFn: async () => {
-      const response = await api.get('/day-offs', {
-        params: {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
-        },
-      })
-      return response.data as DayOff[]
-    },
-  })
-
-  const { data: settings = {} } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const response = await api.get('/settings')
-      return response.data as Record<string, string>
-    },
-  })
-
-  const { data: teamMemberRelationships = [] } = useQuery({
-    queryKey: ['teams', 'members', 'relationships'],
-    queryFn: async () => {
-      const response = await api.get('/teams/members/relationships')
-      return response.data as { teamId: number; teamMemberId: number }[]
-    },
-  })
-
-  const { data: assignmentGroups = [] } = useQuery({
-    queryKey: [
-      'assignment-groups',
-      format(startDate, 'yyyy-MM-dd'),
-      format(dates[dates.length - 1], 'yyyy-MM-dd'),
-    ],
-    queryFn: async () => {
-      const response = await api.get('/assignments/groups', {
-        params: {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(dates[dates.length - 1], 'yyyy-MM-dd'),
-        },
-      })
-      return response.data as AssignmentGroup[]
-    },
-  })
-
-  // Apply project and member filters using utility functions
-  const filteredProjects = applyProjectFilters(
-    projects,
+  // Fetch timeline data using custom hook
+  const {
+    projects: filteredProjects,
+    members: filteredMembersWithProjects,
     projectAssignments,
-    members,
-    teamMemberRelationships,
+    dayAssignments,
+    milestones,
+    dayOffs,
+    settings,
+    assignmentGroups,
+  } = useTimelineData(
+    startDate,
+    dates[dates.length - 1],
     selectedTeamIds,
-    showTentative
+    showTentative,
+    dates
   )
 
-  const filteredMembersWithProjects = applyMemberFilters(
-    members,
-    teamMemberRelationships,
-    selectedTeamIds,
+  // Get reference to data for helper functions
+  const members = filteredMembersWithProjects
+  const projects = filteredProjects
+
+  // Helper function to check if a date is a day-off for a specific member
+  const isDayOff = (memberId: number, date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return dayOffs.some(
+      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
+    )
+  }
+
+  // Helper function to check if a date is a non-working day for a specific member
+  const isNonWorkingDay = (memberId: number, date: Date): boolean => {
+    const member = members.find((m) => m.id === memberId)
+    if (!member) return false
+
+    // Check day-off first
+    if (isDayOff(memberId, date)) return true
+
+    try {
+      const schedule = JSON.parse(member.workSchedule)
+      const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+      // Change from Sunday-first to Monday-first
+      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+      const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
+      return !schedule[dayKeys[dayIndex]]
+    } catch {
+      // If parsing fails, fall back to weekend check
+      return isWeekend(date)
+    }
+  }
+
+  // Helper function to check if current user can edit an assignment (by project assignment ID)
+  const canEditAssignment = (projectAssignmentId: number): boolean => {
+    if (!isAdmin) return false
+    if (currentUserRole === 'admin') return true
+    if (currentUserRole === 'project_manager' && currentUserId) {
+      const assignment = projectAssignments.find((pa: any) => pa.id === projectAssignmentId)
+      if (!assignment) return false
+      const project = projects.find(p => p.id === assignment.projectId)
+      return project?.managerId === currentUserId
+    }
+    return false
+  }
+
+  // Get the assignment group for a specific date within an assignment
+  const getGroupForDate = (assignmentId: number, date: Date): AssignmentGroup | null => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return assignmentGroups.find(g =>
+      g.projectAssignmentId === assignmentId &&
+      dateStr >= g.startDate &&
+      dateStr <= g.endDate
+    ) ?? null
+  }
+
+  // Use custom hooks for state management
+  const { timelineWarning, setTimelineWarning } = useTimelineWarning()
+
+  const { editPopover, setEditPopover, handleAssignmentClick } = useEditPopover(
+    canEditAssignment,
+    dayAssignments,
+    getGroupForDate
+  )
+
+  const {
+    createDayAssignmentMutation,
+    deleteDayAssignmentMutation,
+    createMilestoneMutation,
+    deleteMilestoneMutation,
+    createDayOffMutation,
+    deleteDayOffMutation,
+    saveAssignmentGroupMutation,
+  } = useTimelineMutations()
+
+  const { dragState, handleMouseDown, handleMouseEnter } = useDragAssignment(
     projectAssignments,
-    projects,
-    showTentative
+    filteredMembersWithProjects,
+    settings,
+    dayAssignments,
+    dates,
+    createDayAssignmentMutation,
+    setTimelineWarning,
+    isNonWorkingDay
   )
 
   // Reset initialization flag when view mode changes
@@ -289,154 +240,6 @@ export default function Timeline({
       hasInitializedExpansion.current = true
     }
   }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
-
-  const createDayAssignmentMutation = useMutation({
-    mutationFn: async (data: {
-      projectAssignmentId: number
-      date: string
-    }) => {
-      const response = await api.post('/assignments/days', data)
-      return response.data
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
-      // Day mutations can trigger group merges, so refetch groups too
-      await queryClient.refetchQueries({
-        queryKey: ['assignment-groups'],
-        type: 'all'
-      })
-    },
-  })
-
-  const deleteDayAssignmentMutation = useMutation({
-    mutationFn: async (dayAssignmentId: number) => {
-      await api.delete(`/assignments/days/${dayAssignmentId}`)
-    },
-    onSuccess: async () => {
-      // Force immediate refetch of day assignments
-      await queryClient.refetchQueries({
-        queryKey: ['assignments', 'days'],
-        type: 'all'
-      })
-      // Day deletions can trigger group splits/deletions, so refetch groups too
-      await queryClient.refetchQueries({
-        queryKey: ['assignment-groups'],
-        type: 'all'
-      })
-      toast({ title: 'Assignment deleted' })
-    },
-  })
-
-  const createMilestoneMutation = useMutation({
-    mutationFn: async (data: { projectId: number; date: string }) => {
-      const response = await api.post('/milestones', data)
-      return response.data
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({
-        queryKey: ['milestones'],
-        type: 'all'
-      })
-      toast({ title: 'Milestone created' })
-    },
-  })
-
-  const deleteMilestoneMutation = useMutation({
-    mutationFn: async (milestoneId: number) => {
-      await api.delete(`/milestones/${milestoneId}`)
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({
-        queryKey: ['milestones'],
-        type: 'all'
-      })
-      toast({ title: 'Milestone deleted' })
-    },
-  })
-
-  const createDayOffMutation = useMutation({
-    mutationFn: async ({ teamMemberId, date }: { teamMemberId: number; date: string }) => {
-      await api.post('/day-offs', { teamMemberId, date })
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({
-        queryKey: ['day-offs'],
-        type: 'all'
-      })
-      await queryClient.refetchQueries({
-        queryKey: ['assignments', 'days'],
-        type: 'all'
-      })
-      toast({ title: 'Day off added' })
-    },
-  })
-
-  const deleteDayOffMutation = useMutation({
-    mutationFn: async (dayOffId: number) => {
-      await api.delete(`/day-offs/${dayOffId}`)
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({
-        queryKey: ['day-offs'],
-        type: 'all'
-      })
-      toast({ title: 'Day off removed' })
-    },
-  })
-
-  const saveAssignmentGroupMutation = useMutation({
-    mutationFn: async (data: {
-      groupId?: number
-      projectAssignmentId: number
-      startDate: string
-      endDate: string
-      priority: AssignmentPriority
-      comment: string | null
-    }) => {
-      if (data.groupId) {
-        // Update existing group
-        const response = await api.put(`/assignments/groups/${data.groupId}`, {
-          priority: data.priority,
-          comment: data.comment,
-        })
-        return response.data
-      } else {
-        // Try to create new group
-        try {
-          const response = await api.post('/assignments/groups', {
-            projectAssignmentId: data.projectAssignmentId,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            priority: data.priority,
-            comment: data.comment,
-          })
-          return response.data
-        } catch (error: unknown) {
-          // If overlapping group exists, update it instead
-          const axiosError = error as { response?: { data?: { existingGroupId?: number } } }
-          if (axiosError.response?.data?.existingGroupId) {
-            const response = await api.put(`/assignments/groups/${axiosError.response.data.existingGroupId}`, {
-              priority: data.priority,
-              comment: data.comment,
-            })
-            return response.data
-          }
-          throw error
-        }
-      }
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({
-        queryKey: ['assignment-groups'],
-        type: 'all'
-      })
-      toast({ title: 'Assignment updated' })
-    },
-    onError: (error) => {
-      console.error('Failed to save assignment group:', error)
-      toast({ title: 'Failed to update assignment', variant: 'destructive' })
-    },
-  })
 
   const toggleExpand = (id: number) => {
     const newExpandedSet = new Set(expandedItemsProp)
@@ -463,27 +266,6 @@ export default function Timeline({
     return false
   }
 
-  // Helper function to check if current user can edit an assignment (by project assignment ID)
-  const canEditAssignment = (projectAssignmentId: number): boolean => {
-    if (!isAdmin) return false
-    if (currentUserRole === 'admin') return true
-    if (currentUserRole === 'project_manager' && currentUserId) {
-      const assignment = projectAssignments.find((pa: any) => pa.id === projectAssignmentId)
-      if (!assignment) return false
-      const project = projects.find(p => p.id === assignment.projectId)
-      return project?.managerId === currentUserId
-    }
-    return false
-  }
-
-  // Helper function to check if a date is a day-off for a specific member
-  const isDayOff = (memberId: number, date: Date): boolean => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return dayOffs.some(
-      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
-    )
-  }
-
   // Helper function to get the day-off record for a specific member and date
   const getDayOff = (memberId: number, date: Date): DayOff | undefined => {
     const dateStr = format(date, 'yyyy-MM-dd')
@@ -491,160 +273,6 @@ export default function Timeline({
       dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
     )
   }
-
-  // Helper function to check if a date is a non-working day for a specific member
-  const isNonWorkingDay = (memberId: number, date: Date): boolean => {
-    const member = members.find((m) => m.id === memberId)
-    if (!member) return false
-
-    // Check day-off first
-    if (isDayOff(memberId, date)) return true
-
-    try {
-      const schedule = JSON.parse(member.workSchedule)
-      const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-      // Change from Sunday-first to Monday-first
-      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-      const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
-      return !schedule[dayKeys[dayIndex]]
-    } catch {
-      // If parsing fails, fall back to weekend check
-      return isWeekend(date)
-    }
-  }
-
-  const handleMouseDown = (assignmentId: number, date: Date, _e: React.MouseEvent) => {
-    if (!canEditAssignment(assignmentId)) return
-
-    // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
-    if (_e.button === 2 || _e.ctrlKey || _e.metaKey) {
-      return
-    }
-
-    // Always set drag state - warnings will be checked in handleMouseUp
-    setDragState({
-      assignmentId,
-      startDate: date,
-      endDate: date,
-    })
-  }
-
-  const handleMouseEnter = (date: Date) => {
-    if (dragState.assignmentId && dragState.startDate) {
-      setDragState({
-        ...dragState,
-        endDate: date,
-      })
-    }
-  }
-
-  const handleMouseUp = () => {
-    if (
-      dragState.assignmentId &&
-      dragState.startDate &&
-      dragState.endDate
-    ) {
-      const start =
-        dragState.startDate < dragState.endDate
-          ? dragState.startDate
-          : dragState.endDate
-      const end =
-        dragState.startDate > dragState.endDate
-          ? dragState.startDate
-          : dragState.endDate
-
-      const daysDiff = Math.floor(
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-      )
-
-      // Get the assignment to check member and warnings
-      const assignment = projectAssignments.find((pa: any) => pa.id === dragState.assignmentId)
-      const warnWeekend = settings.warnWeekendAssignments !== 'false'
-
-      // Check all dates in the range for holidays and non-working days
-      if (warnWeekend && assignment) {
-        const holidays: string[] = []
-        const nonWorkingDays: string[] = []
-
-        for (let i = 0; i <= daysDiff; i++) {
-          const date = addDays(start, i)
-
-          if (isHoliday(date)) {
-            const holidayName = getHolidayName(date)
-            holidays.push(holidayName || format(date, 'MMM d'))
-          } else if (isNonWorkingDay(assignment.teamMemberId, date)) {
-            nonWorkingDays.push(format(date, 'MMM d'))
-          }
-        }
-
-        // Show warning if there are holidays or non-working days
-        if (holidays.length > 0 || nonWorkingDays.length > 0) {
-          const member = members.find((m) => m.id === assignment.teamMemberId)
-          const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
-
-          // Build message with strong tags for dates
-          const message = (
-            <>
-              {holidays.length > 0 && (
-                <>
-                  The following dates are holidays: <strong>{holidays.join(', ')}</strong>.{' '}
-                </>
-              )}
-              {nonWorkingDays.length > 0 && (
-                <>
-                  The following dates are non-working days for {memberName}: <strong>{nonWorkingDays.join(', ')}</strong>.{' '}
-                </>
-              )}
-              Are you sure you want to assign work on these days?
-            </>
-          )
-
-          setTimelineWarning({
-            type: holidays.length > 0 ? 'holiday' : 'non-working-day',
-            message,
-            onConfirm: () => {
-              // User confirmed, create all assignments
-              for (let i = 0; i <= daysDiff; i++) {
-                const date = addDays(start, i)
-                createDayAssignmentMutation.mutate({
-                  projectAssignmentId: dragState.assignmentId,
-                  date: format(date, 'yyyy-MM-dd'),
-                })
-              }
-              setTimelineWarning(null)
-            },
-          })
-
-          // Clear drag state but don't create assignments yet (waiting for confirmation)
-          setDragState({ assignmentId: null, startDate: null, endDate: null })
-          return
-        }
-      }
-
-      // No warnings needed, create assignments directly
-      for (let i = 0; i <= daysDiff; i++) {
-        const date = addDays(start, i)
-        createDayAssignmentMutation.mutate({
-          projectAssignmentId: dragState.assignmentId,
-          date: format(date, 'yyyy-MM-dd'),
-        })
-      }
-    }
-
-    setDragState({ assignmentId: null, startDate: null, endDate: null })
-  }
-
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (dragState.assignmentId) {
-        handleMouseUp()
-      }
-    }
-
-    window.addEventListener('mouseup', handleGlobalMouseUp)
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
-  }, [dragState])
-
 
   const getDayAssignmentId = (assignmentId: number, date: Date) => {
     const dayAssignment = dayAssignments.find(
@@ -667,17 +295,6 @@ export default function Timeline({
     deleteDayAssignmentMutation.mutate(dayAssignmentId)
   }
 
-
-  // Get the assignment group for a specific date within an assignment
-  const getGroupForDate = (assignmentId: number, date: Date): AssignmentGroup | null => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return assignmentGroups.find(g =>
-      g.projectAssignmentId === assignmentId &&
-      dateStr >= g.startDate &&
-      dateStr <= g.endDate
-    ) ?? null
-  }
-
   // Get priority for a specific date within an assignment
   const getGroupPriority = (assignmentId: number, date: Date): AssignmentPriority => {
     const group = getGroupForDate(assignmentId, date)
@@ -688,26 +305,6 @@ export default function Timeline({
   const getGroupComment = (assignmentId: number, date: Date): string | null => {
     const group = getGroupForDate(assignmentId, date)
     return group?.comment ?? null
-  }
-
-
-  // Handle click on assignment bar to open edit popover
-  const handleAssignmentClick = (assignmentId: number, date: Date, event: React.MouseEvent) => {
-    if (!canEditAssignment(assignmentId)) return
-    if (event.ctrlKey || event.metaKey) return // Don't interfere with delete action
-
-    event.stopPropagation()
-
-    const range = getContiguousRangeForDate(dayAssignments, assignmentId, date)
-    const group = getGroupForDate(assignmentId, date)
-
-    setEditPopover({
-      open: true,
-      position: { x: event.clientX, y: event.clientY },
-      projectAssignmentId: assignmentId,
-      dateRange: range,
-      group
-    })
   }
 
   // Milestone helper functions
