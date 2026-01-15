@@ -311,6 +311,64 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
+## Contributing with Git
+
+This project uses a simple two-branch workflow:
+
+### Branch Structure
+
+- **`main`** - Production-ready code (deployed to PROD)
+- **`next`** - Active development branch (use this for daily work)
+- **`feature/*`** - Optional branches for complex features
+- **`fix/*`** - Optional branches for complex bug fixes
+
+### Daily Development
+
+For most work, commit directly to the `next` branch:
+
+```bash
+# Switch to next
+git checkout next
+git pull origin next
+
+# Make your changes
+# ... edit files ...
+
+# Commit and push
+git add .
+git commit -m "feat: add new feature"
+git push origin next
+```
+
+### Complex Features
+
+For work spanning multiple days, use a feature branch:
+
+```bash
+# Create feature branch from next
+git checkout next
+git pull origin next
+git checkout -b feature/my-feature
+
+# Work and commit
+git add .
+git commit -m "feat: part 1 of feature"
+git push -u origin feature/my-feature
+
+# When done, merge to next
+git checkout next
+git merge feature/my-feature
+git push origin next
+
+# Cleanup
+git branch -d feature/my-feature
+git push origin --delete feature/my-feature
+```
+
+### Full Workflow Guide
+
+For complete documentation on the git workflow, commit conventions, and release process, see [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md).
+
 ## Next Steps
 
 Once your development environment is running:

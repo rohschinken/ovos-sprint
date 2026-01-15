@@ -73,6 +73,7 @@ Workload management and resource planning tool for IT project managers.
 - **[Development Setup](DEVELOPMENT_SETUP.md)** - Quick start guide for local development
 - **[Production Build Setup](PRODUCTION_BUILD_SETUP.md)** - Build and deployment instructions for production
 - **[Architecture](ARCHITECTURE.md)** - Technical architecture, security features, API endpoints
+- **[Branching Strategy](BRANCHING_STRATEGY.md)** - Git workflow and branching conventions
 - **[Feature Roadmap](TODO.md)** - Planned features and enhancements
 
 ## Technology Stack
