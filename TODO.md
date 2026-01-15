@@ -2,11 +2,18 @@
 
 ## High Priority
 
-_(Currently empty)_
+### Implementing Sparkpost SMTP service for PROD environments
+
+- [ ] currenty emails are not being sent. Check why that is and fix errors.
 
 ## Medium Priority
 
+### Fixing Non-Working Day Warning
+
+- [ ] When Non-Working Day Warning option is enabled no warning is shown when creating assignments on days where the member has the day off (non-working day)
+
 ### Testing Infrastructure
+
 - [ ] Set up Vitest testing framework
 - [ ] Install @testing-library/react and @testing-library/jest-dom
 - [ ] Configure vitest.config.ts for frontend
@@ -21,6 +28,7 @@ _(Currently empty)_
 ## Low Priority
 
 ### Internationalization (i18n)
+
 - [ ] Install and configure intlayer packages (`intlayer`, `react-intlayer`)
 - [ ] Create `.content.ts` files for all pages and components
 - [ ] Support German (de) and English (en) locales
@@ -32,6 +40,7 @@ _(Currently empty)_
 **Current State**: Application uses German locale (`de-AT`) for date formatting but all UI text is in English.
 
 ### Component Refactoring
+
 - [ ] Break down large components into smaller, focused units
   - Timeline.tsx (76KB) - extract sub-components
   - DashboardPage.tsx (21KB) - extract sections

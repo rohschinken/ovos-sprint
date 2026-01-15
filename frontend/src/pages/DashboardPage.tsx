@@ -285,7 +285,7 @@ export default function DashboardPage() {
               className="w-32"
             />
             <span className="text-sm font-medium w-16">
-              {['Extra Narrow', 'Compact', 'Narrow', 'Normal'][zoomLevel - 1]}
+              {['Extra Narrow', 'Narrow', 'Compact', 'Normal'][zoomLevel - 1]}
             </span>
           </motion.div>
 
