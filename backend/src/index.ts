@@ -22,7 +22,10 @@ import { setupWebSocket } from './websocket/index.js'
 import { emailService } from './services/email/emailService.js'
 
 // Load environment variables
-dotenv.config()
+// Explicitly set path to .env file (needed when running from dist/)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+dotenv.config({ path: path.join(__dirname, '../.env') })
 
 // Environment validation for production
 function validateEnvironment() {
