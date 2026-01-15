@@ -51,6 +51,7 @@ interface TimelineViewContentProps {
   handleAssignmentClick: (assignmentId: number, date: Date, e: React.MouseEvent) => void
   handleDeleteDayAssignment: (assignmentId: number, date: Date, e: React.MouseEvent) => void
   handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
+  handleMemberCellClick: (memberId: number, date: Date, e: React.MouseEvent) => void
   // Helper functions
   canEditProject: (projectId: number) => boolean
   canEditAssignment: (assignmentId: number) => boolean
@@ -145,6 +146,7 @@ export function TimelineViewContent({
   handleAssignmentClick,
   handleDeleteDayAssignment,
   handleProjectCellClick,
+  handleMemberCellClick,
   canEditProject,
   canEditAssignment,
   isDayOff,
@@ -286,10 +288,12 @@ export function TimelineViewContent({
                 type="member"
                 item={member}
                 isExpanded={expandedItems.has(member.id)}
-                canEdit={false}
+                canEdit={isAdmin}
                 onToggleExpand={onToggleExpand}
                 dates={dates}
                 columnWidth={columnWidth}
+                dayOffs={dayOffs}
+                onDayOffToggle={handleMemberCellClick}
               />
 
               {expandedItems.has(member.id) &&
