@@ -77,24 +77,31 @@ export function TimelineItemHeader({
     if (type === 'project') {
       const project = item as Project
       return (
-        <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
+        <div className="sticky left-0 z-50 w-64 p-3 border-r-2 border-border bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-primary" />
+            <ChevronDown className={cn(
+              "h-4 w-4",
+              project.status === 'tentative' ? 'text-muted-foreground' : 'text-primary'
+            )} />
           ) : (
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
-          <div
-            className={cn('flex-1', project.status === 'tentative' && 'opacity-50')}
-          >
+          <div className="flex-1">
             <div className="flex items-center gap-2">
-              <div className="font-semibold text-sm">{project.name}</div>
+              <div className={cn(
+                "font-semibold text-sm",
+                project.status === 'tentative' && 'text-muted-foreground'
+              )}>{project.name}</div>
               {project.status === 'tentative' && (
-                <div className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300">
+                <div className="flex items-center text-sm font-medium text-muted-foreground">
                   <Clock className="h-3 w-3" />
                 </div>
               )}
             </div>
-            <div className="text-xs">
+            <div className={cn(
+              "text-xs",
+              project.status === 'tentative' && 'text-muted-foreground'
+            )}>
               {project.customer?.icon && `${project.customer.icon} `}
               {project.customer?.name}
             </div>
@@ -104,7 +111,7 @@ export function TimelineItemHeader({
     } else {
       const member = item as TeamMember
       return (
-        <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
+        <div className="sticky left-0 z-50 w-64 p-3 border-r-2 border-border bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-primary" />
           ) : (
@@ -180,7 +187,12 @@ export function TimelineItemHeader({
 
   return (
     <div
-      className="flex border-b-4 border-border bg-muted/70 hover:bg-muted/90 cursor-pointer transition-colors"
+      className={cn(
+        "flex border-b-4 border-border cursor-pointer transition-colors",
+        type === 'project' && (item as Project).status === 'tentative'
+          ? 'bg-muted hover:bg-muted/90'
+          : 'bg-muted/70 hover:bg-muted/90'
+      )}
       onClick={() => onToggleExpand(item.id)}
     >
       {renderSidebar()}

@@ -87,7 +87,7 @@ export function TimelineHeader({
 
       {/* Date row */}
       <div className="flex border-b-2">
-        <div className="w-64 p-3 font-semibold border-r bg-muted/30">{label}</div>
+        <div className="sticky left-0 z-50 w-64 p-3 font-semibold border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">{label}</div>
         {dates.map((date, dateIndex) => {
           const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
           const isWeekendDay = isWeekend(date)

@@ -296,3 +296,15 @@ export function memberHasAssignmentOnNextDay(
   const nextDate = addDays(date, 1)
   return memberHasAssignmentOnDate(projectAssignments, dayAssignments, memberId, nextDate)
 }
+
+/**
+ * Check if an assignment has any day assignments within a date range
+ * Used for filtering empty rows in timeline
+ */
+export function hasAssignmentInDateRange(
+  dayAssignments: any[],
+  assignmentId: number,
+  dates: Date[]
+): boolean {
+  return dates.some(date => isDayAssigned(dayAssignments, assignmentId, date))
+}

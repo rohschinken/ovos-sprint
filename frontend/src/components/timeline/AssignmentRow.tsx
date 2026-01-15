@@ -171,8 +171,8 @@ export function AssignmentRow({
     const project = parentItem as Project
 
     return (
-      <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
-        <div className="w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background/50">
+      <div key={assignment.id} className="flex border-b bg-background hover:bg-muted/20 transition-colors relative">
+        <div className="sticky left-0 z-50 w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
           <Avatar className="h-6 w-6 ring-1 ring-border/50">
             <AvatarImage src={member.avatarUrl || undefined} />
             <AvatarFallback
@@ -194,6 +194,7 @@ export function AssignmentRow({
             key={date.toISOString()}
             className={cn(
               columnWidth, 'border-r group relative flex items-center justify-center select-none',
+              project.status === 'tentative' && 'bg-background',
               isWeekend(date) && 'bg-weekend',
               isHoliday(date) && 'bg-holiday',
               isDayOff(member.id, date) && 'bg-dayOff',
@@ -271,26 +272,25 @@ export function AssignmentRow({
   const member = parentItem as TeamMember
 
   return (
-    <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
-      <div
-        className={cn(
-          'w-64 p-2 pl-10 border-r bg-background/50',
-          project.status === 'tentative' && 'opacity-50'
-        )}
-      >
+    <div key={assignment.id} className="flex border-b bg-background hover:bg-muted/20 transition-colors relative">
+      <div className="sticky left-0 z-50 w-64 p-2 pl-10 border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
         <div className="flex items-center gap-1.5">
-          <div className="text-sm font-medium">{project.name}</div>
+          <div className={cn(
+            "text-sm font-medium",
+            project.status === 'tentative' && 'text-muted-foreground'
+          )}>{project.name}</div>
           {project.status === 'tentative' ? (
-            <div
-              className={cn('flex items-center text-sm font-medium text-slate-700 dark:text-slate-300')}
-            >
+            <div className="flex items-center text-sm font-medium text-muted-foreground">
               <Clock className="h-2.5 w-2.5" />
             </div>
           ) : (
             ""
           )}
         </div>
-        <div className="text-xs">
+        <div className={cn(
+          "text-xs",
+          project.status === 'tentative' && 'text-muted-foreground'
+        )}>
           {project.customer?.icon && `${project.customer.icon} `}
           {project.customer?.name}
         </div>
@@ -300,6 +300,7 @@ export function AssignmentRow({
           key={date.toISOString()}
           className={cn(
             columnWidth, 'border-r group relative flex items-center justify-center select-none',
+            project.status === 'tentative' && 'bg-background',
             isWeekend(date) && 'bg-weekend',
             isHoliday(date) && 'bg-holiday',
             isDayOff(member.id, date) && 'bg-dayOff',

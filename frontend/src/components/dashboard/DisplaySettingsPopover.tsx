@@ -20,6 +20,8 @@ interface DisplaySettingsPopoverProps {
   showWeekends: boolean
   /** Whether to show overlap indicators */
   showOverlaps: boolean
+  /** Whether to hide empty rows in the timeline */
+  hideEmptyRows: boolean
   /** Whether to warn about weekend assignments */
   warnWeekends: boolean
   /** Number of previous days to show in timeline */
@@ -46,6 +48,7 @@ export function DisplaySettingsPopover({
   showTentative,
   showWeekends,
   showOverlaps,
+  hideEmptyRows,
   warnWeekends,
   prevDays,
   nextDays,
@@ -105,6 +108,19 @@ export function DisplaySettingsPopover({
                 className="text-sm font-normal cursor-pointer flex-1"
               >
                 Show Overlap Indicators
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hide-empty-rows"
+                checked={hideEmptyRows}
+                onCheckedChange={(checked) => onSettingChange('hideEmptyRows', !!checked)}
+              />
+              <Label
+                htmlFor="hide-empty-rows"
+                className="text-sm font-normal cursor-pointer flex-1"
+              >
+                Hide Empty Rows
               </Label>
             </div>
             {canEditTimeline && (

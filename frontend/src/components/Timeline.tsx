@@ -36,6 +36,7 @@ interface TimelineProps {
   showTentative: boolean
   showWeekends: boolean
   showOverlaps: boolean
+  hideEmptyRows: boolean
 }
 
 export default function Timeline({
@@ -52,6 +53,7 @@ export default function Timeline({
   showTentative,
   showWeekends,
   showOverlaps,
+  hideEmptyRows,
 }: TimelineProps) {
   // Track if initial expansion has been done to prevent re-expanding when user collapses all
   const hasInitializedExpansion = useRef(false)
@@ -351,6 +353,7 @@ export default function Timeline({
       isAdmin={isAdmin}
       showOverlaps={showOverlaps}
       showTentative={showTentative}
+      hideEmptyRows={hideEmptyRows}
       dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}
@@ -385,6 +388,7 @@ export default function Timeline({
       isAdmin={isAdmin}
       showOverlaps={showOverlaps}
       showTentative={showTentative}
+      hideEmptyRows={hideEmptyRows}
       dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}

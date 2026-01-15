@@ -32,6 +32,8 @@ interface UseDashboardPreferencesReturn {
   setShowWeekends: Dispatch<SetStateAction<boolean>>
   showOverlaps: boolean
   setShowOverlaps: Dispatch<SetStateAction<boolean>>
+  hideEmptyRows: boolean
+  setHideEmptyRows: Dispatch<SetStateAction<boolean>>
 
   // Date range from backend settings
   prevDays: number
@@ -79,6 +81,7 @@ export function useDashboardPreferences({
   const [showTentative, setShowTentative] = useState(true) // default: shown
   const [showWeekends, setShowWeekends] = useState(true) // default: shown
   const [showOverlaps, setShowOverlaps] = useState(true) // default: shown
+  const [hideEmptyRows, setHideEmptyRows] = useState(true) // default: enabled
 
   // Load user preferences from localStorage on mount
   useEffect(() => {
@@ -96,6 +99,7 @@ export function useDashboardPreferences({
         if (prefs.showTentative !== undefined) setShowTentative(prefs.showTentative)
         if (prefs.showWeekends !== undefined) setShowWeekends(prefs.showWeekends)
         if (prefs.showOverlaps !== undefined) setShowOverlaps(prefs.showOverlaps)
+        if (prefs.hideEmptyRows !== undefined) setHideEmptyRows(prefs.hideEmptyRows)
       } catch (error) {
         console.error('Failed to load dashboard preferences:', error)
       }
@@ -116,9 +120,10 @@ export function useDashboardPreferences({
       showTentative,
       showWeekends,
       showOverlaps,
+      hideEmptyRows,
     }
     localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [userId, prefsLoaded, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps])
+  }, [userId, prefsLoaded, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps, hideEmptyRows])
 
   // Extract date range and display settings from backend settings
   useEffect(() => {
@@ -151,6 +156,8 @@ export function useDashboardPreferences({
     setShowWeekends,
     showOverlaps,
     setShowOverlaps,
+    hideEmptyRows,
+    setHideEmptyRows,
 
     // Date range
     prevDays,

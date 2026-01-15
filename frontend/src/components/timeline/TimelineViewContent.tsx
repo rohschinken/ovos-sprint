@@ -1,6 +1,7 @@
 import { TimelineHeader } from './TimelineHeader'
 import { TimelineItemHeader } from './TimelineItemHeader'
 import { AssignmentRow } from './AssignmentRow'
+import { hasAssignmentInDateRange } from '@/lib/timeline-helpers'
 import type {
   Project,
   TeamMember,
@@ -37,6 +38,7 @@ interface TimelineViewContentProps {
   isAdmin: boolean
   showOverlaps: boolean
   showTentative: boolean
+  hideEmptyRows: boolean
   // State
   dragState: {
     assignmentId: number | null
@@ -136,6 +138,7 @@ export function TimelineViewContent({
   isAdmin,
   showOverlaps,
   showTentative,
+  hideEmptyRows,
   dragState,
   handleMouseDown,
   handleMouseEnter,
@@ -170,6 +173,18 @@ export function TimelineViewContent({
               (pa: ProjectAssignment) => pa.projectId === project.id
             )
 
+            // Filter assignments based on hideEmptyRows setting
+            const visibleAssignments = hideEmptyRows
+              ? assignments.filter((assignment: ProjectAssignment) =>
+                  hasAssignmentInDateRange(dayAssignments, assignment.id, dates)
+                )
+              : assignments
+
+            // Hide parent row if all children are filtered out
+            if (hideEmptyRows && visibleAssignments.length === 0) {
+              return null
+            }
+
             return (
               <div key={project.id}>
                 <TimelineItemHeader
@@ -185,14 +200,14 @@ export function TimelineViewContent({
                 />
 
                 {expandedItems.has(project.id) &&
-                  assignments.map((assignment: ProjectAssignment) => {
-                    const member = members.find(
-                      (m) => m.id === assignment.teamMemberId
-                    )
-                    if (!member) return null
+                  visibleAssignments.map((assignment: ProjectAssignment) => {
+                      const member = members.find(
+                        (m) => m.id === assignment.teamMemberId
+                      )
+                      if (!member) return null
 
-                    return (
-                      <AssignmentRow
+                      return (
+                        <AssignmentRow
                         key={assignment.id}
                         viewMode={viewMode}
                         assignment={assignment}
@@ -253,6 +268,18 @@ export function TimelineViewContent({
             (pa: ProjectAssignment) => pa.teamMemberId === member.id
           )
 
+          // Filter assignments based on hideEmptyRows setting
+          const visibleAssignments = hideEmptyRows
+            ? assignments.filter((assignment: ProjectAssignment) =>
+                hasAssignmentInDateRange(dayAssignments, assignment.id, dates)
+              )
+            : assignments
+
+          // Hide parent row if all children are filtered out
+          if (hideEmptyRows && visibleAssignments.length === 0) {
+            return null
+          }
+
           return (
             <div key={member.id}>
               <TimelineItemHeader
@@ -266,17 +293,17 @@ export function TimelineViewContent({
               />
 
               {expandedItems.has(member.id) &&
-                assignments.map((assignment: ProjectAssignment) => {
-                  const project = projects.find(
-                    (p) => p.id === assignment.projectId
-                  )
-                  if (!project) return null
+                visibleAssignments.map((assignment: ProjectAssignment) => {
+                    const project = projects.find(
+                      (p) => p.id === assignment.projectId
+                    )
+                    if (!project) return null
 
-                  // Hide tentative projects if showTentative is disabled
-                  if (!showTentative && project.status === 'tentative') return null
+                    // Hide tentative projects if showTentative is disabled
+                    if (!showTentative && project.status === 'tentative') return null
 
-                  return (
-                    <AssignmentRow
+                    return (
+                      <AssignmentRow
                       key={assignment.id}
                       viewMode={viewMode}
                       assignment={assignment}

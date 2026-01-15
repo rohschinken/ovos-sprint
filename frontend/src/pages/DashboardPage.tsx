@@ -61,6 +61,8 @@ export default function DashboardPage() {
     setShowWeekends,
     showOverlaps,
     setShowOverlaps,
+    hideEmptyRows,
+    setHideEmptyRows,
     prevDays,
     setPrevDays,
     nextDays,
@@ -116,6 +118,9 @@ export default function DashboardPage() {
       case 'showOverlaps':
         setShowOverlaps(value)
         handleSettingChange('showOverlapVisualization', value)
+        break
+      case 'hideEmptyRows':
+        setHideEmptyRows(value)
         break
       case 'warnWeekends':
         setWarnWeekends(value)
@@ -177,6 +182,7 @@ export default function DashboardPage() {
             showTentative={showTentative}
             showWeekends={showWeekends}
             showOverlaps={showOverlaps}
+            hideEmptyRows={hideEmptyRows}
             warnWeekends={warnWeekends}
             prevDays={prevDays}
             nextDays={nextDays}
@@ -211,6 +217,7 @@ export default function DashboardPage() {
             showTentative={showTentative}
             showWeekends={showWeekends}
             showOverlaps={showOverlaps}
+            hideEmptyRows={hideEmptyRows}
           />
         </Card>
       </motion.div>
