@@ -10,6 +10,18 @@ class EmailService {
   private config: EmailConfig
 
   constructor() {
+    // Don't initialize config or transporter in constructor
+    // They will be initialized lazily on first use (after .env is loaded)
+    this.config = {} as EmailConfig
+  }
+
+  private initialize() {
+    // Only initialize once
+    if (this.transporter) {
+      return
+    }
+
+    // Load config from environment (should be available by now)
     this.config = {
       host: process.env.SMTP_HOST || 'localhost',
       port: parseInt(process.env.SMTP_PORT || '1025'),
@@ -19,11 +31,6 @@ class EmailService {
         name: process.env.SMTP_FROM_NAME || 'ovos Sprint 🏃‍♂️‍➡️',
       },
     }
-
-    this.initialize()
-  }
-
-  private initialize() {
     try {
       const smtpUser = process.env.SMTP_USER
       const smtpPassword = process.env.SMTP_PASSWORD
@@ -49,6 +56,9 @@ class EmailService {
   }
 
   private async sendEmail(options: EmailOptions): Promise<boolean> {
+    // Ensure transporter is initialized (lazy initialization)
+    this.initialize()
+
     if (!this.transporter) {
       console.error('Email transporter not initialized')
       return false
