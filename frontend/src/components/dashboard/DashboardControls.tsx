@@ -1,0 +1,145 @@
+import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import {
+  ZoomIn,
+  UnfoldVertical,
+  FoldVertical,
+  Briefcase,
+  UserCircle,
+} from 'lucide-react'
+import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+/**
+ * Props for the DashboardControls component
+ */
+interface DashboardControlsProps {
+  /** Current view mode (by-project or by-member) */
+  viewMode: 'by-project' | 'by-member'
+  /** Callback when view mode changes */
+  onViewModeChange: (mode: 'by-project' | 'by-member') => void
+  /** Current zoom level (1-4) */
+  zoomLevel: number
+  /** Callback when zoom level changes */
+  onZoomChange: (level: number) => void
+  /** Callback to toggle expand/collapse all items */
+  onToggleExpandAll: () => void
+  /** Number of currently expanded items */
+  expandedItemsCount: number
+  /** Total number of expandable items */
+  totalItemsCount: number
+}
+
+/**
+ * DashboardControls Component
+ *
+ * Provides control buttons and settings for the dashboard view.
+ * Features view mode toggle (by-project/by-member), expand/collapse all button,
+ * and zoom level control slider.
+ *
+ * @param props - Component props
+ * @returns The dashboard controls component
+ */
+export function DashboardControls({
+  viewMode,
+  onViewModeChange,
+  zoomLevel,
+  onZoomChange,
+  onToggleExpandAll,
+  expandedItemsCount,
+  totalItemsCount,
+}: DashboardControlsProps) {
+  // Determine if all items are expanded
+  const allExpanded = totalItemsCount > 0 && expandedItemsCount === totalItemsCount
+
+  // Zoom level labels
+  const zoomLabels = ['Extra Narrow', 'Narrow', 'Compact', 'Normal']
+
+  return (
+    <div className="flex gap-3">
+      {/* View Mode Toggle */}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+        className={cn(
+          "flex items-center gap-3 px-4 h-12 rounded-md border bg-background",
+          viewMode === 'by-project' ? 'border-mode-project' : 'border-mode-member'
+        )}
+      >
+        <span className="text-sm font-medium">By Member</span>
+        <div className="relative">
+          <Switch
+            checked={viewMode === 'by-project'}
+            onCheckedChange={(checked) =>
+              onViewModeChange(checked ? 'by-project' : 'by-member')
+            }
+            className={cn(
+              "h-7 w-14 [&>span]:hidden",
+              viewMode === 'by-member' ? 'bg-mode-member' : 'bg-mode-project'
+            )}
+          />
+          <div className="absolute top-[2px] left-0 flex items-center pointer-events-none">
+            <div
+              className={cn(
+                "h-6 w-6 rounded-full bg-background shadow-sm flex items-center justify-center transition-transform duration-200",
+                viewMode === 'by-project' ? 'translate-x-[30px]' : 'translate-x-[2px]'
+              )}
+            >
+              {viewMode === 'by-project' ? (
+                <Briefcase className="h-4 w-4 font-color-mode-project" />
+              ) : (
+                <UserCircle className="h-4 w-4 font-color-mode-member" />
+              )}
+            </div>
+          </div>
+        </div>
+        <span className="text-sm font-medium">By Project</span>
+      </motion.div>
+
+      {/* Expand/Collapse All Button */}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.15 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Button
+          variant="outline"
+          onClick={onToggleExpandAll}
+          className="gap-2 h-12 min-w-[130px]"
+        >
+          {allExpanded ? (
+            <FoldVertical className="h-4 w-4" />
+          ) : (
+            <UnfoldVertical className="h-4 w-4" />
+          )}
+          {allExpanded ? 'Collapse All' : 'Expand All'}
+        </Button>
+      </motion.div>
+
+      {/* Zoom Control */}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
+      >
+        <ZoomIn className="h-4 w-4" />
+        <Slider
+          value={[zoomLevel]}
+          onValueChange={([value]) => onZoomChange(value)}
+          min={1}
+          max={4}
+          step={1}
+          className="w-32"
+        />
+        <span className="text-sm font-medium w-16">
+          {zoomLabels[zoomLevel - 1]}
+        </span>
+      </motion.div>
+    </div>
+  )
+}
