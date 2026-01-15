@@ -21,12 +21,6 @@ import dayOffsRoutes from './routes/day-offs.js'
 import { setupWebSocket } from './websocket/index.js'
 import { emailService } from './services/email/emailService.js'
 
-// Load environment variables
-// Explicitly set path to .env file (needed when running from dist/)
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-dotenv.config({ path: path.join(__dirname, '../.env') })
-
 // Environment validation for production
 function validateEnvironment() {
   const isProduction = process.env.NODE_ENV === 'production'
@@ -72,10 +66,15 @@ function validateEnvironment() {
   }
 }
 
-validateEnvironment()
-
+// Get current file path for resolving relative paths
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// Load environment variables with explicit path (needed when running from dist/)
+dotenv.config({ path: path.join(__dirname, '../.env') })
+
+// Validate environment after loading .env
+validateEnvironment()
 
 // Ensure required directories exist
 const avatarsDir = path.join(__dirname, '../data/avatars')
