@@ -5,7 +5,7 @@ import { db, users, invitations, teamMembers, teamTeamMembers, passwordResets } 
 import { generateToken } from '../utils/jwt.js'
 import { loginSchema, registerSchema, inviteSchema, forgotPasswordSchema, resetPasswordSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq, gt } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { emailService } from '../services/email/emailService.js'
 import {
   generatePasswordResetToken,
