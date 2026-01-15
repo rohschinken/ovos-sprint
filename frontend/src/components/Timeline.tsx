@@ -1,12 +1,12 @@
 import { useRef, useEffect } from 'react'
-import { TimelineViewMode, Milestone, DayOff, AssignmentGroup, AssignmentPriority } from '@/types'
-import { isHoliday, isWeekend, getHolidayName } from '@/lib/holidays'
+import { TimelineViewMode, Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
+import { isHoliday, isWeekend } from '@/lib/holidays'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import { TooltipProvider } from './ui/tooltip'
 import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
-import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
 import { useDragAssignment } from '@/hooks/useDragAssignment'
@@ -15,9 +15,10 @@ import { useEditPopover } from '@/hooks/useEditPopover'
 import { useTimelineData } from '@/hooks/useTimelineData'
 import { useTimelineMutations } from '@/hooks/useTimelineMutations'
 import { MilestoneIndicator } from './timeline/MilestoneIndicator'
-import { DayOffIndicator } from './timeline/DayOffIndicator'
-import { CollapsedAssignmentBar } from './timeline/CollapsedAssignmentBar'
 import { ExpandedAssignmentBar } from './timeline/ExpandedAssignmentBar'
+import { AssignmentCommentOverlay } from './timeline/AssignmentCommentOverlay'
+import { TimelineHeader } from './timeline/TimelineHeader'
+import { TimelineItemHeader } from './timeline/TimelineItemHeader'
 import {
   ZOOM_COLUMN_WIDTHS,
   DEFAULT_COLUMN_WIDTH,
@@ -25,10 +26,6 @@ import {
 } from '@/lib/timeline-constants'
 import {
   isDayAssigned,
-  isFirstDayOfRange,
-  getCommentOverlayWidth,
-  getDatePixelOffset,
-  getDateFromClickX,
   getMemberAssignmentsOnDate,
   getProjectMembersOnDate
 } from '@/lib/timeline-helpers'
@@ -195,8 +192,6 @@ export default function Timeline({
     deleteDayAssignmentMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
-    createDayOffMutation,
-    deleteDayOffMutation,
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
@@ -238,9 +233,6 @@ export default function Timeline({
     onExpandedItemsChange(Array.from(newExpandedSet))
   }
 
-  // Check if user is specifically an admin (not PM)
-  const isActualAdmin = currentUserRole === 'admin'
-
   // Helper function to check if current user can edit a specific project
   // Admins can edit all projects, PMs can only edit their own projects
   const canEditProject = (projectId: number): boolean => {
@@ -251,14 +243,6 @@ export default function Timeline({
       return project?.managerId === currentUserId
     }
     return false
-  }
-
-  // Helper function to get the day-off record for a specific member and date
-  const getDayOff = (memberId: number, date: Date): DayOff | undefined => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return dayOffs.find(
-      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
-    )
   }
 
   const getDayAssignmentId = (assignmentId: number, date: Date) => {
@@ -286,12 +270,6 @@ export default function Timeline({
   const getGroupPriority = (assignmentId: number, date: Date): AssignmentPriority => {
     const group = getGroupForDate(assignmentId, date)
     return group?.priority ?? 'normal'
-  }
-
-  // Get comment for a specific date within an assignment
-  const getGroupComment = (assignmentId: number, date: Date): string | null => {
-    const group = getGroupForDate(assignmentId, date)
-    return group?.comment ?? null
   }
 
   // Milestone helper functions
@@ -323,33 +301,6 @@ export default function Timeline({
         createMilestoneMutation.mutate({
           projectId,
           date: format(date, 'yyyy-MM-dd'),
-        })
-      }
-    }
-  }
-
-  const handleMemberCellClick = (memberId: number, date: Date, _e: React.MouseEvent) => {
-    // Day-offs are admin-only (not for PMs)
-    if (!isActualAdmin || viewMode !== 'by-member') return
-
-    _e.preventDefault()
-    _e.stopPropagation()
-
-    // Check if there's already a day-off
-    const existingDayOff = getDayOff(memberId, date)
-    const dateStr = format(date, 'yyyy-MM-dd')
-
-    if (existingDayOff) {
-      // Delete existing day-off if CTRL/CMD+click or right-click
-      if (_e.ctrlKey || _e.metaKey || _e.button === 2) {
-        deleteDayOffMutation.mutate(existingDayOff.id)
-      }
-    } else {
-      // Create new day-off on normal click
-      if (!_e.ctrlKey && !_e.metaKey && _e.button === 0) {
-        createDayOffMutation.mutate({
-          teamMemberId: memberId,
-          date: dateStr,
         })
       }
     }
@@ -408,65 +359,12 @@ export default function Timeline({
     <div className="overflow-auto max-h-full">
       <div className="min-w-max">
         {/* Header */}
-        <div className="sticky top-0 bg-background z-30 shadow-sm">
-          {/* Month labels row */}
-          <div className="flex border-b">
-              <div className="w-64 border-r bg-muted/30"></div>
-              {monthGroups.map((group, idx) => {
-                // Calculate width based on column count and zoom level
-                const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
-                const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
-                const totalWidth = group.count * pixelWidth
-
-                return (
-                  <div
-                    key={idx}
-                    style={{ width: `${totalWidth}px` }}
-                    className={cn(
-                      'p-2 text-center font-semibold text-sm bg-muted/50 border-r',
-                      isFirstDayOfMonth(group.firstDate) && 'border-l-4 border-l-border'
-                    )}
-                  >
-                    {group.month}
-                  </div>
-                )
-              })}
-            </div>
-            {/* Date row */}
-            <div className="flex border-b-2">
-            <div className="w-64 p-3 font-semibold border-r bg-muted/30">Projects</div>
-            {dates.map((date, dateIndex) => (
-              <div
-                key={date.toISOString()}
-                className={cn(
-                  columnWidth, 'p-2 text-center text-sm border-r',
-                  isWeekend(date) && 'bg-weekend',
-                  isHoliday(date) && 'bg-holiday',
-                  isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
-                  isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                  isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
-                )}
-              >
-                <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                  {format(date, 'EEE', { locale: enGB })}
-                </div>
-                <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
-                  {format(date, 'dd.MM')}
-                </div>
-                {isSameDay(date, today) && (
-                  <div className="text-xs text-primary font-semibold">
-                    {zoomLevel <= 2 ? 'TDY' : 'TODAY'}
-                  </div>
-                )}
-                {isHoliday(date) && (
-                  <div className="text-xs text-purple-700 dark:text-purple-400 font-medium truncate px-1">
-                    {getHolidayName(date)}
-                  </div>
-                )}
-              </div>
-            ))}
-            </div>
-          </div>
+        <TimelineHeader
+          dates={dates}
+          monthGroups={monthGroups}
+          columnWidth={columnWidth}
+          zoomLevel={zoomLevel}
+        />
 
           {/* Projects */}
           {filteredProjects.map((project) => {
@@ -476,85 +374,17 @@ export default function Timeline({
 
             return (
               <div key={project.id}>
-                <div
-                  className="flex border-b-4 border-border bg-muted/70 hover:bg-muted/90 cursor-pointer transition-colors"
-                  onClick={() => toggleExpand(project.id)}
-                >
-                  <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
-                    {expandedItemsSet.has(project.id) ? (
-                      <ChevronDown className="h-4 w-4 text-primary" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <div
-                      className={cn(
-                        'flex-1',
-                        project.status === 'tentative' && 'opacity-50'
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="font-semibold text-sm">{project.name}</div>
-                        {project.status === 'tentative' ? (
-                          <div
-                            className={cn('flex items-center text-sm font-medium text-slate-700 dark:text-slate-300')}
-                          >
-                              <Clock className="h-3 w-3" />
-                          </div>
-                        ) : (
-                          ""
-                        )}
-                      </div>
-                      <div className="text-xs">
-                        {project.customer?.icon && `${project.customer.icon} `}
-                        {project.customer?.name}
-                      </div>
-                    </div>
-                  </div>
-                  {dates.map((date, dateIndex) => (
-                    <Tooltip key={date.toISOString()}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            columnWidth, 'border-r relative flex items-center justify-center',
-                            isWeekend(date) && 'bg-weekend',
-                            isHoliday(date) && 'bg-holiday',
-                            isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                            isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                            canEditProject(project.id) && 'cursor-pointer'
-                          )}
-                          onClick={(e) => handleProjectCellClick(project.id, date, e)}
-                          onContextMenu={(e) => handleProjectCellClick(project.id, date, e)}
-                        >
-                          <MilestoneIndicator
-                            projectId={project.id}
-                            date={date}
-                            milestones={milestones}
-                            canEdit={canEditProject(project.id)}
-                            onToggle={handleProjectCellClick}
-                          />
-                          {!expandedItemsSet.has(project.id) && (
-                            <CollapsedAssignmentBar
-                              type="project"
-                              id={project.id}
-                              date={date}
-                              projectAssignments={projectAssignments}
-                              dayAssignments={dayAssignments}
-                              isTentative={project.status === 'tentative'}
-                              hasOverlap={false}
-                              showOverlaps={false}
-                            />
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      {canEditProject(project.id) && (
-                        <TooltipContent side="top" className="text-xs">
-                          Add/remove milestone 🚩
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  ))}
-                </div>
+                <TimelineItemHeader
+                  type="project"
+                  item={project}
+                  isExpanded={expandedItemsSet.has(project.id)}
+                  canEdit={canEditProject(project.id)}
+                  onToggleExpand={toggleExpand}
+                  dates={dates}
+                  columnWidth={columnWidth}
+                  milestones={milestones}
+                  onMilestoneToggle={handleProjectCellClick}
+                />
 
                 {expandedItemsSet.has(project.id) &&
                   assignments.map((assignment: any) => {
@@ -642,70 +472,19 @@ export default function Timeline({
                           </div>
                         ))}
                         {/* Comment overlay rendered at row level to appear above all bar segments */}
-                        {(() => {
-                          // Find all contiguous ranges with comments for this assignment
-                          const commentRanges: { date: Date; comment: string }[] = []
-                          dates.forEach(date => {
-                            if (isDayAssigned(dayAssignments, assignment.id, date) && isFirstDayOfRange(dayAssignments, assignment.id, date)) {
-                              const comment = getGroupComment(assignment.id, date)
-                              if (comment) {
-                                commentRanges.push({ date, comment })
-                              }
-                            }
-                          })
-                          return commentRanges.map(({ date, comment }) => (
-                            <Tooltip key={`comment-${date.toISOString()}`}>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
-                                  style={{
-                                    left: 256 + getDatePixelOffset(dates, date, zoomLevel as ZoomLevel) + 4, // 256px = w-64 sidebar, +4 for padding
-                                    width: getCommentOverlayWidth(dayAssignments, dates, assignment.id, date, zoomLevel as ZoomLevel),
-                                  }}
-                                  onClick={(e) => {
-                                    // Find the actual date clicked based on X position
-                                    const row = e.currentTarget.closest('.relative') as HTMLElement
-                                    if (row) {
-                                      const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
-                                      if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
-                                        handleAssignmentClick(assignment.id, clickedDate, e)
-                                      }
-                                    }
-                                  }}
-                                  onContextMenu={(e) => {
-                                    e.preventDefault()
-                                    // Find the actual date clicked based on X position
-                                    const row = e.currentTarget.closest('.relative') as HTMLElement
-                                    if (row) {
-                                      const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
-                                      if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
-                                        handleDeleteDayAssignment(assignment.id, clickedDate, e)
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <span className="flex-shrink-0">💬</span>
-                                  <span className="truncate text-foreground/70 font-medium">
-                                    {comment}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">💬 {comment}</p>
-                                {getGroupPriority(assignment.id, date) === 'high' && (
-                                  <p className="max-w-xs">
-                                    {'🔥 high priority'}
-                                  </p>
-                                )}
-                                {getGroupPriority(assignment.id, date) === 'low' && (
-                                  <p className="max-w-xs">
-                                    {'🤷‍♂️ low priority'}
-                                  </p>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          ))
-                        })()}
+                        <AssignmentCommentOverlay
+                          assignmentId={assignment.id}
+                          dates={dates}
+                          dayAssignments={dayAssignments}
+                          assignmentGroups={assignmentGroups}
+                          zoomLevel={zoomLevel}
+                          onCommentClick={(assignmentId, date, e) => {
+                            handleAssignmentClick(assignmentId, date, e)
+                          }}
+                          onCommentContextMenu={(assignmentId, date, e) => {
+                            handleDeleteDayAssignment(assignmentId, date, e)
+                          }}
+                        />
                       </div>
                     )
                   })}
@@ -719,65 +498,13 @@ export default function Timeline({
     <div className="overflow-auto max-h-full">
       <div className="min-w-max">
         {/* Header */}
-        <div className="sticky top-0 bg-background z-30 shadow-sm">
-          {/* Month labels row */}
-          <div className="flex border-b">
-            <div className="w-64 border-r bg-muted/30"></div>
-            {monthGroups.map((group, idx) => {
-              // Calculate width based on column count and zoom level
-              const pixelWidths = { 1: 40, 2: 48, 3: 64, 4: 80 }
-              const pixelWidth = pixelWidths[zoomLevel as keyof typeof pixelWidths] || 64
-              const totalWidth = group.count * pixelWidth
-
-              return (
-                <div
-                  key={idx}
-                  style={{ width: `${totalWidth}px` }}
-                  className={cn(
-                    'p-2 text-center font-semibold text-sm bg-muted/50 border-r',
-                    isFirstDayOfMonth(group.firstDate) && 'border-l-4 border-l-border'
-                  )}
-                >
-                  {group.month}
-                </div>
-              )
-            })}
-          </div>
-          {/* Date row */}
-          <div className="flex border-b-2">
-          <div className="w-64 p-3 font-semibold border-r bg-muted/30">Team Members</div>
-          {dates.map((date, dateIndex) => (
-            <div
-              key={date.toISOString()}
-              className={cn(
-                columnWidth, 'p-2 text-center text-sm border-r',
-                isWeekend(date) && 'bg-weekend',
-                isHoliday(date) && 'bg-holiday',
-                isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary font-bold',
-                isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
-              )}
-            >
-              <div className={cn('font-medium', isSameDay(date, today) && 'text-primary')}>
-                {format(date, 'EEE', { locale: enGB })}
-              </div>
-              <div className={cn('text-xs', isSameDay(date, today) ? 'text-primary font-semibold' : 'text-muted-foreground')}>
-                {format(date, 'dd.MM')}
-              </div>
-              {isSameDay(date, today) && (
-                <div className="text-xs text-primary font-semibold">
-                  {zoomLevel <= 2 ? 'TDY' : 'TODAY'}
-                </div>
-              )}
-              {isHoliday(date) && (
-                <div className="text-xs text-purple-700 dark:text-purple-400 font-medium truncate px-1">
-                  {getHolidayName(date)}
-                </div>
-              )}
-            </div>
-          ))}
-          </div>
-        </div>
+        <TimelineHeader
+          dates={dates}
+          monthGroups={monthGroups}
+          columnWidth={columnWidth}
+          zoomLevel={zoomLevel}
+          label="Team Members"
+        />
 
         {/* Members */}
         {filteredMembersWithProjects.map((member) => {
@@ -787,75 +514,15 @@ export default function Timeline({
 
           return (
             <div key={member.id}>
-              <div
-                className="flex border-b-4 border-border bg-muted/70 hover:bg-muted/90 cursor-pointer transition-colors"
-                onClick={() => toggleExpand(member.id)}
-              >
-                <div className="w-64 p-3 border-r-2 border-border bg-background/50 flex items-center gap-2">
-                  {expandedItemsSet.has(member.id) ? (
-                    <ChevronDown className="h-4 w-4 text-primary" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <Avatar className="h-8 w-8 ring-2 ring-border/50">
-                    <AvatarImage src={member.avatarUrl || undefined} />
-                    <AvatarFallback
-                      style={{
-                        backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
-                        color: getAvatarColor(member.firstName, member.lastName).text,
-                      }}
-                    >
-                      {getInitials(member.firstName, member.lastName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-semibold text-sm">
-                    {member.firstName} {member.lastName}
-                  </span>
-                </div>
-                {dates.map((date, dateIndex) => (
-                  <Tooltip key={date.toISOString()}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          columnWidth, 'border-r relative flex items-center justify-center',
-                          isWeekend(date) && 'bg-weekend',
-                          isHoliday(date) && 'bg-holiday',
-                          isDayOff(member.id, date) && 'bg-dayOff',
-                          isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                          isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                          isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground',
-                          isActualAdmin && 'cursor-pointer'
-                        )}
-                        onClick={(e) => handleMemberCellClick(member.id, date, e)}
-                        onContextMenu={(e) => handleMemberCellClick(member.id, date, e)}
-                      >
-                        <DayOffIndicator
-                          memberId={member.id}
-                          date={date}
-                          dayOffs={dayOffs}
-                        />
-                        {!expandedItemsSet.has(member.id) && (
-                          <CollapsedAssignmentBar
-                            type="member"
-                            id={member.id}
-                            date={date}
-                            projectAssignments={projectAssignments}
-                            dayAssignments={dayAssignments}
-                            projects={projects}
-                            hasOverlap={hasOverlap(member.id, date, 'member')}
-                            showOverlaps={showOverlaps}
-                          />
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    {isActualAdmin && (
-                      <TooltipContent side="top" className="text-xs">
-                        Add/remove day off 🏝️
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                ))}
-              </div>
+              <TimelineItemHeader
+                type="member"
+                item={member}
+                isExpanded={expandedItemsSet.has(member.id)}
+                canEdit={false}
+                onToggleExpand={toggleExpand}
+                dates={dates}
+                columnWidth={columnWidth}
+              />
 
               {expandedItemsSet.has(member.id) &&
                 assignments.map((assignment: any) => {
@@ -957,70 +624,19 @@ export default function Timeline({
                         </div>
                       ))}
                       {/* Comment overlay rendered at row level to appear above all bar segments */}
-                      {(() => {
-                        // Find all contiguous ranges with comments for this assignment
-                        const commentRanges: { date: Date; comment: string }[] = []
-                        dates.forEach(date => {
-                          if (isDayAssigned(dayAssignments, assignment.id, date) && isFirstDayOfRange(dayAssignments, assignment.id, date)) {
-                            const comment = getGroupComment(assignment.id, date)
-                            if (comment) {
-                              commentRanges.push({ date, comment })
-                            }
-                          }
-                        })
-                        return commentRanges.map(({ date, comment }) => (
-                          <Tooltip key={`comment-${date.toISOString()}`}>
-                            <TooltipTrigger asChild>
-                              <div
-                                className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9px] leading-none pointer-events-auto cursor-pointer overflow-hidden z-20"
-                                style={{
-                                  left: 256 + getDatePixelOffset(dates, date, zoomLevel as ZoomLevel) + 4, // 256px = w-64 sidebar, +4 for padding
-                                  width: getCommentOverlayWidth(dayAssignments, dates, assignment.id, date, zoomLevel as ZoomLevel),
-                                }}
-                                onClick={(e) => {
-                                  // Find the actual date clicked based on X position
-                                  const row = e.currentTarget.closest('.relative') as HTMLElement
-                                  if (row) {
-                                    const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
-                                    if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
-                                      handleAssignmentClick(assignment.id, clickedDate, e)
-                                    }
-                                  }
-                                }}
-                                onContextMenu={(e) => {
-                                  e.preventDefault()
-                                  // Find the actual date clicked based on X position
-                                  const row = e.currentTarget.closest('.relative') as HTMLElement
-                                  if (row) {
-                                    const clickedDate = getDateFromClickX(dates, e.clientX, row, zoomLevel as ZoomLevel)
-                                    if (clickedDate && isDayAssigned(dayAssignments, assignment.id, clickedDate)) {
-                                      handleDeleteDayAssignment(assignment.id, clickedDate, e)
-                                    }
-                                  }
-                                }}
-                              >
-                                <span className="flex-shrink-0">💬</span>
-                                <span className="truncate text-foreground/70 font-medium">
-                                  {comment}
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">💬 {comment}</p>
-                              {getGroupPriority(assignment.id, date) === 'high' && (
-                                <p className="max-w-xs">
-                                  {'🔥 high priority'}
-                                </p>
-                              )}
-                              {getGroupPriority(assignment.id, date) === 'low' && (
-                                <p className="max-w-xs">
-                                  {'🤷‍♂️ low priority'}
-                                </p>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        ))
-                      })()}
+                      <AssignmentCommentOverlay
+                        assignmentId={assignment.id}
+                        dates={dates}
+                        dayAssignments={dayAssignments}
+                        assignmentGroups={assignmentGroups}
+                        zoomLevel={zoomLevel}
+                        onCommentClick={(assignmentId, date, e) => {
+                          handleAssignmentClick(assignmentId, date, e)
+                        }}
+                        onCommentContextMenu={(assignmentId, date, e) => {
+                          handleDeleteDayAssignment(assignmentId, date, e)
+                        }}
+                      />
                     </div>
                   )
                 })}
