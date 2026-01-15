@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
 export default function LoginPage() {
@@ -75,6 +75,11 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="flex items-center justify-center border-t pt-6">
+          <p className="text-sm text-muted-foreground">
+            Made with 💚 by ovos and Claude
+          </p>
+        </CardFooter>
       </Card>
     </div>
   )

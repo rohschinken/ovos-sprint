@@ -18,6 +18,10 @@
   - Created `/lib/` with 4 utility modules
 - [ ] Move shared types to feature-specific types.ts files
 
+### missing tooltips in header rows in Timeline
+
+- [ ] we used to have Tooltips when hovering above the header rows for adding/removing Milestones and Days-Off. Those tooltips seem to have vanished when the Timeline was refactored. Bring them back!
+
 ### Testing Infrastructure
 
 - [ ] Set up Vitest testing framework
@@ -49,11 +53,14 @@
 
 ### Disclaimer on login page
 
-- [ ] Add a small disclaimer on the login page "Made with 💚 by ovos and Claude"
+- [x] Add a small disclaimer on the login page "Made with 💚 by ovos and Claude"
 
-### Quick Start Guide for ProjectManager Members
+### Quick Start Guide (Onboarding)
 
-- [ ] Users who can create assignments, milestones and vacations (thus: project managers and admins), shouls see a short "Tutorial" in the Settings Page below the Dark-Theme Toggle. The Tutorial should explain how to create assignments, days-off milestones, comments, etc.
+- [x] Interactive onboarding slideshow modal for all users on first login
+- [x] Tutorial covers assignments, milestones, days-off, comments, and priority
+- [x] Help button (?) in header to reopen tutorial anytime
+- [x] First-login detection using settings table (hasSeenOnboarding)
 
 ### Email Spam Filter Investigation
 
