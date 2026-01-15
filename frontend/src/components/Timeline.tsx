@@ -1,12 +1,9 @@
 import { useRef, useEffect } from 'react'
 import { TimelineViewMode, Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
-import { isHoliday, isWeekend } from '@/lib/holidays'
-import { cn, getInitials, getAvatarColor } from '@/lib/utils'
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
+import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
-import { format, addDays, startOfDay, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
+import { format, addDays, startOfDay, isSameDay } from 'date-fns'
 import { enGB } from 'date-fns/locale'
-import { Clock } from 'lucide-react'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
 import { useDragAssignment } from '@/hooks/useDragAssignment'
@@ -14,18 +11,13 @@ import { useTimelineWarning } from '@/hooks/useTimelineWarning'
 import { useEditPopover } from '@/hooks/useEditPopover'
 import { useTimelineData } from '@/hooks/useTimelineData'
 import { useTimelineMutations } from '@/hooks/useTimelineMutations'
-import { MilestoneIndicator } from './timeline/MilestoneIndicator'
-import { ExpandedAssignmentBar } from './timeline/ExpandedAssignmentBar'
-import { AssignmentCommentOverlay } from './timeline/AssignmentCommentOverlay'
-import { TimelineHeader } from './timeline/TimelineHeader'
-import { TimelineItemHeader } from './timeline/TimelineItemHeader'
+import { TimelineViewContent } from './timeline/TimelineViewContent'
 import {
   ZOOM_COLUMN_WIDTHS,
   DEFAULT_COLUMN_WIDTH,
   type ZoomLevel
 } from '@/lib/timeline-constants'
 import {
-  isDayAssigned,
   getMemberAssignmentsOnDate,
   getProjectMembersOnDate
 } from '@/lib/timeline-helpers'
@@ -306,23 +298,6 @@ export default function Timeline({
     }
   }
 
-  // Week separator helper - checks if a date should show a week boundary
-  const isWeekStart = (date: Date, index: number) => {
-    // First visible date always gets a separator
-    if (index === 0) return true
-
-    // Monday (getDay returns 1 for Monday) gets a separator
-    if (getDay(date) === 1) return true
-
-    // If previous visible date is from a different week (important when weekends are hidden)
-    if (index > 0) {
-      const prevDate = dates[index - 1]
-      if (getISOWeek(prevDate) !== getISOWeek(date)) return true
-    }
-
-    return false
-  }
-
   const isDayInDragRange = (assignmentId: number, date: Date) => {
     if (
       dragState.assignmentId !== assignmentId ||
@@ -356,295 +331,73 @@ export default function Timeline({
   }
 
   const content = viewMode === 'by-project' ? (
-    <div className="overflow-auto max-h-full">
-      <div className="min-w-max">
-        {/* Header */}
-        <TimelineHeader
-          dates={dates}
-          monthGroups={monthGroups}
-          columnWidth={columnWidth}
-          zoomLevel={zoomLevel}
-        />
-
-          {/* Projects */}
-          {filteredProjects.map((project) => {
-            const assignments = projectAssignments.filter(
-              (pa: any) => pa.projectId === project.id
-            )
-
-            return (
-              <div key={project.id}>
-                <TimelineItemHeader
-                  type="project"
-                  item={project}
-                  isExpanded={expandedItemsSet.has(project.id)}
-                  canEdit={canEditProject(project.id)}
-                  onToggleExpand={toggleExpand}
-                  dates={dates}
-                  columnWidth={columnWidth}
-                  milestones={milestones}
-                  onMilestoneToggle={handleProjectCellClick}
-                />
-
-                {expandedItemsSet.has(project.id) &&
-                  assignments.map((assignment: any) => {
-                    const member = members.find(
-                      (m) => m.id === assignment.teamMemberId
-                    )
-                    if (!member) return null
-
-                    return (
-                      <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
-                        <div className="w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background/50">
-                          <Avatar className="h-6 w-6 ring-1 ring-border/50">
-                            <AvatarImage src={member.avatarUrl || undefined} />
-                            <AvatarFallback
-                              className="text-xs"
-                              style={{
-                                backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
-                                color: getAvatarColor(member.firstName, member.lastName).text,
-                              }}
-                            >
-                              {getInitials(member.firstName, member.lastName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">
-                            {member.firstName} {member.lastName}
-                          </span>
-                        </div>
-                        {dates.map((date, dateIndex) => (
-                          <div
-                            key={date.toISOString()}
-                            className={cn(
-                              columnWidth, 'border-r group relative flex items-center justify-center select-none',
-                              isWeekend(date) && 'bg-weekend',
-                              isHoliday(date) && 'bg-holiday',
-                              isDayOff(member.id, date) && 'bg-dayOff',
-                              isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                              isAdmin && 'cursor-pointer',
-                              isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                              isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
-                            )}
-                            onMouseDown={(_e) =>
-                              handleMouseDown(assignment.id, date, _e)
-                            }
-                            onMouseEnter={() => handleMouseEnter(date)}
-                            onClick={(e) => {
-                              if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
-                                handleDeleteDayAssignment(assignment.id, date, e)
-                              }
-                            }}
-                            onContextMenu={(_e) => {
-                              _e.preventDefault() // Prevent browser context menu
-                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                handleDeleteDayAssignment(assignment.id, date, _e)
-                              }
-                            }}
-                          >
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                              <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/60 font-medium">
-                                {format(date, 'EEE', { locale: enGB })}
-                              </span>
-                            </div>
-                            <ExpandedAssignmentBar
-                              assignmentId={assignment.id}
-                              date={date}
-                              projectAssignments={projectAssignments}
-                              dayAssignments={dayAssignments}
-                              project={project}
-                              isDayInDragRange={isDayInDragRange(assignment.id, date)}
-                              isAdmin={isAdmin}
-                              hasOverlap={hasOverlap(member.id, date, 'member')}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                  handleAssignmentClick(assignment.id, date, e)
-                                }
-                              }}
-                              onContextMenu={(e) => {
-                                e.preventDefault()
-                                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                  handleDeleteDayAssignment(assignment.id, date, e)
-                                }
-                              }}
-                              getGroupPriority={getGroupPriority}
-                            />
-                          </div>
-                        ))}
-                        {/* Comment overlay rendered at row level to appear above all bar segments */}
-                        <AssignmentCommentOverlay
-                          assignmentId={assignment.id}
-                          dates={dates}
-                          dayAssignments={dayAssignments}
-                          assignmentGroups={assignmentGroups}
-                          zoomLevel={zoomLevel}
-                          onCommentClick={(assignmentId, date, e) => {
-                            handleAssignmentClick(assignmentId, date, e)
-                          }}
-                          onCommentContextMenu={(assignmentId, date, e) => {
-                            handleDeleteDayAssignment(assignmentId, date, e)
-                          }}
-                        />
-                      </div>
-                    )
-                  })}
-              </div>
-            )
-          })}
-      </div>
-    </div>
+    <TimelineViewContent
+      viewMode="by-project"
+      items={filteredProjects}
+      projects={projects}
+      members={filteredMembersWithProjects}
+      projectAssignments={projectAssignments}
+      dayAssignments={dayAssignments}
+      milestones={milestones}
+      dayOffs={dayOffs}
+      settings={settings}
+      assignmentGroups={assignmentGroups}
+      dates={dates}
+      monthGroups={monthGroups}
+      columnWidth={columnWidth}
+      zoomLevel={zoomLevel}
+      expandedItems={expandedItemsSet}
+      onToggleExpand={toggleExpand}
+      isAdmin={isAdmin}
+      showOverlaps={showOverlaps}
+      showTentative={showTentative}
+      dragState={dragState}
+      handleMouseDown={handleMouseDown}
+      handleMouseEnter={handleMouseEnter}
+      handleAssignmentClick={handleAssignmentClick}
+      handleDeleteDayAssignment={handleDeleteDayAssignment}
+      handleProjectCellClick={handleProjectCellClick}
+      canEditProject={canEditProject}
+      canEditAssignment={canEditAssignment}
+      isDayOff={isDayOff}
+      isDayInDragRange={isDayInDragRange}
+      hasOverlap={hasOverlap}
+      getGroupPriority={getGroupPriority}
+    />
   ) : (
-    // By Member view
-    <div className="overflow-auto max-h-full">
-      <div className="min-w-max">
-        {/* Header */}
-        <TimelineHeader
-          dates={dates}
-          monthGroups={monthGroups}
-          columnWidth={columnWidth}
-          zoomLevel={zoomLevel}
-          label="Team Members"
-        />
-
-        {/* Members */}
-        {filteredMembersWithProjects.map((member) => {
-          const assignments = projectAssignments.filter(
-            (pa: any) => pa.teamMemberId === member.id
-          )
-
-          return (
-            <div key={member.id}>
-              <TimelineItemHeader
-                type="member"
-                item={member}
-                isExpanded={expandedItemsSet.has(member.id)}
-                canEdit={false}
-                onToggleExpand={toggleExpand}
-                dates={dates}
-                columnWidth={columnWidth}
-              />
-
-              {expandedItemsSet.has(member.id) &&
-                assignments.map((assignment: any) => {
-                  const project = projects.find(
-                    (p) => p.id === assignment.projectId
-                  )
-                  if (!project) return null
-
-                  // Hide tentative projects if showTentative is disabled
-                  if (!showTentative && project.status === 'tentative') return null
-
-                  return (
-                    <div key={assignment.id} className="flex border-b bg-background/30 hover:bg-muted/20 transition-colors relative">
-                      <div
-                        className={cn(
-                          'w-64 p-2 pl-10 border-r bg-background/50',
-                          project.status === 'tentative' && 'opacity-50'
-                        )}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <div className="text-sm font-medium">{project.name}</div>
-                          {project.status === 'tentative' ? (
-                            <div
-                              className={cn('flex items-center text-sm font-medium text-slate-700 dark:text-slate-300')}
-                            >
-                                <Clock className="h-2.5 w-2.5" />
-                            </div>
-                          ) : (
-                            ""
-                          )}
-                        </div>
-                        <div className="text-xs">
-                          {project.customer?.icon && `${project.customer.icon} `}
-                          {project.customer?.name}
-                        </div>
-                      </div>
-                      {dates.map((date, dateIndex) => (
-                        <div
-                          key={date.toISOString()}
-                          className={cn(
-                            columnWidth, 'border-r group relative flex items-center justify-center select-none',
-                            isWeekend(date) && 'bg-weekend',
-                            isHoliday(date) && 'bg-holiday',
-                            isDayOff(member.id, date) && 'bg-dayOff',
-                            isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
-                            isAdmin && 'cursor-pointer',
-                            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-                            isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
-                          )}
-                                                      onMouseDown={(_e) =>
-                                                        handleMouseDown(assignment.id, date, _e)                          }
-                          onMouseEnter={() => handleMouseEnter(date)}
-                          onClick={(e) => {
-                            if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
-                              handleDeleteDayAssignment(assignment.id, date, e)
-                            }
-                          }}
-                                                      onContextMenu={(_e) => {
-                                                        _e.preventDefault() // Prevent browser context menu
-                                                        if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                                          handleDeleteDayAssignment(assignment.id, date, _e)
-                                                        }
-                                                      }}                        >
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
-                              {format(date, 'EEE', { locale: enGB })}
-                            </span>
-                          </div>
-                          <MilestoneIndicator
-                            projectId={project.id}
-                            date={date}
-                            milestones={milestones}
-                            canEdit={canEditProject(project.id)}
-                            onToggle={handleProjectCellClick}
-                          />
-                          <ExpandedAssignmentBar
-                            assignmentId={assignment.id}
-                            date={date}
-                            projectAssignments={projectAssignments}
-                            dayAssignments={dayAssignments}
-                            project={project}
-                            isDayInDragRange={isDayInDragRange(assignment.id, date)}
-                            isAdmin={isAdmin}
-                            hasOverlap={false}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                handleAssignmentClick(assignment.id, date, e)
-                              }
-                            }}
-                            onContextMenu={(e) => {
-                              e.preventDefault()
-                              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                                handleDeleteDayAssignment(assignment.id, date, e)
-                              }
-                            }}
-                            getGroupPriority={getGroupPriority}
-                          />
-                        </div>
-                      ))}
-                      {/* Comment overlay rendered at row level to appear above all bar segments */}
-                      <AssignmentCommentOverlay
-                        assignmentId={assignment.id}
-                        dates={dates}
-                        dayAssignments={dayAssignments}
-                        assignmentGroups={assignmentGroups}
-                        zoomLevel={zoomLevel}
-                        onCommentClick={(assignmentId, date, e) => {
-                          handleAssignmentClick(assignmentId, date, e)
-                        }}
-                        onCommentContextMenu={(assignmentId, date, e) => {
-                          handleDeleteDayAssignment(assignmentId, date, e)
-                        }}
-                      />
-                    </div>
-                  )
-                })}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <TimelineViewContent
+      viewMode="by-member"
+      items={filteredMembersWithProjects}
+      projects={projects}
+      members={filteredMembersWithProjects}
+      projectAssignments={projectAssignments}
+      dayAssignments={dayAssignments}
+      milestones={milestones}
+      dayOffs={dayOffs}
+      settings={settings}
+      assignmentGroups={assignmentGroups}
+      dates={dates}
+      monthGroups={monthGroups}
+      columnWidth={columnWidth}
+      zoomLevel={zoomLevel}
+      expandedItems={expandedItemsSet}
+      onToggleExpand={toggleExpand}
+      isAdmin={isAdmin}
+      showOverlaps={showOverlaps}
+      showTentative={showTentative}
+      dragState={dragState}
+      handleMouseDown={handleMouseDown}
+      handleMouseEnter={handleMouseEnter}
+      handleAssignmentClick={handleAssignmentClick}
+      handleDeleteDayAssignment={handleDeleteDayAssignment}
+      handleProjectCellClick={handleProjectCellClick}
+      canEditProject={canEditProject}
+      canEditAssignment={canEditAssignment}
+      isDayOff={isDayOff}
+      isDayInDragRange={isDayInDragRange}
+      hasOverlap={hasOverlap}
+      getGroupPriority={getGroupPriority}
+    />
   )
 
   return (
