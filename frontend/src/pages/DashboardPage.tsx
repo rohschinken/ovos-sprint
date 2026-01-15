@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import api from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -16,25 +15,14 @@ import { Switch } from '@/components/ui/switch'
 import Timeline from '@/components/Timeline'
 import { useAuthStore } from '@/store/auth'
 import { Filter, ZoomIn, Eye, UnfoldVertical, FoldVertical, Briefcase, UserCircle } from 'lucide-react'
-import { TimelineViewMode, Team } from '@/types'
+import { Team } from '@/types'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useDashboardPreferences } from '@/hooks/useDashboardPreferences'
+import { useDashboardSettings } from '@/hooks/useDashboardSettings'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
-  const [prefsLoaded, setPrefsLoaded] = useState(false)
-  const [viewMode, setViewMode] = useState<TimelineViewMode>('by-member')
-  const [prevDays, setPrevDays] = useState(1)
-  const [nextDays, setNextDays] = useState(30)
-  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
-  const [zoomLevel, setZoomLevel] = useState(2) // 1-4, default 2 (narrow)
-  const [expandedItems, setExpandedItems] = useState<number[]>([])
-  const [showTentative, setShowTentative] = useState(true) // default: shown
-  const [showWeekends, setShowWeekends] = useState(true) // default: shown
-  const [showOverlaps, setShowOverlaps] = useState(true) // default: shown
-  const [warnWeekends, setWarnWeekends] = useState(true) // default: warn
-
-  const queryClient = useQueryClient()
 
   const { data: settings = {} } = useQuery({
     queryKey: ['settings'],
@@ -68,89 +56,34 @@ export default function DashboardPage() {
     },
   })
 
-  // Load user preferences from localStorage on mount
-  useEffect(() => {
-    if (!user?.id || prefsLoaded) return
-
-    const prefsKey = `dashboard-prefs-${user.id}`
-    const savedPrefs = localStorage.getItem(prefsKey)
-    if (savedPrefs) {
-      try {
-        const prefs = JSON.parse(savedPrefs)
-        if (prefs.viewMode) setViewMode(prefs.viewMode)
-        if (prefs.selectedTeamIds) setSelectedTeamIds(prefs.selectedTeamIds)
-        if (prefs.zoomLevel) setZoomLevel(prefs.zoomLevel)
-        if (prefs.expandedItems !== undefined) setExpandedItems(prefs.expandedItems)
-        if (prefs.showTentative !== undefined) setShowTentative(prefs.showTentative)
-        if (prefs.showWeekends !== undefined) setShowWeekends(prefs.showWeekends)
-        if (prefs.showOverlaps !== undefined) setShowOverlaps(prefs.showOverlaps)
-      } catch (error) {
-        console.error('Failed to load dashboard preferences:', error)
-      }
-    }
-    setPrefsLoaded(true)
-  }, [user?.id, prefsLoaded])
-
-  // Save user preferences to localStorage (only after initial load)
-  useEffect(() => {
-    if (!user?.id || !prefsLoaded) return
-
-    const prefsKey = `dashboard-prefs-${user.id}`
-    const prefs = {
-      viewMode,
-      selectedTeamIds,
-      zoomLevel,
-      expandedItems,
-      showTentative,
-      showWeekends,
-      showOverlaps,
-    }
-    localStorage.setItem(prefsKey, JSON.stringify(prefs))
-  }, [user?.id, prefsLoaded, viewMode, selectedTeamIds, zoomLevel, expandedItems, showTentative, showWeekends, showOverlaps])
-
-  // Auto-initialize team filters for first-time users
-  useEffect(() => {
-    if (!user?.id) return
-
-    const hasInitializedKey = `dashboard-team-initialized-${user.id}`
-    const hasInitialized = localStorage.getItem(hasInitializedKey)
-
-    // Only auto-initialize if:
-    // 1. Never initialized before (tracked separately from preferences)
-    // 2. User has linked teams
-    if (!hasInitialized && user.teams && user.teams.length > 0) {
-      setSelectedTeamIds(user.teams)
-      localStorage.setItem(hasInitializedKey, 'true')
-    }
-  }, [user?.id, user?.teams])
-
-  useEffect(() => {
-    if (settings.timelinePrevDays) {
-      setPrevDays(parseInt(settings.timelinePrevDays))
-    }
-    if (settings.timelineNextDays) {
-      setNextDays(parseInt(settings.timelineNextDays))
-    }
-    if (settings.showOverlapVisualization !== undefined) {
-      setShowOverlaps(settings.showOverlapVisualization !== 'false')
-    }
-    if (settings.warnWeekendAssignments !== undefined) {
-      setWarnWeekends(settings.warnWeekendAssignments !== 'false')
-    }
-  }, [settings])
-
-  const updateSettingMutation = useMutation({
-    mutationFn: async (data: { key: string; value: string }) => {
-      await api.put(`/settings/${data.key}`, { value: data.value })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] })
-    },
+  // Use custom hooks for preferences and settings management
+  const {
+    viewMode,
+    setViewMode,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    zoomLevel,
+    setZoomLevel,
+    expandedItems,
+    setExpandedItems,
+    showTentative,
+    setShowTentative,
+    showWeekends,
+    setShowWeekends,
+    showOverlaps,
+    setShowOverlaps,
+    prevDays,
+    setPrevDays,
+    nextDays,
+    setNextDays,
+  } = useDashboardPreferences({
+    userId: user?.id,
+    settings,
   })
 
-  const handleSettingChange = (key: string, value: boolean | string) => {
-    updateSettingMutation.mutate({ key, value: typeof value === 'boolean' ? value.toString() : value })
-  }
+  const { warnWeekends, setWarnWeekends, handleSettingChange } = useDashboardSettings({
+    settings,
+  })
 
   const toggleTeam = (teamId: number) => {
     setSelectedTeamIds((prev) =>
