@@ -2,7 +2,7 @@
 
 ## High Priority
 
-- [ ] bug: adding / removing vacation (day-off) is broken. it should work like before the refactoring of the Timeline into smaller components: clicking on the member row in per-member view-mode should add a day-off, right clicking should remove day-off.
+- [x] bug: adding / removing vacation (day-off) is broken. it should work like before the refactoring of the Timeline into smaller components: clicking on the member row in per-member view-mode should add a day-off, right clicking should remove day-off.
 
 ## Medium Priority
 
