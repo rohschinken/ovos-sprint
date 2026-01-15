@@ -203,7 +203,9 @@ export function TimelineItemHeader({
             />
           )}
           {type === 'member' && isDayOffDay && (
-            <span className="text-dayOff-foreground font-medium">Day Off</span>
+            <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
+              vac. 🏝️
+            </div>
           )}
         </div>
       )

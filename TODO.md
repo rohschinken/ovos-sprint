@@ -51,6 +51,10 @@
 
 - [ ] Add a small disclaimer on the login page "Made with 💚 by ovos and Claude"
 
+### Quick Start Guide for ProjectManager Members
+
+- [ ] Users who can create assignments, milestones and vacations (thus: project managers and admins), shouls see a short "Tutorial" in the Settings Page below the Dark-Theme Toggle. The Tutorial should explain how to create assignments, days-off milestones, comments, etc.
+
 ### Email Spam Filter Investigation
 
 - [ ] Investigate why invitation emails land in spam folder despite 10/10 score on mailtester.com
