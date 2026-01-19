@@ -46,10 +46,18 @@ npm run test:coverage # With coverage - generates coverage report
 ### All Tests (from Project Root)
 
 ```bash
-npm test                        # Sequential - runs frontend then backend
-npm run test:frontend           # Frontend only
-npm run test:backend            # Backend only
+# Run tests once (non-interactive, for CI/CD)
+npm test                        # Sequential - runs frontend then backend once
+npm run test:frontend           # Frontend only (non-interactive)
+npm run test:backend            # Backend only (non-interactive)
 npm run test:all                # Parallel - runs both concurrently (faster)
+
+# Watch mode (interactive, for development)
+npm run test:watch              # Watch both frontend and backend
+npm run test:watch:frontend     # Watch frontend only
+npm run test:watch:backend      # Watch backend only
+
+# Coverage reports
 npm run test:coverage           # Coverage for both
 npm run test:coverage:frontend  # Frontend coverage only
 npm run test:coverage:backend   # Backend coverage only
