@@ -12,7 +12,14 @@
     "build:backend": "cd backend && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "db:setup": "cd backend && npm run db:push && npm run db:seed",
-    "db:seed": "cd backend && npm run db:seed"
+    "db:seed": "cd backend && npm run db:seed",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "test:all": "concurrently \"npm:test:frontend\" \"npm:test:backend\"",
+    "test:coverage": "npm run test:coverage:frontend && npm run test:coverage:backend",
+    "test:coverage:frontend": "cd frontend && npm run test:coverage",
+    "test:coverage:backend": "cd backend && npm run test:coverage"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
