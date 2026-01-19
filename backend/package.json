@@ -49,6 +49,7 @@
     "@types/sharp": "^0.31.1",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^9.0.8",
+    "@vitest/coverage-v8": "^4.0.17",
     "@vitest/ui": "^4.0.17",
     "drizzle-kit": "^0.31.8",
     "supertest": "^7.2.2",
