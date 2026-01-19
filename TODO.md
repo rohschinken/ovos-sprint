@@ -2,20 +2,12 @@
 
 ## High Priority
 
-- [x] bug: adding / removing vacation (day-off) is broken. it should work like before the refactoring of the Timeline into smaller components: clicking on the member row in per-member view-mode should add a day-off, right clicking should remove day-off.
+- [ ] bug: Vertical Scrolling on all pages (Customers, Projects, Members, Settings. etc.) is broken
 
 ## Medium Priority
 
 ### Component Refactoring
 
-- [x] Break down large components into smaller, focused units
-  - Timeline.tsx: 1,797 → 430 lines (76% reduction)
-  - DashboardPage.tsx: 538 → 220 lines (59% reduction)
-- [x] Create feature-based component directories with index.ts exports
-  - Created `/components/timeline/` with 10 components
-  - Created `/components/dashboard/` with 3 components
-  - Created `/hooks/` with 7 new hooks
-  - Created `/lib/` with 4 utility modules
 - [ ] Move shared types to feature-specific types.ts files
 
 ### missing tooltips in header rows in Timeline
@@ -35,14 +27,10 @@
 **Location**: `src/**/tests/*.test.tsx` (as per original plan)
 **Commands**: `npm test` (frontend/backend)
 
-### Improve UX of Timeline view
 
-- [x] First column (containing members and projects) should be fixed when scrolling horizontally. Especially when showing a lot of upcoming days and when scrolling all the way to the right, the first column disappears and it's hard to guess which row belongs to which person or project.
-- [x] New Option in Display Settings: Hide empty rows (default: enabled) - when enabled rows that do not have assignments _in the currently shown day-range_(!) should not be rendered. The idea of this feature is to reduce visual clutter and hide unnecessary rows.
+### Google Authentication
 
-### PW Reset form for users
-
-- [x] users must be able to rest their pw if they are logged out of the platform
+- [ ] Google Authentication (Google Workspace Domain/Key must be configurable)
 
 ### Archived Projects
 
@@ -50,17 +38,6 @@
 - [ ] Allow changing the project status in /projects View from both the card view and list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
 
 ## Low Priority
-
-### Disclaimer on login page
-
-- [x] Add a small disclaimer on the login page "Made with 💚 by ovos and Claude"
-
-### Quick Start Guide (Onboarding)
-
-- [x] Interactive onboarding slideshow modal for all users on first login
-- [x] Tutorial covers assignments, milestones, days-off, comments, and priority
-- [x] Help button (?) in header to reopen tutorial anytime
-- [x] First-login detection using settings table (hasSeenOnboarding)
 
 ### Email Spam Filter Investigation
 
@@ -79,6 +56,7 @@
 - [ ] Update date formatting in `lib/utils.ts` to use dynamic locale
 - [ ] Configure intlayer build process
 - [ ] Add language switcher component
+- [ ] Use Tolgee for interactive localization
 
 **Current State**: Application uses German locale (`de-AT`) for date formatting but all UI text is in English.
 
@@ -96,3 +74,9 @@
 - [x] SparkPost SMTP integration for production emails
 - [x] Git branching strategy (main/next workflow)
 - [x] Non-working day warning for timeline assignments
+- [x] Password reset functionality with secure token-based flow
+- [x] Login page disclaimer footer
+- [x] Interactive onboarding slideshow with help button
+- [x] Component refactoring (Timeline and Dashboard split into focused modules)
+- [x] Fixed sticky first column in Timeline view
+- [x] "Hide empty rows" option in Timeline Display Settings
