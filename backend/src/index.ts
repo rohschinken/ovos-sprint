@@ -215,15 +215,17 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   })
 })
 
-// Start server
-const PORT = process.env.PORT || 3001
+// Start server (skip in test mode)
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 3001
 
-httpServer.listen(PORT, () => {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('🚀 ovos Sprint 🏃‍♂️‍➡️ Backend Server')
-  console.log(`📡 Server running on port ${PORT}`)
-  console.log(`🔌 WebSocket server ready`)
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-})
+  httpServer.listen(PORT, () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🚀 ovos Sprint 🏃‍♂️‍➡️ Backend Server')
+    console.log(`📡 Server running on port ${PORT}`)
+    console.log(`🔌 WebSocket server ready`)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  })
+}
 
 export default app
