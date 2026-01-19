@@ -2,7 +2,7 @@
 
 ## High Priority
 
-- [ ] bug: Vertical Scrolling on all pages (Customers, Projects, Members, Settings. etc.) is broken
+_No high priority items at this time_
 
 ## Medium Priority
 
@@ -80,3 +80,4 @@
 - [x] Component refactoring (Timeline and Dashboard split into focused modules)
 - [x] Fixed sticky first column in Timeline view
 - [x] "Hide empty rows" option in Timeline Display Settings
+- [x] Vertical scrolling on all pages (Customers, Projects, Members, Settings, Teams, Users)
