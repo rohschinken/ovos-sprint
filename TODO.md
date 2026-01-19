@@ -4,10 +4,6 @@
 
 ## Medium Priority
 
-### missing tooltips in header rows in Timeline
-
-- [ ] we used to have Tooltips when hovering above the header rows for adding/removing Milestones and Days-Off. Those tooltips seem to have vanished when the Timeline was refactored. Bring them back!
-
 ### Testing Infrastructure
 
 - [ ] Set up Vitest testing framework
@@ -77,3 +73,4 @@
 - [x] Vertical scrolling on all pages (Customers, Projects, Members, Settings, Teams, Users)
 - [x] Move shared types to feature-specific types.ts files
 - [x] Bug fix: Timeline team filtering now works correctly
+- [x] Restored tooltips in Timeline header rows for adding/removing Milestones and Days-Off

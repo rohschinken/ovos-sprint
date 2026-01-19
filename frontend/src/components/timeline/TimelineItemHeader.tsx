@@ -2,6 +2,11 @@ import { format, isFirstDayOfMonth, getDay } from 'date-fns'
 import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { isWeekend, isHoliday } from '@/lib/holidays'
 import { MilestoneIndicator } from './MilestoneIndicator'
 import type { Project, TeamMember } from '@/types'
@@ -145,51 +150,59 @@ export function TimelineItemHeader({
       const isDayOffDay = isDayOff(date)
 
       return (
-        <div
-          key={date.toISOString()}
-          className={cn(
-            columnWidth,
-            'border-r relative flex items-center justify-center text-[10px]',
-            isWeekendDay && 'bg-weekend',
-            isHolidayDay && 'bg-holiday',
-            isDayOffDay && 'bg-dayOff',
-            isToday && 'bg-primary/10 border-x-2 border-x-primary',
-            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-            isWeekStart(date, dateIndex) &&
-              !isFirstDayOfMonth(date) &&
-              'border-l-4 border-l-muted-foreground',
-            canEdit && (type === 'project' || type === 'member') && 'cursor-pointer'
-          )}
-          onClick={
-            type === 'project' && onMilestoneToggle
-              ? (e) => onMilestoneToggle((item as Project).id, date, e)
-              : type === 'member' && onDayOffToggle
-              ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
-              : undefined
-          }
-          onContextMenu={
-            type === 'project' && onMilestoneToggle
-              ? (e) => onMilestoneToggle((item as Project).id, date, e)
-              : type === 'member' && onDayOffToggle
-              ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
-              : undefined
-          }
-        >
-          {type === 'project' && milestones && onMilestoneToggle && (
-            <MilestoneIndicator
-              projectId={(item as Project).id}
-              date={date}
-              milestones={milestones}
-              canEdit={canEdit}
-              onToggle={onMilestoneToggle}
-            />
-          )}
-          {type === 'member' && isDayOffDay && (
-            <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
-              vac. 🏝️
+        <Tooltip key={date.toISOString()}>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                columnWidth,
+                'border-r relative flex items-center justify-center text-[10px]',
+                isWeekendDay && 'bg-weekend',
+                isHolidayDay && 'bg-holiday',
+                isDayOffDay && 'bg-dayOff',
+                isToday && 'bg-primary/10 border-x-2 border-x-primary',
+                isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
+                isWeekStart(date, dateIndex) &&
+                  !isFirstDayOfMonth(date) &&
+                  'border-l-4 border-l-muted-foreground',
+                canEdit && (type === 'project' || type === 'member') && 'cursor-pointer'
+              )}
+              onClick={
+                type === 'project' && onMilestoneToggle
+                  ? (e) => onMilestoneToggle((item as Project).id, date, e)
+                  : type === 'member' && onDayOffToggle
+                  ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
+                  : undefined
+              }
+              onContextMenu={
+                type === 'project' && onMilestoneToggle
+                  ? (e) => onMilestoneToggle((item as Project).id, date, e)
+                  : type === 'member' && onDayOffToggle
+                  ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
+                  : undefined
+              }
+            >
+              {type === 'project' && milestones && onMilestoneToggle && (
+                <MilestoneIndicator
+                  projectId={(item as Project).id}
+                  date={date}
+                  milestones={milestones}
+                  canEdit={canEdit}
+                  onToggle={onMilestoneToggle}
+                />
+              )}
+              {type === 'member' && isDayOffDay && (
+                <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
+                  vac. 🏝️
+                </div>
+              )}
             </div>
+          </TooltipTrigger>
+          {canEdit && (
+            <TooltipContent side="top" className="text-xs">
+              {type === 'project' ? 'Add/remove milestone' : 'Add/remove day off'}
+            </TooltipContent>
           )}
-        </div>
+        </Tooltip>
       )
     })
   }
