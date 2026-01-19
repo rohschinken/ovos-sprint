@@ -2,13 +2,7 @@
 
 ## High Priority
 
-_No high priority items at this time_
-
 ## Medium Priority
-
-### Component Refactoring
-
-- [ ] Move shared types to feature-specific types.ts files
 
 ### missing tooltips in header rows in Timeline
 
@@ -81,3 +75,5 @@ _No high priority items at this time_
 - [x] Fixed sticky first column in Timeline view
 - [x] "Hide empty rows" option in Timeline Display Settings
 - [x] Vertical scrolling on all pages (Customers, Projects, Members, Settings, Teams, Users)
+- [x] Move shared types to feature-specific types.ts files
+- [x] Bug fix: Timeline team filtering now works correctly

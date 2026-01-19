@@ -84,8 +84,8 @@ export default function Timeline({
 
   // Fetch timeline data using custom hook
   const {
-    projects: filteredProjects,
-    members: filteredMembersWithProjects,
+    filteredProjects,
+    filteredMembers: filteredMembersWithProjects,
     projectAssignments,
     dayAssignments,
     milestones,
