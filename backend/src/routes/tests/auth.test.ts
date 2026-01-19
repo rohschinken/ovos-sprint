@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import request from 'supertest'
 import app from '../../index'
-import { mockUser } from '../../tests/utils'
 
 describe('Auth API', () => {
   describe('POST /api/auth/login', () => {
