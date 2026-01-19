@@ -3,18 +3,7 @@ import { enGB } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { isWeekend, getHolidayName, isHoliday } from '@/lib/holidays'
 import { ZOOM_PIXEL_WIDTHS } from '@/lib/timeline-constants'
-import type { ZoomLevel } from '@/lib/timeline-constants'
-
-/**
- * Props for TimelineHeader component
- */
-interface TimelineHeaderProps {
-  dates: Date[]
-  monthGroups: Array<{ month: string; count: number; firstDate: Date }>
-  columnWidth: string
-  zoomLevel: number
-  label?: string
-}
+import type { TimelineHeaderProps, ZoomLevel } from './types'
 
 /**
  * TimelineHeader Component

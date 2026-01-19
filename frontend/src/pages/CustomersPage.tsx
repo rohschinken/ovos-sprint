@@ -36,13 +36,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/auth'
 import { AlertDialog } from '@/components/ui/alert-dialog'
-
-interface CascadeInfo {
-  projects: number
-  assignments: number
-  dayAssignments: number
-  milestones: number
-}
+import type { CustomerCascadeInfo as CascadeInfo } from './types'
 
 export default function CustomersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)

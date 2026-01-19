@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { AssignmentPriority, AssignmentGroup } from '@/types'
+import type { AssignmentPriority } from '@/types'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -12,16 +12,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { cn } from '@/lib/utils'
-
-interface AssignmentEditPopoverProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  position: { x: number; y: number }
-  group: AssignmentGroup | null
-  projectAssignmentId: number
-  dateRange: { start: string; end: string }
-  onSave: (data: { priority: AssignmentPriority; comment: string | null }) => void
-}
+import type { AssignmentEditPopoverProps } from './types'
 
 export function AssignmentEditPopover({
   open,

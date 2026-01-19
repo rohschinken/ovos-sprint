@@ -1,13 +1,5 @@
 import { useState } from 'react'
-
-/**
- * Warning state interface for timeline warnings
- */
-export interface TimelineWarning {
-  type: 'holiday' | 'non-working-day'
-  message: string | React.ReactNode
-  onConfirm: () => void
-}
+import type { TimelineWarning } from '@/components/timeline/types'
 
 /**
  * Custom hook for managing timeline warning dialogs

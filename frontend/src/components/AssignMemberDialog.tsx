@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-import { Project, TeamMember, ProjectAssignmentWithDetails } from '@/types'
+import type { TeamMember, ProjectAssignmentWithDetails } from '@/types'
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { getInitials } from '@/lib/utils'
 import { UserPlus, X } from 'lucide-react'
-
-interface AssignMemberDialogProps {
-  project: Project
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+import type { AssignMemberDialogProps } from './types'
 
 export default function AssignMemberDialog({
   project,

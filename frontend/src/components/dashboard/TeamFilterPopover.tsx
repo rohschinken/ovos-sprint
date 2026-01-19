@@ -6,29 +6,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Team } from '@/types'
 import { Filter } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-/**
- * Props for the TeamFilterPopover component
- */
-interface TeamFilterPopoverProps {
-  /** List of all available teams */
-  teams: Team[]
-  /** Array of currently selected team IDs */
-  selectedTeamIds: number[]
-  /** Current user's team IDs for determining "My Teams" section */
-  currentUserTeams?: number[]
-  /** Callback when a team checkbox is toggled */
-  onToggleTeam: (id: number) => void
-  /** Callback to clear all team filters */
-  onClearFilter: () => void
-  /** Callback to select all teams */
-  onSelectAll: () => void
-  /** Callback to select only the current user's teams */
-  onSelectMyTeams: () => void
-}
+import { TeamFilterPopoverProps } from './types'
 
 /**
  * TeamFilterPopover Component

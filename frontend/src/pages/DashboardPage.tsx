@@ -218,6 +218,7 @@ export default function DashboardPage() {
             showWeekends={showWeekends}
             showOverlaps={showOverlaps}
             hideEmptyRows={hideEmptyRows}
+            warnWeekends={warnWeekends}
           />
         </Card>
       </motion.div>

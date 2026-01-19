@@ -9,30 +9,7 @@ import {
 } from '@/components/ui/popover'
 import { Eye } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-/**
- * Props for the DisplaySettingsPopover component
- */
-interface DisplaySettingsPopoverProps {
-  /** Whether to show tentative projects */
-  showTentative: boolean
-  /** Whether to show weekends in the timeline */
-  showWeekends: boolean
-  /** Whether to show overlap indicators */
-  showOverlaps: boolean
-  /** Whether to hide empty rows in the timeline */
-  hideEmptyRows: boolean
-  /** Whether to warn about weekend assignments */
-  warnWeekends: boolean
-  /** Number of previous days to show in timeline */
-  prevDays: number
-  /** Number of next days to show in timeline */
-  nextDays: number
-  /** Current user's role */
-  currentUserRole?: string
-  /** Callback when a setting value changes */
-  onSettingChange: (key: string, value: any) => void
-}
+import { DisplaySettingsPopoverProps } from './types'
 
 /**
  * DisplaySettingsPopover Component

@@ -1,12 +1,7 @@
 import { LayoutGrid, List } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { PageViewMode } from '@/types'
-
-interface ViewModeToggleProps {
-  viewMode: PageViewMode
-  onViewModeChange: (mode: PageViewMode) => void
-}
+import type { ViewModeToggleProps } from './types'
 
 export function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeToggleProps) {
   return (

@@ -32,20 +32,8 @@ import { useAuthStore } from '@/store/auth'
 import { UserPlus, Copy, Mail, Trash2, Shield, Briefcase } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
-
-
-
-interface User {
-  id: number
-  email: string
-  role: string
-  createdAt: string
-}
-
-interface CascadeInfo {
-  settings: number
-  linkedTeamMembers: number
-}
+import type { User } from '@/types'
+import type { UserCascadeInfo as CascadeInfo } from './types'
 
 export default function UsersPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false)

@@ -54,5 +54,6 @@ export const PRIORITY_INDICATOR_WIDTH = 24
 
 /**
  * Type for zoom level keys
+ * NOTE: Moved to @/components/timeline/types for better organization
  */
-export type ZoomLevel = keyof typeof ZOOM_PIXEL_WIDTHS
+export type { ZoomLevel } from '@/components/timeline/types'

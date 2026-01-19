@@ -10,26 +10,7 @@ import {
   isLastDayOfRange,
   isDayAssigned,
 } from '@/lib/timeline-helpers'
-import { AssignmentPriority } from '@/types'
-
-/**
- * Props for ExpandedAssignmentBar component
- */
-interface ExpandedAssignmentBarProps {
-  assignmentId: number
-  date: Date
-  projectAssignments: any[]
-  dayAssignments: any[]
-  project: any
-  member?: any
-  isDayInDragRange: boolean
-  isAdmin: boolean
-  hasOverlap: boolean
-  onMouseDown: (e: React.MouseEvent) => void
-  onClick: (e: React.MouseEvent) => void
-  onContextMenu: (e: React.MouseEvent) => void
-  getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
-}
+import type { ExpandedAssignmentBarProps } from './types'
 
 /**
  * ExpandedAssignmentBar Component

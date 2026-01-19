@@ -7,22 +7,9 @@ import {
   getCommentOverlayWidth,
   getDateFromClickX,
 } from '@/lib/timeline-helpers'
-import type { ZoomLevel } from '@/lib/timeline-constants'
 import type { AssignmentGroup } from '@/types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-
-/**
- * Props for AssignmentCommentOverlay component
- */
-interface AssignmentCommentOverlayProps {
-  assignmentId: number
-  dates: Date[]
-  dayAssignments: any[]
-  assignmentGroups: AssignmentGroup[]
-  zoomLevel: number
-  onCommentClick: (assignmentId: number, date: Date, event: React.MouseEvent) => void
-  onCommentContextMenu: (assignmentId: number, date: Date, event: React.MouseEvent) => void
-}
+import type { AssignmentCommentOverlayProps, ZoomLevel } from './types'
 
 /**
  * AssignmentCommentOverlay Component

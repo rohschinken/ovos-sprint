@@ -12,21 +12,7 @@ import {
   memberHasAssignmentOnPrevDay,
   memberHasAssignmentOnNextDay,
 } from '@/lib/timeline-helpers'
-
-/**
- * Props for CollapsedAssignmentBar component
- */
-interface CollapsedAssignmentBarProps {
-  type: 'project' | 'member'
-  id: number
-  date: Date
-  projectAssignments: any[]
-  dayAssignments: any[]
-  projects?: any[]
-  isTentative?: boolean
-  hasOverlap: boolean
-  showOverlaps: boolean
-}
+import type { CollapsedAssignmentBarProps } from './types'
 
 /**
  * CollapsedAssignmentBar Component

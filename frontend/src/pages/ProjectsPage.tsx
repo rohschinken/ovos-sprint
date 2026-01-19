@@ -44,12 +44,7 @@ import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
-
-interface CascadeInfo {
-  assignments: number
-  dayAssignments: number
-  milestones: number
-}
+import type { ProjectCascadeInfo as CascadeInfo } from './types'
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)

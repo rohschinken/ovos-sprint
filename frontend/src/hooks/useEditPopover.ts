@@ -1,17 +1,7 @@
 import { useState } from 'react'
 import { getContiguousRangeForDate } from '@/lib/timeline-helpers'
-import { AssignmentGroup } from '@/types'
-
-/**
- * Edit popover state interface
- */
-export interface EditPopoverState {
-  open: boolean
-  position: { x: number; y: number }
-  projectAssignmentId: number
-  dateRange: { start: string; end: string }
-  group: AssignmentGroup | null
-}
+import type { AssignmentGroup } from '@/types'
+import type { EditPopoverState } from '@/components/timeline/types'
 
 /**
  * Custom hook for managing assignment edit popover state

@@ -1,49 +1,9 @@
-import { useState, useEffect, Dispatch, SetStateAction } from 'react'
+import { useState, useEffect } from 'react'
 import { TimelineViewMode } from '@/types'
-
-/**
- * Parameters for the useDashboardPreferences hook
- */
-interface UseDashboardPreferencesParams {
-  /** User ID for localStorage key generation */
-  userId?: number
-  /** Backend settings containing timeline configuration */
-  settings: Record<string, string>
-}
-
-/**
- * Return type for the useDashboardPreferences hook
- */
-interface UseDashboardPreferencesReturn {
-  // View preferences
-  viewMode: TimelineViewMode
-  setViewMode: Dispatch<SetStateAction<TimelineViewMode>>
-  selectedTeamIds: number[]
-  setSelectedTeamIds: Dispatch<SetStateAction<number[]>>
-  zoomLevel: number
-  setZoomLevel: Dispatch<SetStateAction<number>>
-  expandedItems: number[]
-  setExpandedItems: Dispatch<SetStateAction<number[]>>
-
-  // Display settings
-  showTentative: boolean
-  setShowTentative: Dispatch<SetStateAction<boolean>>
-  showWeekends: boolean
-  setShowWeekends: Dispatch<SetStateAction<boolean>>
-  showOverlaps: boolean
-  setShowOverlaps: Dispatch<SetStateAction<boolean>>
-  hideEmptyRows: boolean
-  setHideEmptyRows: Dispatch<SetStateAction<boolean>>
-
-  // Date range from backend settings
-  prevDays: number
-  setPrevDays: Dispatch<SetStateAction<number>>
-  nextDays: number
-  setNextDays: Dispatch<SetStateAction<number>>
-
-  // Status
-  prefsLoaded: boolean
-}
+import {
+  UseDashboardPreferencesParams,
+  UseDashboardPreferencesReturn,
+} from '@/components/dashboard/types'
 
 /**
  * Custom hook for managing dashboard preferences with localStorage persistence.

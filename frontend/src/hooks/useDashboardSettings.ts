@@ -1,36 +1,11 @@
-import { useState, useEffect, Dispatch, SetStateAction } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
-
-/**
- * Parameters for the settings mutation
- */
-interface SettingUpdateData {
-  key: string
-  value: string
-}
-
-/**
- * Return type for the useDashboardSettings hook
- */
-interface UseDashboardSettingsReturn {
-  /** Whether to warn about weekend assignments */
-  warnWeekends: boolean
-  /** Setter for warnWeekends state */
-  setWarnWeekends: Dispatch<SetStateAction<boolean>>
-  /** Function to update any setting in the backend */
-  handleSettingChange: (key: string, value: boolean | string) => void
-  /** Whether a setting update is in progress */
-  isUpdating: boolean
-}
-
-/**
- * Parameters for the useDashboardSettings hook
- */
-interface UseDashboardSettingsParams {
-  /** Backend settings containing configuration */
-  settings: Record<string, string>
-}
+import {
+  SettingUpdateData,
+  UseDashboardSettingsReturn,
+  UseDashboardSettingsParams,
+} from '@/components/dashboard/types'
 
 /**
  * Custom hook for managing dashboard settings with backend persistence.

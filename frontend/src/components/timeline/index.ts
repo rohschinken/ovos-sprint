@@ -26,3 +26,19 @@ export { AssignmentCommentOverlay } from './AssignmentCommentOverlay'
 // Indicator components
 export { MilestoneIndicator } from './MilestoneIndicator'
 export { DayOffIndicator } from './DayOffIndicator'
+
+// Types
+export type {
+  ZoomLevel,
+  TimelineViewContentProps,
+  AssignmentRowProps,
+  AssignmentCommentOverlayProps,
+  TimelineHeaderProps,
+  TimelineItemHeaderProps,
+  ExpandedAssignmentBarProps,
+  CollapsedAssignmentBarProps,
+  MilestoneIndicatorProps,
+  DayOffIndicatorProps,
+  TimelineWarning,
+  EditPopoverState,
+} from './types'

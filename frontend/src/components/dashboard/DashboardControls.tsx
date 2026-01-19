@@ -10,26 +10,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-
-/**
- * Props for the DashboardControls component
- */
-interface DashboardControlsProps {
-  /** Current view mode (by-project or by-member) */
-  viewMode: 'by-project' | 'by-member'
-  /** Callback when view mode changes */
-  onViewModeChange: (mode: 'by-project' | 'by-member') => void
-  /** Current zoom level (1-4) */
-  zoomLevel: number
-  /** Callback when zoom level changes */
-  onZoomChange: (level: number) => void
-  /** Callback to toggle expand/collapse all items */
-  onToggleExpandAll: () => void
-  /** Number of currently expanded items */
-  expandedItemsCount: number
-  /** Total number of expandable items */
-  totalItemsCount: number
-}
+import { DashboardControlsProps } from './types'
 
 /**
  * DashboardControls Component

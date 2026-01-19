@@ -2,64 +2,8 @@ import { TimelineHeader } from './TimelineHeader'
 import { TimelineItemHeader } from './TimelineItemHeader'
 import { AssignmentRow } from './AssignmentRow'
 import { hasAssignmentInDateRange } from '@/lib/timeline-helpers'
-import type {
-  Project,
-  TeamMember,
-  ProjectAssignment,
-  DayAssignment,
-  Milestone,
-  DayOff,
-  AssignmentGroup,
-  AssignmentPriority,
-} from '@/types/index'
-
-/**
- * Props for TimelineViewContent component
- */
-interface TimelineViewContentProps {
-  viewMode: 'by-project' | 'by-member'
-  // Data
-  items: (Project | TeamMember)[]
-  projects: Project[]
-  members: TeamMember[]
-  projectAssignments: ProjectAssignment[]
-  dayAssignments: DayAssignment[]
-  milestones: Milestone[]
-  dayOffs: DayOff[]
-  settings: Record<string, string>
-  assignmentGroups: AssignmentGroup[]
-  dates: Date[]
-  monthGroups: Array<{ month: string; count: number; firstDate: Date }>
-  // Settings
-  columnWidth: string
-  zoomLevel: number
-  expandedItems: Set<number>
-  onToggleExpand: (id: number) => void
-  isAdmin: boolean
-  showOverlaps: boolean
-  showTentative: boolean
-  hideEmptyRows: boolean
-  // State
-  dragState: {
-    assignmentId: number | null
-    startDate: Date | null
-    endDate: Date | null
-  }
-  // Handlers
-  handleMouseDown: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleMouseEnter: (date: Date) => void
-  handleAssignmentClick: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleDeleteDayAssignment: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
-  handleMemberCellClick: (memberId: number, date: Date, e: React.MouseEvent) => void
-  // Helper functions
-  canEditProject: (projectId: number) => boolean
-  canEditAssignment: (assignmentId: number) => boolean
-  isDayOff: (memberId: number, date: Date) => boolean
-  isDayInDragRange: (assignmentId: number, date: Date) => boolean
-  hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
-  getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
-}
+import type { Project, TeamMember, ProjectAssignment } from '@/types'
+import type { TimelineViewContentProps } from './types'
 
 /**
  * TimelineViewContent Component

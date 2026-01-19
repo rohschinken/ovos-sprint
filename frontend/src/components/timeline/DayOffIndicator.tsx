@@ -1,14 +1,5 @@
 import { isSameDay } from 'date-fns'
-import { DayOff } from '@/types'
-
-/**
- * Props for DayOffIndicator component
- */
-interface DayOffIndicatorProps {
-  memberId: number
-  date: Date
-  dayOffs: DayOff[]
-}
+import type { DayOffIndicatorProps } from './types'
 
 /**
  * DayOffIndicator Component

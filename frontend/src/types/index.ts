@@ -1,3 +1,20 @@
+/**
+ * Central Type Definitions
+ *
+ * This file contains core domain entities, enums, and system-wide types that are shared
+ * across the entire application.
+ *
+ * Feature-specific types have been moved to their respective directories:
+ * - Dashboard component types: @/components/dashboard/types
+ * - Timeline component types: @/components/timeline/types
+ * - Page-level types: @/pages/types
+ * - Top-level component types: @/components/types
+ */
+
+// ============================================================================
+// User & Authentication Types
+// ============================================================================
+
 export type UserRole = 'admin' | 'project_manager' | 'user'
 
 export interface User {
@@ -14,6 +31,10 @@ export interface User {
   }
   teams?: number[]
 }
+
+// ============================================================================
+// Organization & Team Types
+// ============================================================================
 
 export interface Team {
   id: number
@@ -50,6 +71,10 @@ export interface TeamMember {
   workSchedule: string
   createdAt: string
 }
+
+// ============================================================================
+// Project & Assignment Types
+// ============================================================================
 
 export type ProjectStatus = 'confirmed' | 'tentative'
 
@@ -90,6 +115,10 @@ export interface TeamTeamMember {
   teamMemberId: number
 }
 
+// ============================================================================
+// System Settings & Configuration Types
+// ============================================================================
+
 export interface Invitation {
   id: number
   email: string
@@ -105,6 +134,10 @@ export interface Settings {
   key: string
   value: string
 }
+
+// ============================================================================
+// Timeline-Related Domain Types
+// ============================================================================
 
 export interface Milestone {
   id: number
@@ -133,7 +166,10 @@ export interface AssignmentGroup {
   createdAt: string
 }
 
-// Extended types with relations
+// ============================================================================
+// Extended Types with Relations
+// ============================================================================
+
 export interface TeamWithMembers extends Team {
   members: TeamMember[]
 }
@@ -152,13 +188,17 @@ export interface TeamMemberWithProjects extends TeamMember {
   })[]
 }
 
-// View modes for timeline
-export type TimelineViewMode = 'by-project' | 'by-member'
+// ============================================================================
+// View Modes & UI State Types
+// ============================================================================
 
-// View modes for pages (card/list)
+export type TimelineViewMode = 'by-project' | 'by-member'
 export type PageViewMode = 'cards' | 'list'
 
-// Settings keys
+// ============================================================================
+// System Enums
+// ============================================================================
+
 export type SettingKey =
   | 'warnWeekendAssignments'
   | 'showOverlapVisualization'

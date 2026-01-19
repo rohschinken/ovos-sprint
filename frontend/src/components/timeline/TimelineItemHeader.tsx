@@ -4,26 +4,8 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { isWeekend, isHoliday } from '@/lib/holidays'
 import { MilestoneIndicator } from './MilestoneIndicator'
-import type { Project, TeamMember, Milestone, DayOff } from '@/types'
-
-/**
- * Props for TimelineItemHeader component
- */
-interface TimelineItemHeaderProps {
-  type: 'project' | 'member'
-  item: Project | TeamMember
-  isExpanded: boolean
-  canEdit: boolean
-  onToggleExpand: (id: number) => void
-  dates: Date[]
-  columnWidth: string
-  // Only for projects:
-  milestones?: Milestone[]
-  onMilestoneToggle?: (projectId: number, date: Date, event: React.MouseEvent) => void
-  // Only for members:
-  dayOffs?: DayOff[]
-  onDayOffToggle?: (memberId: number, date: Date, event: React.MouseEvent) => void
-}
+import type { Project, TeamMember } from '@/types'
+import type { TimelineItemHeaderProps } from './types'
 
 /**
  * TimelineItemHeader Component

@@ -1,16 +1,6 @@
 import { isSameDay } from 'date-fns'
-import { Milestone } from '@/types'
-
-/**
- * Props for MilestoneIndicator component
- */
-interface MilestoneIndicatorProps {
-  projectId: number
-  date: Date
-  milestones: Milestone[]
-  canEdit: boolean
-  onToggle: (projectId: number, date: Date, e: React.MouseEvent) => void
-}
+import type { Milestone } from '@/types'
+import type { MilestoneIndicatorProps } from './types'
 
 /**
  * MilestoneIndicator Component

@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { TimelineViewMode, Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
+import type { Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
 import { format, addDays, startOfDay, isSameDay } from 'date-fns'
@@ -21,23 +21,7 @@ import {
   getMemberAssignmentsOnDate,
   getProjectMembersOnDate
 } from '@/lib/timeline-helpers'
-
-interface TimelineProps {
-  viewMode: TimelineViewMode
-  prevDays: number
-  nextDays: number
-  isAdmin: boolean
-  currentUserId?: number
-  currentUserRole?: 'admin' | 'project_manager' | 'user'
-  selectedTeamIds: number[]
-  zoomLevel: number
-  expandedItems: number[]
-  onExpandedItemsChange: (items: number[]) => void
-  showTentative: boolean
-  showWeekends: boolean
-  showOverlaps: boolean
-  hideEmptyRows: boolean
-}
+import type { TimelineProps } from './types'
 
 export default function Timeline({
   viewMode,

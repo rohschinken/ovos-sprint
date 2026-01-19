@@ -8,57 +8,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar'
 import { ExpandedAssignmentBar } from './ExpandedAssignmentBar'
 import { AssignmentCommentOverlay } from './AssignmentCommentOverlay'
 import { MilestoneIndicator } from './MilestoneIndicator'
-import type {
-  ProjectAssignment,
-  TeamMember,
-  Project,
-  DayAssignment,
-  AssignmentGroup,
-  Milestone,
-  DayOff,
-  AssignmentPriority,
-} from '@/types/index'
-
-/**
- * Props for AssignmentRow component
- */
-interface AssignmentRowProps {
-  viewMode: 'by-project' | 'by-member'
-  assignment: ProjectAssignment
-  parentItem: Project | TeamMember
-  childItem: TeamMember | Project
-  dates: Date[]
-  columnWidth: string
-  zoomLevel: number
-  isAdmin: boolean
-  showOverlaps: boolean
-  // Data
-  dayAssignments: DayAssignment[]
-  assignmentGroups: AssignmentGroup[]
-  projectAssignments: ProjectAssignment[]
-  projects: Project[]
-  dayOffs: DayOff[]
-  milestones: Milestone[]
-  // State
-  dragState: {
-    assignmentId: number | null
-    startDate: Date | null
-    endDate: Date | null
-  }
-  // Handlers
-  handleMouseDown: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleMouseEnter: (date: Date) => void
-  handleAssignmentClick: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleDeleteDayAssignment: (assignmentId: number, date: Date, e: React.MouseEvent) => void
-  handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
-  // Helper functions
-  isDayInDragRange: (assignmentId: number, date: Date) => boolean
-  isDayOff: (memberId: number, date: Date) => boolean
-  hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
-  canEditAssignment: (assignmentId: number) => boolean
-  canEditProject: (projectId: number) => boolean
-  getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
-}
+import type { TeamMember, Project } from '@/types'
+import type { AssignmentRowProps } from './types'
 
 /**
  * AssignmentRow Component
