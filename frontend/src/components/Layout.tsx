@@ -159,7 +159,7 @@ export default function Layout() {
         </div>
       </header>
       <div className="h-0.5 bg-gradient-primary-via" />
-      <main className="p-4 flex-1 overflow-hidden flex flex-col">
+      <main className="p-4 flex-1 overflow-y-auto flex flex-col">
         <Outlet />
       </main>
 
