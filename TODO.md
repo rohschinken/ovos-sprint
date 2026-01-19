@@ -4,20 +4,6 @@
 
 ## Medium Priority
 
-### Testing Infrastructure
-
-- [ ] Set up Vitest testing framework
-- [ ] Install @testing-library/react and @testing-library/jest-dom
-- [ ] Configure vitest.config.ts for frontend
-- [ ] Create example tests for core components (Timeline, DashboardPage)
-- [ ] Add test scripts to package.json (frontend and backend)
-- [ ] Test user flows (navigation, state updates) using @testing-library/react
-- [ ] Add backend API endpoint tests
-
-**Location**: `src/**/tests/*.test.tsx` (as per original plan)
-**Commands**: `npm test` (frontend/backend)
-
-
 ### Google Authentication
 
 - [ ] Google Authentication (Google Workspace Domain/Key must be configurable)
@@ -74,3 +60,15 @@
 - [x] Move shared types to feature-specific types.ts files
 - [x] Bug fix: Timeline team filtering now works correctly
 - [x] Restored tooltips in Timeline header rows for adding/removing Milestones and Days-Off
+- [x] Testing Infrastructure
+  - [x] Set up Vitest testing framework for frontend and backend
+  - [x] Install @testing-library/react and @testing-library/jest-dom
+  - [x] Configure vitest.config.ts for both frontend (jsdom) and backend (node)
+  - [x] Create test setup files with global configurations
+  - [x] Create test utility files (custom render with providers, auth helpers)
+  - [x] Create example tests: 11 frontend tests + 10 backend tests (21 total, all passing)
+  - [x] Add test scripts to package.json (frontend, backend, and root)
+  - [x] Create TESTING.md documentation with comprehensive guide
+  - **Branch**: `feature/vitest-testing-infrastructure`
+  - **Location**: `src/**/tests/*.test.tsx` and `src/**/tests/*.test.ts`
+  - **Commands**: `npm test` (runs all), `npm run test:frontend`, `npm run test:backend`
