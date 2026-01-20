@@ -1,4 +1,4 @@
-import { Plus, Calendar, MessageSquare, Milestone, UserX, Sparkles } from 'lucide-react'
+import { Plus, MessageSquareText, Flag, Palmtree, Sparkles, Flame } from 'lucide-react'
 import { OnboardingSlide } from './types'
 
 export const WelcomeSlide = () => (
@@ -43,7 +43,7 @@ export const MilestonesAndDaysOffSlide = () => (
     {/* Milestones */}
     <div className="space-y-3">
       <div className="flex items-center gap-2 font-semibold">
-        <Milestone className="h-5 w-5 text-primary" />
+        <Flag className="h-5 w-5 text-primary" />
         <span>Adding Milestones</span>
       </div>
       <ul className="space-y-2 text-sm text-muted-foreground ml-7">
@@ -57,7 +57,7 @@ export const MilestonesAndDaysOffSlide = () => (
     {/* Days Off */}
     <div className="space-y-3">
       <div className="flex items-center gap-2 font-semibold">
-        <UserX className="h-5 w-5 text-primary" />
+        <Palmtree className="h-5 w-5 text-primary" />
         <span>Managing Days Off</span>
       </div>
       <ul className="space-y-2 text-sm text-muted-foreground ml-7">
@@ -75,7 +75,7 @@ export const CommentsAndPrioritySlide = () => (
     {/* Comments */}
     <div className="space-y-3">
       <div className="flex items-center gap-2 font-semibold">
-        <MessageSquare className="h-5 w-5 text-primary" />
+        <MessageSquareText className="h-5 w-5 text-primary" />
         <span>Adding Comments</span>
       </div>
       <ul className="space-y-2 text-sm text-muted-foreground ml-7">
@@ -89,7 +89,7 @@ export const CommentsAndPrioritySlide = () => (
     {/* Priority */}
     <div className="space-y-3">
       <div className="flex items-center gap-2 font-semibold">
-        <Calendar className="h-5 w-5 text-primary" />
+        <Flame className="h-5 w-5 text-primary" />
         <span>Assignment Priority</span>
       </div>
       <ul className="space-y-2 text-sm text-muted-foreground ml-7">
@@ -131,8 +131,8 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Milestones & Days Off',
     icon: (
       <div className="flex gap-2">
-        <Milestone className="h-10 w-10 text-primary" />
-        <UserX className="h-10 w-10 text-primary" />
+        <Flag className="h-10 w-10 text-primary" />
+        <Palmtree className="h-10 w-10 text-primary" />
       </div>
     ),
     content: <MilestonesAndDaysOffSlide />,
@@ -141,8 +141,8 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Comments & Priority',
     icon: (
       <div className="flex gap-2">
-        <MessageSquare className="h-10 w-10 text-primary" />
-        <Calendar className="h-10 w-10 text-primary" />
+        <MessageSquareText className="h-10 w-10 text-primary" />
+        <Flame className="h-10 w-10 text-primary" />
       </div>
     ),
     content: <CommentsAndPrioritySlide />,

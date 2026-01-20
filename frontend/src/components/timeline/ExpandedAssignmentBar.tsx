@@ -20,7 +20,7 @@ import type { ExpandedAssignmentBarProps } from './types'
  *
  * Priority indicators appear on the last day of each assignment range:
  * - High priority: 🔥
- * - Low priority: ❄️
+ * - Low priority: 🤷‍♂️
  * - Normal priority: (no indicator)
  *
  * Color logic:
@@ -105,7 +105,7 @@ export function ExpandedAssignmentBar({
           )}
           {priority === 'low' && (
             <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">
-              ❄️
+              🤷‍♂️
             </span>
           )}
         </>
