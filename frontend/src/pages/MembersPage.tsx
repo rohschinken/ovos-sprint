@@ -29,6 +29,10 @@ import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { WarningDialog } from '@/components/ui/warning-dialog'
 import { AlertDialog } from '@/components/ui/alert-dialog'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type MemberSortKey = 'firstName' | 'email' | 'createdAt'
 
 export default function MembersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -234,6 +238,9 @@ export default function MembersPage() {
     return fullName.includes(query)
   })
 
+  const { sortedData: sortedMembers, sortKey, sortOrder, toggleSort } =
+    useSort<TeamMember, MemberSortKey>(filteredMembers, 'firstName')
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -274,15 +281,33 @@ export default function MembersPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Avatar</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <SortableTableHeader
+                label="Name"
+                sortKey="firstName"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
+              <SortableTableHeader
+                label="Email"
+                sortKey="email"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
               <TableHead>Schedule</TableHead>
-              <TableHead>Added</TableHead>
+              <SortableTableHeader
+                label="Added"
+                sortKey="createdAt"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMembers.map((member) => {
+            {sortedMembers.map((member) => {
               const schedule = JSON.parse(member.workSchedule) as WorkSchedule
               const workDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
                 .filter((day) => schedule[day as keyof WorkSchedule])
