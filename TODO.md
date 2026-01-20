@@ -8,10 +8,15 @@
 
 - [x] A regression bug from when the Timeline View was refactored:  narrow assignment bar is not shown on collapsed member and project rowss (this includes the overlap indicator). 
 
+### Performance optimizations
+
+- [ ] Performance is really bad. Creating or deleting multiple assignments after another will take a lot of time. This is especially but not exclusively noticable when creating a long assignment bar via click & drag.
+- [ ] 'message' handler takes a very long time sometimes >150ms
+- [ ] "Expand All" btn in Dashboard for expanding collapsing all rows sometimes gets out of sync with actual row state.
+
 ### Google Authentication
 
 - [ ] Add a new alternative login method: Google Authentication (Google Workspace Domain/Key must be configurable)
-
 
 ## Low Priority
 
