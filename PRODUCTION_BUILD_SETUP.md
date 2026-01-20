@@ -371,6 +371,11 @@ find "$BACKUP_DIR" -name "ovos-sprint_*.db" -mtime +30 -delete
 echo "Backup completed: $BACKUP_FILE"
 ```
 
+Make sure the user owns the bash script and has execute permissions:
+```bash
+chmod +x /backup.sh
+```
+
 Add to crontab for daily backups:
 
 ```bash
