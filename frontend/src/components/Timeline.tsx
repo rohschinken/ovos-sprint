@@ -24,7 +24,8 @@ import {
 } from '@/lib/timeline-helpers'
 import type { TimelineProps } from './types'
 
-export default function Timeline({
+// Inner Timeline component that uses drag context
+function TimelineInner({
   viewMode,
   prevDays,
   nextDays,
@@ -418,47 +419,54 @@ export default function Timeline({
   )
 
   return (
-    <DragProvider>
-      <TooltipProvider>
-        {content}
+    <TooltipProvider>
+      {content}
 
-        {/* Holiday/Non-Working Day Warning Dialog */}
-        <WarningDialog
-          open={!!timelineWarning}
-          onOpenChange={() => setTimelineWarning(null)}
-          title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
-          message={timelineWarning?.message || ''}
-          confirmLabel="Continue Anyway"
-          onConfirm={() => {
-            timelineWarning?.onConfirm()
+      {/* Holiday/Non-Working Day Warning Dialog */}
+      <WarningDialog
+        open={!!timelineWarning}
+        onOpenChange={() => setTimelineWarning(null)}
+        title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
+        message={timelineWarning?.message || ''}
+        confirmLabel="Continue Anyway"
+        onConfirm={() => {
+          timelineWarning?.onConfirm()
+        }}
+      />
+
+      {/* Assignment Edit Popover */}
+      {editPopover && (
+        <AssignmentEditPopover
+          open={editPopover.open}
+          onOpenChange={(open) => {
+            if (!open) setEditPopover(null)
+          }}
+          position={editPopover.position}
+          group={editPopover.group}
+          projectAssignmentId={editPopover.projectAssignmentId}
+          dateRange={editPopover.dateRange}
+          onSave={(data) => {
+            saveAssignmentGroupMutation.mutate({
+              groupId: editPopover.group?.id,
+              projectAssignmentId: editPopover.projectAssignmentId,
+              startDate: editPopover.dateRange.start,
+              endDate: editPopover.dateRange.end,
+              priority: data.priority,
+              comment: data.comment,
+            })
+            setEditPopover(null)
           }}
         />
+      )}
+    </TooltipProvider>
+  )
+}
 
-        {/* Assignment Edit Popover */}
-        {editPopover && (
-          <AssignmentEditPopover
-            open={editPopover.open}
-            onOpenChange={(open) => {
-              if (!open) setEditPopover(null)
-            }}
-            position={editPopover.position}
-            group={editPopover.group}
-            projectAssignmentId={editPopover.projectAssignmentId}
-            dateRange={editPopover.dateRange}
-            onSave={(data) => {
-              saveAssignmentGroupMutation.mutate({
-                groupId: editPopover.group?.id,
-                projectAssignmentId: editPopover.projectAssignmentId,
-                startDate: editPopover.dateRange.start,
-                endDate: editPopover.dateRange.end,
-                priority: data.priority,
-                comment: data.comment,
-              })
-              setEditPopover(null)
-            }}
-          />
-        )}
-      </TooltipProvider>
+// Outer Timeline component that provides drag context
+export default function Timeline(props: TimelineProps) {
+  return (
+    <DragProvider>
+      <TimelineInner {...props} />
     </DragProvider>
   )
 }
