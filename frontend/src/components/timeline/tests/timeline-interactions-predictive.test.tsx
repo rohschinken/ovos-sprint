@@ -9,8 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@/tests/utils'
-import type { DayOff, Milestone } from '@/types'
+import type { Milestone } from '@/types'
 
 describe('Timeline Interactions - Predictive Tests for Future Bugs', () => {
   /**
@@ -29,7 +28,7 @@ describe('Timeline Interactions - Predictive Tests for Future Bugs', () => {
           id: 1,
           projectId: 1,
           date: '2026-01-20',
-          title: 'Release v1.0',
+          name: 'Release v1.0',
           createdAt: '2026-01-10T00:00:00Z',
         },
       ]
@@ -38,7 +37,7 @@ describe('Timeline Interactions - Predictive Tests for Future Bugs', () => {
       // If refactoring removes this, timeline should show milestones
       // but editing should fail silently
       expect(mockMilestones).toHaveLength(1)
-      expect(mockMilestones[0]).toHaveProperty('title')
+      expect(mockMilestones[0]).toHaveProperty('name')
 
       // Document expected interaction: click to edit, right-click to delete
       // These handlers should NOT be lost during refactoring
@@ -52,7 +51,7 @@ describe('Timeline Interactions - Predictive Tests for Future Bugs', () => {
         id: 1,
         projectId: 1,
         date: '2026-01-20',
-        title: 'Release v1.0',
+        name: 'Release v1.0',
         createdAt: '2026-01-10T00:00:00Z',
       }
 
@@ -61,7 +60,7 @@ describe('Timeline Interactions - Predictive Tests for Future Bugs', () => {
       // 2. Delete milestone (right-click menu)
       // 3. Move milestone (drag and drop)
       expect(mockMilestone.id).toBeDefined()
-      expect(mockMilestone.title).toBeDefined()
+      expect(mockMilestone.name).toBeDefined()
 
       // These interactions should persist through any refactoring
     })
