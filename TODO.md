@@ -4,14 +4,24 @@
 
 ## Medium Priority
 
-### Google Authentication
+### Remove Card View in Teams, Members, Customers and Projects
 
-- [ ] Google Authentication (Google Workspace Domain/Key must be configurable)
+- [x] The card view in Teams, Members, Customers and Projects should be remove entirely in favor of the list view
+
+### Sorting in Teams, Members, Customers and Projects pages
+
+- [ ] Add sorting to list view in Teams, Members, Customers and Projects for columns where ASC and DESC sorting makes sense
 
 ### Archived Projects
 
 - [ ] New Status for Projects: "Archived" - Projects with this status should never appear in the Timeline View. Use a fitting icon and color code for this status. Total project statuses: Confirmed, Tentative, Archived
-- [ ] Allow changing the project status in /projects View from both the card view and list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
+- [ ] Allow changing the project status in /projects View from list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
+- [ ] Add a toggle "show archived projects" to Projects page. By default this toggle should be disabled. This means by default archived projects must be filtered from the list view in Projects page.
+
+### Google Authentication
+
+- [ ] Add a new alternative login method: Google Authentication (Google Workspace Domain/Key must be configurable)
+
 
 ## Low Priority
 
