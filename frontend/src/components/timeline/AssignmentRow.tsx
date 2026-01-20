@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { format, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { Clock } from 'lucide-react'
@@ -38,6 +39,8 @@ import type { AssignmentRowProps } from './types'
  * - Interactive drag-to-assign functionality
  * - Click/right-click to delete assignments
  *
+ * Memoized to prevent unnecessary re-renders during drag operations.
+ *
  * @param viewMode - Current view mode ('by-project' or 'by-member')
  * @param assignment - The project assignment to render
  * @param parentItem - The expanded parent (project or member)
@@ -66,7 +69,7 @@ import type { AssignmentRowProps } from './types'
  * @param canEditProject - Check if project can be edited
  * @param getGroupPriority - Get priority for assignment on date
  */
-export function AssignmentRow({
+const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   viewMode,
   assignment,
   parentItem,
@@ -94,7 +97,7 @@ export function AssignmentRow({
   canEditAssignment: _canEditAssignment,
   canEditProject,
   getGroupPriority,
-}: AssignmentRowProps) {
+}) => {
   const today = new Date()
 
   /**
@@ -330,3 +333,7 @@ export function AssignmentRow({
     </div>
   )
 }
+
+// Memoize the component to prevent re-renders when props haven't changed
+// This is critical for performance during drag operations
+export const AssignmentRow = memo(AssignmentRowComponent)
