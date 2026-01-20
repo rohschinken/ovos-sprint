@@ -10,9 +10,9 @@
 
 ### Performance optimizations
 
-- [ ] Performance is really bad. Creating or deleting multiple assignments after another will take a lot of time. This is especially but not exclusively noticable when creating a long assignment bar via click & drag.
-- [ ] 'message' handler takes a very long time sometimes >150ms
-- [ ] "Expand All" btn in Dashboard for expanding collapsing all rows sometimes gets out of sync with actual row state.
+- [x] Performance is really bad. Creating or deleting multiple assignments after another will take a lot of time. This is especially but not exclusively noticable when creating a long assignment bar via click & drag.
+- [x] 'message' handler takes a very long time sometimes >150ms
+- [x] "Expand All" btn in Dashboard for expanding collapsing all rows sometimes gets out of sync with actual row state.
 
 ### Google Authentication
 
@@ -100,3 +100,28 @@
   - [x] Gray color and Archive icon for archived status
   - [x] Updated backend schema and validation
   - **Branch**: `feature/add-archived-projects` → merged to `next`
+- [x] Performance Optimizations
+  - [x] **Phase 1**: Batch assignment operations (40-50 API calls → 2-3 calls)
+    - Backend batch create/delete endpoints (`/api/assignments/days/batch`)
+    - Frontend batch mutations with optimistic updates
+    - Debounced drag state updates (16ms ~60fps)
+    - Optimized QueryClient cache configuration (staleTime: 10s)
+  - [x] **Phase 2**: Optimize filtering and message handler (O(n³) → O(n))
+    - Replaced nested loops with Map/Set for O(1) lookups
+    - Memoized filter results in useTimelineData
+    - Performance monitoring (console warnings >50ms)
+  - [x] **Phase 2.5**: Drag context isolation
+    - Created DragContext with ref-based state to prevent Timeline re-renders
+    - Wrapped AssignmentRow with React.memo
+    - Stable function references via useCallback
+    - Eliminated 290ms violations during drag operations
+  - [x] **Phase 3**: Fix Expand All button synchronization
+    - Calculate visibleItems accounting for hideEmptyRows and filtering
+    - Derive isAllExpanded from actual visible items (not counts)
+    - Clear expanded items on view mode switch
+  - [x] **Immediate Fixes**: Based on Chrome DevTools trace analysis (66MB, 190K events)
+    - Optimized date lookups with Set for O(1) lookup (-30-50ms)
+    - Replaced Framer Motion whileHover/whileTap with CSS transitions (-50-100ms)
+  - **Branch**: `feature/performance-phase1-batch-operations`
+  - **Documentation**: `PERFORMANCE_ANALYSIS.md`, `FUTURE_OPTIMIZATIONS.md`, `PERFORMANCE_OPTIMIZATION_SUMMARY.md`
+  - **Total Impact**: Estimated 70-80% reduction in performance violations
