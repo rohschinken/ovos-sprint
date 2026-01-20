@@ -143,6 +143,9 @@ export function TimelineViewContent({
                   columnWidth={columnWidth}
                   milestones={milestones}
                   onMilestoneToggle={handleProjectCellClick}
+                  showOverlaps={showOverlaps}
+                  projectAssignments={projectAssignments}
+                  dayAssignments={dayAssignments}
                 />
 
                 {expandedItems.has(project.id) &&
@@ -238,6 +241,11 @@ export function TimelineViewContent({
                 columnWidth={columnWidth}
                 dayOffs={dayOffs}
                 onDayOffToggle={handleMemberCellClick}
+                showOverlaps={showOverlaps}
+                projectAssignments={projectAssignments}
+                dayAssignments={dayAssignments}
+                projects={projects}
+                hasOverlap={hasOverlap}
               />
 
               {expandedItems.has(member.id) &&

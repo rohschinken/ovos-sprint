@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/tooltip'
 import { isWeekend, isHoliday } from '@/lib/holidays'
 import { MilestoneIndicator } from './MilestoneIndicator'
+import { CollapsedAssignmentBar } from './CollapsedAssignmentBar'
 import type { Project, TeamMember } from '@/types'
 import type { TimelineItemHeaderProps } from './types'
 
@@ -51,6 +52,11 @@ export function TimelineItemHeader({
   onMilestoneToggle,
   dayOffs,
   onDayOffToggle,
+  showOverlaps,
+  projectAssignments,
+  dayAssignments,
+  projects,
+  hasOverlap,
 }: TimelineItemHeaderProps) {
   const today = new Date()
 
@@ -181,6 +187,34 @@ export function TimelineItemHeader({
                   : undefined
               }
             >
+              {/* Render CollapsedAssignmentBar when NOT expanded */}
+              {!isExpanded && type === 'project' && (
+                <CollapsedAssignmentBar
+                  type="project"
+                  id={(item as Project).id}
+                  date={date}
+                  projectAssignments={projectAssignments}
+                  dayAssignments={dayAssignments}
+                  isTentative={(item as Project).status === 'tentative'}
+                  hasOverlap={false} // Projects don't show overlaps
+                  showOverlaps={showOverlaps}
+                />
+              )}
+
+              {!isExpanded && type === 'member' && hasOverlap && (
+                <CollapsedAssignmentBar
+                  type="member"
+                  id={(item as TeamMember).id}
+                  date={date}
+                  projectAssignments={projectAssignments}
+                  dayAssignments={dayAssignments}
+                  projects={projects || []}
+                  hasOverlap={hasOverlap((item as TeamMember).id, date, 'member')}
+                  showOverlaps={showOverlaps}
+                />
+              )}
+
+              {/* Existing milestone indicator */}
               {type === 'project' && milestones && onMilestoneToggle && (
                 <MilestoneIndicator
                   projectId={(item as Project).id}
@@ -190,6 +224,8 @@ export function TimelineItemHeader({
                   onToggle={onMilestoneToggle}
                 />
               )}
+
+              {/* Existing day-off indicator */}
               {type === 'member' && isDayOffDay && (
                 <div className="absolute bottom-0 left-0 right-0 text-[10px] text-dayOffText text-center font-medium pointer-events-none">
                   vac. 🏝️

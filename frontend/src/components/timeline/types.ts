@@ -149,6 +149,12 @@ export interface TimelineItemHeaderProps {
   // Only for members:
   dayOffs?: DayOff[]
   onDayOffToggle?: (memberId: number, date: Date, event: React.MouseEvent) => void
+  // For CollapsedAssignmentBar rendering:
+  showOverlaps: boolean
+  projectAssignments: ProjectAssignment[]
+  dayAssignments: DayAssignment[]
+  projects?: Project[] // Only needed for member view
+  hasOverlap?: (id: number, date: Date, type: 'member' | 'project') => boolean // Only for member view
 }
 
 /**
