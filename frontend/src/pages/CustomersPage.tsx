@@ -6,13 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,8 +22,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
-import { useViewMode } from '@/hooks/use-view-mode'
-import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -53,7 +44,6 @@ export default function CustomersPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
-  const { viewMode, setViewMode } = useViewMode('customers')
 
   const isAdmin = user?.role === 'admin'
   const isProjectManager = user?.role === 'project_manager'
@@ -160,65 +150,6 @@ export default function CustomersPage() {
   const myCustomers = filteredCustomers.filter((c) => c.managerId === user?.id)
   const otherCustomers = filteredCustomers.filter((c) => c.managerId !== user?.id)
 
-  const CustomerCard = ({
-    customer,
-    index,
-    canEdit,
-    onEdit,
-    onDelete,
-  }: {
-    customer: Customer
-    index: number
-    canEdit: boolean
-    onEdit: () => void
-    onDelete: () => void
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
-      <Card className={cn('hover:shadow-md transition-shadow', !canEdit && 'opacity-75')}>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              {customer.icon && <div className="text-4xl">{customer.icon}</div>}
-              <div>
-                <CardTitle>{customer.name}</CardTitle>
-                <CardDescription>
-                  Created {new Date(customer.createdAt).toLocaleDateString()}
-                </CardDescription>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        {canEdit ? (
-          <CardContent>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onEdit} className="flex-1">
-                <Pencil className="h-3 w-3 mr-1" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onDelete}
-                className="flex-1 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Delete
-              </Button>
-            </div>
-          </CardContent>
-        ) : (
-          <CardContent>
-            <p className="text-xs text-muted-foreground">View only</p>
-          </CardContent>
-        )}
-      </Card>
-    </motion.div>
-  )
-
   const CustomerTable = ({
     customers,
     canEdit,
@@ -313,7 +244,6 @@ export default function CustomersPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
       {/* Project Manager: Show "My Customers" and "Other Customers" sections */}
@@ -323,27 +253,12 @@ export default function CustomersPage() {
           {myCustomers.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">My Customers</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myCustomers.map((customer, index) => (
-                    <CustomerCard
-                      key={customer.id}
-                      customer={customer}
-                      index={index}
-                      canEdit={true}
-                      onEdit={() => handleEdit(customer)}
-                      onDelete={() => handleDelete(customer)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <CustomerTable
-                  customers={myCustomers}
-                  canEdit={() => true}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              )}
+              <CustomerTable
+                customers={myCustomers}
+                canEdit={() => true}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </div>
           )}
 
@@ -351,27 +266,12 @@ export default function CustomersPage() {
           {otherCustomers.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-muted-foreground">Other Customers</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {otherCustomers.map((customer, index) => (
-                    <CustomerCard
-                      key={customer.id}
-                      customer={customer}
-                      index={index}
-                      canEdit={false}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <CustomerTable
-                  customers={otherCustomers}
-                  canEdit={() => false}
-                  onEdit={() => {}}
-                  onDelete={() => {}}
-                />
-              )}
+              <CustomerTable
+                customers={otherCustomers}
+                canEdit={() => false}
+                onEdit={() => {}}
+                onDelete={() => {}}
+              />
             </div>
           )}
 
@@ -384,27 +284,12 @@ export default function CustomersPage() {
       ) : (
         /* Admin: Show all customers together */
         <>
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCustomers.map((customer, index) => (
-                <CustomerCard
-                  key={customer.id}
-                  customer={customer}
-                  index={index}
-                  canEdit={true}
-                  onEdit={() => handleEdit(customer)}
-                  onDelete={() => handleDelete(customer)}
-                />
-              ))}
-            </div>
-          ) : (
-            <CustomerTable
-              customers={filteredCustomers}
-              canEdit={() => true}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          )}
+          <CustomerTable
+            customers={filteredCustomers}
+            canEdit={() => true}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
 
           {filteredCustomers.length === 0 && (
             <p className="text-center text-muted-foreground py-8">

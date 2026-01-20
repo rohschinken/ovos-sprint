@@ -15,13 +15,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -38,8 +31,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
-import { useViewMode } from '@/hooks/use-view-mode'
-import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2, Users, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getInitials, getAvatarColor } from '@/lib/utils'
@@ -67,7 +58,6 @@ export default function TeamsPage() {
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { viewMode, setViewMode } = useViewMode('teams')
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
@@ -244,113 +234,54 @@ export default function TeamsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
-      {viewMode === 'cards' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeams.map((team, index) => (
-            <motion.div
-              key={team.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>{team.name}</CardTitle>
-                  <CardDescription>
-                    Created {new Date(team.createdAt).toLocaleDateString('de-AT')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setManagingTeam(team)}
-                      className="gap-2 w-full"
-                    >
-                      <Users className="h-3 w-3" />
-                      Manage Members
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTeams.map((team) => (
+              <TableRow key={team.id}>
+                <TableCell className="font-medium">{team.name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {new Date(team.createdAt).toLocaleDateString('de-AT')}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setManagingTeam(team)}>
+                      <Users className="h-4 w-4" />
                     </Button>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingTeam(team)
-                          setTeamName(team.name)
-                        }}
-                        className="gap-2"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(team)}
-                        className="gap-2"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingTeam(team)
+                        setTeamName(team.name)
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClick(team)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTeams.map((team) => (
-                <TableRow key={team.id}>
-                  <TableCell className="font-medium">{team.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(team.createdAt).toLocaleDateString('de-AT')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setManagingTeam(team)}>
-                        <Users className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingTeam(team)
-                          setTeamName(team.name)
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClick(team)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       {filteredTeams.length === 0 && (
         <p className="text-center text-muted-foreground py-8">

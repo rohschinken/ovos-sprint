@@ -14,13 +14,6 @@ import {
 } from '@/components/ui/select'
 import AssignMemberDialog from '@/components/AssignMemberDialog'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -38,8 +31,6 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { useViewMode } from '@/hooks/use-view-mode'
-import { ViewModeToggle } from '@/components/ViewModeToggle'
 import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -63,7 +54,6 @@ export default function ProjectsPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
-  const { viewMode, setViewMode } = useViewMode('projects')
 
   const isAdmin = user?.role === 'admin'
   const isProjectManager = user?.role === 'project_manager'
@@ -190,77 +180,6 @@ export default function ProjectsPage() {
     }
   }
 
-  const ProjectCard = ({
-    project,
-    index,
-    canEdit,
-    onEdit,
-    onDelete,
-    onAssign,
-  }: {
-    project: Project
-    index: number
-    canEdit: boolean
-    onEdit: () => void
-    onDelete: () => void
-    onAssign: () => void
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
-      <Card className={cn(!canEdit && 'opacity-75')}>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle>{project.name}</CardTitle>
-              <CardDescription>
-                {project.customer?.icon && `${project.customer.icon} `}
-                {project.customer?.name || 'Unknown Customer'}
-              </CardDescription>
-            </div>
-            <div
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                project.status === 'confirmed'
-                  ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
-                  : 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
-              )}
-            >
-              {project.status === 'confirmed' ? (
-                <CheckCircle2 className="h-3 w-3" />
-              ) : (
-                <Clock className="h-3 w-3" />
-              )}
-              {project.status}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {canEdit ? (
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={onAssign} className="gap-2">
-                <Users className="h-3 w-3" />
-                Assign
-              </Button>
-              <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
-                <Pencil className="h-3 w-3" />
-                Edit
-              </Button>
-              <Button variant="destructive" size="sm" onClick={onDelete} className="gap-2">
-                <Trash2 className="h-3 w-3" />
-                Delete
-              </Button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">View only</p>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
-
   const ProjectTable = ({
     projects,
     canEdit,
@@ -375,7 +294,6 @@ export default function ProjectsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
       {/* Project Manager: Show "My Projects" and "Other Projects" sections */}
@@ -385,39 +303,18 @@ export default function ProjectsPage() {
           {myProjects.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">My Projects</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myProjects.map((project, index) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      index={index}
-                      canEdit={isAdmin}
-                      onEdit={() => {
-                        setEditingProject(project)
-                        setCustomerId(project.customerId)
-                        setName(project.name)
-                        setStatus(project.status)
-                      }}
-                      onDelete={() => handleDeleteClick(project)}
-                      onAssign={() => setAssigningProject(project)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ProjectTable
-                  projects={myProjects}
-                  canEdit={() => isAdmin}
-                  onEdit={(project) => {
-                    setEditingProject(project)
-                    setCustomerId(project.customerId)
-                    setName(project.name)
-                    setStatus(project.status)
-                  }}
-                  onDelete={handleDeleteClick}
-                  onAssign={(project) => setAssigningProject(project)}
-                />
-              )}
+              <ProjectTable
+                projects={myProjects}
+                canEdit={() => isAdmin}
+                onEdit={(project) => {
+                  setEditingProject(project)
+                  setCustomerId(project.customerId)
+                  setName(project.name)
+                  setStatus(project.status)
+                }}
+                onDelete={handleDeleteClick}
+                onAssign={(project) => setAssigningProject(project)}
+              />
             </div>
           )}
 
@@ -425,29 +322,13 @@ export default function ProjectsPage() {
           {otherProjects.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-muted-foreground">Other Projects</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {otherProjects.map((project, index) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      index={index}
-                      canEdit={false}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                      onAssign={() => {}}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ProjectTable
-                  projects={otherProjects}
-                  canEdit={() => false}
-                  onEdit={() => {}}
-                  onDelete={() => {}}
-                  onAssign={() => {}}
-                />
-              )}
+              <ProjectTable
+                projects={otherProjects}
+                canEdit={() => false}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onAssign={() => {}}
+              />
             </div>
           )}
 
@@ -460,39 +341,18 @@ export default function ProjectsPage() {
       ) : (
         /* Admin: Show all projects together */
         <>
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProjects.map((project, index) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  index={index}
-                  canEdit={true}
-                  onEdit={() => {
-                    setEditingProject(project)
-                    setCustomerId(project.customerId)
-                    setName(project.name)
-                    setStatus(project.status)
-                  }}
-                  onDelete={() => handleDeleteClick(project)}
-                  onAssign={() => setAssigningProject(project)}
-                />
-              ))}
-            </div>
-          ) : (
-            <ProjectTable
-              projects={filteredProjects}
-              canEdit={() => true}
-              onEdit={(project) => {
-                setEditingProject(project)
-                setCustomerId(project.customerId)
-                setName(project.name)
-                setStatus(project.status)
-              }}
-              onDelete={handleDeleteClick}
-              onAssign={(project) => setAssigningProject(project)}
-            />
-          )}
+          <ProjectTable
+            projects={filteredProjects}
+            canEdit={() => true}
+            onEdit={(project) => {
+              setEditingProject(project)
+              setCustomerId(project.customerId)
+              setName(project.name)
+              setStatus(project.status)
+            }}
+            onDelete={handleDeleteClick}
+            onAssign={(project) => setAssigningProject(project)}
+          />
 
           {filteredProjects.length === 0 && (
             <p className="text-center text-muted-foreground py-8">
