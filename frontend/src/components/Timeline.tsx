@@ -166,8 +166,8 @@ export default function Timeline({
   )
 
   const {
-    createDayAssignmentMutation,
     deleteDayAssignmentMutation,
+    createBatchDayAssignmentsMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
     createDayOffMutation,
@@ -181,7 +181,7 @@ export default function Timeline({
     settings,
     dayAssignments,
     dates,
-    createDayAssignmentMutation,
+    createBatchDayAssignmentsMutation,
     setTimelineWarning,
     isNonWorkingDay
   )

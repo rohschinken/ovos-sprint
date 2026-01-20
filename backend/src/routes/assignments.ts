@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { db, projectAssignments, dayAssignments, assignmentGroups } from '../db/index.js'
 import { projectAssignmentSchema, dayAssignmentSchema, assignmentGroupSchema, updateAssignmentGroupSchema } from '../utils/validation.js'
 import { authenticate, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
-import { eq, and, gte, lte } from 'drizzle-orm'
+import { eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { handleGroupMergeOnDayAdd, handleGroupSplitOnDayDelete } from '../utils/groupMerge.js'
 
 const router = Router()
@@ -348,6 +348,108 @@ router.delete('/days/:id', authenticate, requireAdminOrProjectManager, async (re
   } catch (error) {
     console.error('Delete day assignment error:', error)
     res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Batch create multiple day assignments at once
+router.post('/days/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
+  try {
+    const data = req.body as { projectAssignmentId: number; dates: string[] }
+
+    if (!data.projectAssignmentId || !Array.isArray(data.dates)) {
+      return res.status(400).json({ error: 'Invalid request: projectAssignmentId and dates array required' })
+    }
+
+    // Validate all dates match YYYY-MM-DD format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!data.dates.every(date => dateRegex.test(date))) {
+      return res.status(400).json({ error: 'Invalid date format: use YYYY-MM-DD' })
+    }
+
+    // Check project ownership via project assignment
+    const projectId = await getProjectIdFromAssignment(data.projectAssignmentId)
+    if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only create day assignments for your own projects' })
+    }
+
+    // Create all day assignments
+    const createdAssignments = []
+    for (const date of data.dates) {
+      // Check if assignment already exists
+      const existing = await db.query.dayAssignments.findFirst({
+        where: (da, { and, eq }) => and(
+          eq(da.projectAssignmentId, data.projectAssignmentId),
+          eq(da.date, date)
+        )
+      })
+
+      if (!existing) {
+        const [created] = await db.insert(dayAssignments).values({
+          projectAssignmentId: data.projectAssignmentId,
+          date,
+        }).returning()
+        createdAssignments.push(created)
+      }
+    }
+
+    // Run group merge ONCE after all days are created
+    if (createdAssignments.length > 0) {
+      await handleGroupMergeOnDayAdd(data.projectAssignmentId, data.dates[0])
+    }
+
+    res.json(createdAssignments)
+  } catch (error) {
+    console.error('Error creating batch day assignments:', error)
+    res.status(500).json({ error: 'Failed to create batch day assignments' })
+  }
+})
+
+// Batch delete multiple day assignments at once
+router.delete('/days/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
+  try {
+    const data = req.body as { ids: number[] }
+
+    if (!Array.isArray(data.ids)) {
+      return res.status(400).json({ error: 'Invalid request: ids array required' })
+    }
+
+    // Get all assignments to check ownership
+    const assignments = await db.query.dayAssignments.findMany({
+      where: (da, { inArray }) => inArray(da.id, data.ids)
+    })
+
+    if (assignments.length !== data.ids.length) {
+      return res.status(404).json({ error: 'Some assignments not found' })
+    }
+
+    // Check project ownership for all assignments
+    for (const assignment of assignments) {
+      const projectId = await getProjectIdFromAssignment(assignment.projectAssignmentId)
+      if (!projectId || !await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+        return res.status(403).json({ error: 'You can only delete day assignments for your own projects' })
+      }
+    }
+
+    // Delete all assignments
+    await db.delete(dayAssignments).where(inArray(dayAssignments.id, data.ids))
+
+    // Run group split once for each affected project assignment
+    const uniqueProjectAssignments = [...new Set(assignments.map(a => a.projectAssignmentId))]
+    for (const paId of uniqueProjectAssignments) {
+      // Get all remaining day assignments for this project assignment to run merge logic
+      const remainingDays = await db.query.dayAssignments.findMany({
+        where: (da, { eq }) => eq(da.projectAssignmentId, paId)
+      })
+
+      if (remainingDays.length > 0) {
+        await handleGroupSplitOnDayDelete(paId, assignments[0].date)
+      }
+    }
+
+    res.status(204).send()
+  } catch (error) {
+    console.error('Error deleting batch day assignments:', error)
+    res.status(500).json({ error: 'Failed to delete batch day assignments' })
   }
 })
 

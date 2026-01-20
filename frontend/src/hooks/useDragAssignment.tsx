@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { UseMutationResult } from '@tanstack/react-query'
 import { format, addDays } from 'date-fns'
+import debounce from 'lodash.debounce'
 import { isHoliday, getHolidayName } from '@/lib/holidays'
 
 /**
@@ -28,7 +29,7 @@ export function useDragAssignment(
   settings: Record<string, string>,
   _dayAssignments: any[],
   _dates: Date[],
-  createDayAssignmentMutation: UseMutationResult<any, unknown, { projectAssignmentId: number; date: string }, unknown>,
+  createBatchDayAssignmentsMutation: UseMutationResult<any, unknown, { projectAssignmentId: number; dates: string[] }, unknown>,
   setTimelineWarning: (warning: {
     type: 'holiday' | 'non-working-day'
     message: string | React.ReactNode
@@ -41,6 +42,25 @@ export function useDragAssignment(
     startDate: Date | null
     endDate: Date | null
   }>({ assignmentId: null, startDate: null, endDate: null })
+
+  /**
+   * Debounced version of setDragState for smooth drag updates (~60fps)
+   */
+  const debouncedSetDragState = useMemo(
+    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null }) => {
+      setDragState(newState)
+    }, 16), // ~60fps
+    []
+  )
+
+  /**
+   * Cleanup debounced function on unmount
+   */
+  useEffect(() => {
+    return () => {
+      debouncedSetDragState.cancel()
+    }
+  }, [debouncedSetDragState])
 
   /**
    * Check if current user can edit a specific assignment
@@ -76,7 +96,7 @@ export function useDragAssignment(
    */
   const handleMouseEnter = (date: Date) => {
     if (dragState.assignmentId && dragState.startDate) {
-      setDragState({
+      debouncedSetDragState({
         ...dragState,
         endDate: date,
       })
@@ -151,14 +171,16 @@ export function useDragAssignment(
             type: holidays.length > 0 ? 'holiday' : 'non-working-day',
             message,
             onConfirm: () => {
-              // User confirmed, create all assignments
+              // User confirmed, create all assignments in batch
+              const dates: string[] = []
               for (let i = 0; i <= daysDiff; i++) {
                 const date = addDays(start, i)
-                createDayAssignmentMutation.mutate({
-                  projectAssignmentId: dragState.assignmentId!,
-                  date: format(date, 'yyyy-MM-dd'),
-                })
+                dates.push(format(date, 'yyyy-MM-dd'))
               }
+              createBatchDayAssignmentsMutation.mutate({
+                projectAssignmentId: dragState.assignmentId!,
+                dates,
+              })
               setTimelineWarning(null)
             },
           })
@@ -169,14 +191,16 @@ export function useDragAssignment(
         }
       }
 
-      // No warnings needed, create assignments directly
+      // No warnings needed, create assignments directly in batch
+      const dates: string[] = []
       for (let i = 0; i <= daysDiff; i++) {
         const date = addDays(start, i)
-        createDayAssignmentMutation.mutate({
-          projectAssignmentId: dragState.assignmentId,
-          date: format(date, 'yyyy-MM-dd'),
-        })
+        dates.push(format(date, 'yyyy-MM-dd'))
       }
+      createBatchDayAssignmentsMutation.mutate({
+        projectAssignmentId: dragState.assignmentId,
+        dates,
+      })
     }
 
     setDragState({ assignmentId: null, startDate: null, endDate: null })
