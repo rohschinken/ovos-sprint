@@ -114,6 +114,16 @@ export default function DashboardPage() {
     setSelectedTeamIds(user?.teams || [])
   }
 
+  // Pre-compute date Set for O(1) lookups instead of O(n) comparison
+  const dateSet = useMemo(() => {
+    return new Set(dates.map(d => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }))
+  }, [dates])
+
   // Calculate actually visible items (accounting for hideEmptyRows and filtering)
   const visibleItems = useMemo(() => {
     if (viewMode === 'by-project') {
@@ -125,12 +135,7 @@ export default function DashboardPage() {
         return assignments.some((assignment: any) =>
           dayAssignments.some((da: any) =>
             da.projectAssignmentId === assignment.id &&
-            dates.some(d => {
-              const daDate = new Date(da.date)
-              return daDate.getFullYear() === d.getFullYear() &&
-                     daDate.getMonth() === d.getMonth() &&
-                     daDate.getDate() === d.getDate()
-            })
+            dateSet.has(da.date) // O(1) lookup instead of O(n) date comparison
           )
         )
       })
@@ -143,17 +148,12 @@ export default function DashboardPage() {
         return assignments.some((assignment: any) =>
           dayAssignments.some((da: any) =>
             da.projectAssignmentId === assignment.id &&
-            dates.some(d => {
-              const daDate = new Date(da.date)
-              return daDate.getFullYear() === d.getFullYear() &&
-                     daDate.getMonth() === d.getMonth() &&
-                     daDate.getDate() === d.getDate()
-            })
+            dateSet.has(da.date) // O(1) lookup instead of O(n) date comparison
           )
         )
       })
     }
-  }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, dayAssignments, dates])
+  }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, dayAssignments, dateSet])
 
   // Calculate accurate "all expanded" state
   const isAllExpanded = useMemo(() => {

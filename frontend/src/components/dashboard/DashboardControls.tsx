@@ -81,13 +81,11 @@ export function DashboardControls({
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.15 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <Button
           variant="outline"
           onClick={onToggleExpandAll}
-          className="gap-2 h-12 min-w-[130px]"
+          className="gap-2 h-12 min-w-[130px] transition-transform hover:scale-105 active:scale-95"
         >
           {isAllExpanded ? (
             <FoldVertical className="h-4 w-4" />
