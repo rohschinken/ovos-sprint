@@ -5,6 +5,7 @@ import { Project, ProjectStatus, Customer } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users, Archive } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
@@ -49,6 +50,7 @@ export default function ProjectsPage() {
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('confirmed')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showArchived, setShowArchived] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{
     projectId: number
     projectName: string
@@ -151,6 +153,12 @@ export default function ProjectsPage() {
   }
 
   const filteredProjects = projects.filter((project) => {
+    // Filter by archived status
+    if (!showArchived && project.status === 'archived') {
+      return false
+    }
+
+    // Filter by search query
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     const customerName = project.customer?.name?.toLowerCase() || ''
@@ -256,21 +264,62 @@ export default function ProjectsPage() {
                 {project.customer?.name || 'Unknown'}
               </TableCell>
               <TableCell>
-                <div
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                    project.status === 'confirmed'
-                      ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
-                      : 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
-                  )}
+                <Select
+                  value={project.status}
+                  onValueChange={(value) => {
+                    updateMutation.mutate({
+                      id: project.id,
+                      customerId: project.customerId,
+                      name: project.name,
+                      status: value as ProjectStatus,
+                    })
+                  }}
+                  disabled={!canEdit(project)}
                 >
-                  {project.status === 'confirmed' ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <Clock className="h-3 w-3" />
-                  )}
-                  {project.status}
-                </div>
+                  <SelectTrigger
+                    className={cn(
+                      'w-[130px] h-7 border-0',
+                      project.status === 'confirmed'
+                        ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
+                        : project.status === 'tentative'
+                          ? 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
+                          : 'bg-slate-400 text-slate-800 dark:bg-slate-600 dark:text-slate-200'
+                    )}
+                  >
+                    <SelectValue>
+                      <div className="flex items-center gap-1.5">
+                        {project.status === 'confirmed' ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : project.status === 'tentative' ? (
+                          <Clock className="h-3 w-3" />
+                        ) : (
+                          <Archive className="h-3 w-3" />
+                        )}
+                        <span className="capitalize">{project.status}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Confirmed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="tentative">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        Tentative
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="archived">
+                      <div className="flex items-center gap-1.5">
+                        <Archive className="h-3 w-3" />
+                        Archived
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {project.manager?.email || '-'}
@@ -337,6 +386,16 @@ export default function ProjectsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={showArchived}
+            onCheckedChange={setShowArchived}
+            id="show-archived"
+          />
+          <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+            Show archived projects
+          </Label>
+        </div>
       </div>
 
       {/* Project Manager: Show "My Projects" and "Other Projects" sections */}
@@ -472,6 +531,7 @@ export default function ProjectsPage() {
                   <SelectContent>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="tentative">Tentative</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
