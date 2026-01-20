@@ -14,9 +14,9 @@
 
 ### Archived Projects
 
-- [ ] New Status for Projects: "Archived" - Projects with this status should never appear in the Timeline View. Use a fitting icon and color code for this status. Total project statuses: Confirmed, Tentative, Archived
-- [ ] Allow changing the project status in /projects View from list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
-- [ ] Add a toggle "show archived projects" to Projects page. By default this toggle should be disabled. This means by default archived projects must be filtered from the list view in Projects page.
+- [x] New Status for Projects: "Archived" - Projects with this status should never appear in the Timeline View. Use a fitting icon and color code for this status. Total project statuses: Confirmed, Tentative, Archived
+- [x] Allow changing the project status in /projects View from list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
+- [x] Add a toggle "show archived projects" to Projects page. By default this toggle should be disabled. This means by default archived projects must be filtered from the list view in Projects page.
 
 ### Google Authentication
 
