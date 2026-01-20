@@ -31,7 +31,7 @@ import type { CustomerCascadeInfo as CascadeInfo } from './types'
 import { useSort } from '@/hooks/use-sort'
 import { SortableTableHeader } from '@/components/SortableTableHeader'
 
-type CustomerSortKey = 'name' | 'createdAt'
+type CustomerSortKey = 'name' | 'createdAt' | 'managerEmail'
 
 export default function CustomersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -150,8 +150,18 @@ export default function CustomersPage() {
     return customer.name.toLowerCase().includes(query)
   })
 
+  // Enrich customers with sortable fields
+  type EnrichedCustomer = Customer & {
+    managerEmail: string
+  }
+
+  const enrichedCustomers: EnrichedCustomer[] = filteredCustomers.map(customer => ({
+    ...customer,
+    managerEmail: customer.manager?.email || '',
+  }))
+
   const { sortedData: sortedCustomers, sortKey, sortOrder, toggleSort } =
-    useSort<Customer, CustomerSortKey>(filteredCustomers, 'name')
+    useSort<EnrichedCustomer, CustomerSortKey>(enrichedCustomers, 'name')
 
   // Split customers for project managers
   const myCustomers = sortedCustomers.filter((c) => c.managerId === user?.id)
@@ -180,7 +190,13 @@ export default function CustomersPage() {
               currentSortOrder={sortOrder}
               onSort={toggleSort}
             />
-            <TableHead>Manager</TableHead>
+            <SortableTableHeader
+              label="Manager"
+              sortKey="managerEmail"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <SortableTableHeader
               label="Created"
               sortKey="createdAt"
@@ -304,13 +320,13 @@ export default function CustomersPage() {
         /* Admin: Show all customers together */
         <>
           <CustomerTable
-            customers={filteredCustomers}
+            customers={sortedCustomers}
             canEdit={() => true}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
 
-          {filteredCustomers.length === 0 && (
+          {sortedCustomers.length === 0 && (
             <p className="text-center text-muted-foreground py-8">
               {customers.length > 0 ? `No customers found matching "${searchQuery}".` : 'No customers yet. Click "Add Customer" to create one.'}
             </p>

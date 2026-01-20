@@ -39,7 +39,7 @@ import type { ProjectCascadeInfo as CascadeInfo } from './types'
 import { useSort } from '@/hooks/use-sort'
 import { SortableTableHeader } from '@/components/SortableTableHeader'
 
-type ProjectSortKey = 'name' | 'status'
+type ProjectSortKey = 'name' | 'status' | 'customerName' | 'managerEmail'
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -158,8 +158,20 @@ export default function ProjectsPage() {
     return customerName.includes(query) || projectName.includes(query)
   })
 
+  // Enrich projects with sortable fields
+  type EnrichedProject = Project & {
+    customerName: string
+    managerEmail: string
+  }
+
+  const enrichedProjects: EnrichedProject[] = filteredProjects.map(project => ({
+    ...project,
+    customerName: project.customer?.name || '',
+    managerEmail: project.manager?.email || '',
+  }))
+
   const { sortedData: sortedProjects, sortKey, sortOrder, toggleSort } =
-    useSort<Project, ProjectSortKey>(filteredProjects, 'name')
+    useSort<EnrichedProject, ProjectSortKey>(enrichedProjects, 'name')
 
   // Split projects for project managers
   const myProjects = sortedProjects.filter((p) => p.managerId === user?.id)
@@ -211,7 +223,13 @@ export default function ProjectsPage() {
               currentSortOrder={sortOrder}
               onSort={toggleSort}
             />
-            <TableHead>Customer</TableHead>
+            <SortableTableHeader
+              label="Customer"
+              sortKey="customerName"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <SortableTableHeader
               label="Status"
               sortKey="status"
@@ -219,7 +237,13 @@ export default function ProjectsPage() {
               currentSortOrder={sortOrder}
               onSort={toggleSort}
             />
-            <TableHead>Manager</TableHead>
+            <SortableTableHeader
+              label="Manager"
+              sortKey="managerEmail"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -361,7 +385,7 @@ export default function ProjectsPage() {
         /* Admin: Show all projects together */
         <>
           <ProjectTable
-            projects={filteredProjects}
+            projects={sortedProjects}
             canEdit={() => true}
             onEdit={(project) => {
               setEditingProject(project)
@@ -373,7 +397,7 @@ export default function ProjectsPage() {
             onAssign={(project) => setAssigningProject(project)}
           />
 
-          {filteredProjects.length === 0 && (
+          {sortedProjects.length === 0 && (
             <p className="text-center text-muted-foreground py-8">
               No projects found. Create your first project!
             </p>
