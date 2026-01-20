@@ -10,7 +10,7 @@
 
 ### Sorting in Teams, Members, Customers and Projects pages
 
-- [ ] Add sorting to list view in Teams, Members, Customers and Projects for columns where ASC and DESC sorting makes sense
+- [x] Add sorting to list view in Teams, Members, Customers and Projects for columns where ASC and DESC sorting makes sense
 
 ### Archived Projects
 
