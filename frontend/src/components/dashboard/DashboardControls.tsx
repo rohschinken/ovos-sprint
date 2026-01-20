@@ -28,11 +28,8 @@ export function DashboardControls({
   zoomLevel,
   onZoomChange,
   onToggleExpandAll,
-  expandedItemsCount,
-  totalItemsCount,
+  isAllExpanded,
 }: DashboardControlsProps) {
-  // Determine if all items are expanded
-  const allExpanded = totalItemsCount > 0 && expandedItemsCount === totalItemsCount
 
   // Zoom level labels
   const zoomLabels = ['Narrow', 'Compact', 'Normal', 'Wide']
@@ -92,12 +89,12 @@ export function DashboardControls({
           onClick={onToggleExpandAll}
           className="gap-2 h-12 min-w-[130px]"
         >
-          {allExpanded ? (
+          {isAllExpanded ? (
             <FoldVertical className="h-4 w-4" />
           ) : (
             <UnfoldVertical className="h-4 w-4" />
           )}
-          {allExpanded ? 'Collapse All' : 'Expand All'}
+          {isAllExpanded ? 'Collapse All' : 'Expand All'}
         </Button>
       </motion.div>
 

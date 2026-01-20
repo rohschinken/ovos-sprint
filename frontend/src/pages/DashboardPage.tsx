@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useMemo, useEffect } from 'react'
 import api from '@/api/client'
 import { Card } from '@/components/ui/card'
 import Timeline from '@/components/Timeline'
@@ -9,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences'
 import { useDashboardSettings } from '@/hooks/useDashboardSettings'
 import { TeamFilterPopover, DisplaySettingsPopover, DashboardControls } from '@/components/dashboard'
+import { useTimelineData } from '@/hooks/useTimelineData'
+import { addDays } from 'date-fns'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
@@ -26,22 +29,6 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/teams')
       return response.data as Team[]
-    },
-  })
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await api.get('/projects')
-      return response.data as any[]
-    },
-  })
-
-  const { data: members = [] } = useQuery({
-    queryKey: ['members'],
-    queryFn: async () => {
-      const response = await api.get('/members')
-      return response.data as any[]
     },
   })
 
@@ -76,6 +63,37 @@ export default function DashboardPage() {
     settings,
   })
 
+  // Calculate date range for timeline data fetching
+  const startDate = useMemo(() => addDays(new Date(), -prevDays), [prevDays])
+  const endDate = useMemo(() => addDays(new Date(), nextDays), [nextDays])
+
+  // Calculate visible dates based on showWeekends setting
+  const dates = useMemo(() => {
+    const dateList: Date[] = []
+    let currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      if (showWeekends || (currentDate.getDay() !== 0 && currentDate.getDay() !== 6)) {
+        dateList.push(new Date(currentDate))
+      }
+      currentDate = addDays(currentDate, 1)
+    }
+    return dateList
+  }, [startDate, endDate, showWeekends])
+
+  // Fetch timeline data with filtering
+  const {
+    filteredProjects,
+    filteredMembers,
+    projectAssignments,
+    dayAssignments,
+  } = useTimelineData(
+    startDate,
+    endDate,
+    selectedTeamIds,
+    showTentative,
+    dates
+  )
+
   const toggleTeam = (teamId: number) => {
     setSelectedTeamIds((prev) =>
       prev.includes(teamId)
@@ -96,16 +114,67 @@ export default function DashboardPage() {
     setSelectedTeamIds(user?.teams || [])
   }
 
-  const toggleExpandAll = () => {
-    // Get all IDs based on current view mode
-    const allIds = viewMode === 'by-project'
-      ? projects.map((p) => p.id)
-      : members.map((m) => m.id)
+  // Calculate actually visible items (accounting for hideEmptyRows and filtering)
+  const visibleItems = useMemo(() => {
+    if (viewMode === 'by-project') {
+      if (!hideEmptyRows) return filteredProjects
 
-    // If all are expanded, collapse all. Otherwise expand all.
-    const allExpanded = allIds.length > 0 && allIds.every((id) => expandedItems.includes(id))
-    setExpandedItems(allExpanded ? [] : allIds)
+      // Filter out projects with no assignments in date range
+      return filteredProjects.filter(project => {
+        const assignments = projectAssignments.filter((pa: any) => pa.projectId === project.id)
+        return assignments.some((assignment: any) =>
+          dayAssignments.some((da: any) =>
+            da.projectAssignmentId === assignment.id &&
+            dates.some(d => {
+              const daDate = new Date(da.date)
+              return daDate.getFullYear() === d.getFullYear() &&
+                     daDate.getMonth() === d.getMonth() &&
+                     daDate.getDate() === d.getDate()
+            })
+          )
+        )
+      })
+    } else {
+      if (!hideEmptyRows) return filteredMembers
+
+      // Filter out members with no assignments in date range
+      return filteredMembers.filter(member => {
+        const assignments = projectAssignments.filter((pa: any) => pa.teamMemberId === member.id)
+        return assignments.some((assignment: any) =>
+          dayAssignments.some((da: any) =>
+            da.projectAssignmentId === assignment.id &&
+            dates.some(d => {
+              const daDate = new Date(da.date)
+              return daDate.getFullYear() === d.getFullYear() &&
+                     daDate.getMonth() === d.getMonth() &&
+                     daDate.getDate() === d.getDate()
+            })
+          )
+        )
+      })
+    }
+  }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, dayAssignments, dates])
+
+  // Calculate accurate "all expanded" state
+  const isAllExpanded = useMemo(() => {
+    if (visibleItems.length === 0) return false
+    return visibleItems.every(item => expandedItems.includes(item.id))
+  }, [visibleItems, expandedItems])
+
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      // Collapse all visible items
+      setExpandedItems([])
+    } else {
+      // Expand all visible items
+      setExpandedItems(visibleItems.map(item => item.id))
+    }
   }
+
+  // Clear expanded items when switching view modes
+  useEffect(() => {
+    setExpandedItems([])
+  }, [viewMode])
 
   const handleDisplaySettingChange = (key: string, value: any) => {
     switch (key) {
@@ -164,8 +233,7 @@ export default function DashboardPage() {
             zoomLevel={zoomLevel}
             onZoomChange={setZoomLevel}
             onToggleExpandAll={toggleExpandAll}
-            expandedItemsCount={expandedItems.length}
-            totalItemsCount={viewMode === 'by-project' ? projects.length : members.length}
+            isAllExpanded={isAllExpanded}
           />
 
           <TeamFilterPopover
