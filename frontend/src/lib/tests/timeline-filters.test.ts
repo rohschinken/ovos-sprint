@@ -64,7 +64,6 @@ describe('Timeline Filters', () => {
       const result = filterProjectsByTeams(
         mockProjects,
         mockProjectAssignments,
-        mockMembers,
         mockTeamMemberRelationships,
         []
       )
@@ -80,7 +79,6 @@ describe('Timeline Filters', () => {
       const result = filterProjectsByTeams(
         mockProjects,
         mockProjectAssignments,
-        mockMembers,
         mockTeamMemberRelationships,
         [1]
       )
@@ -89,22 +87,14 @@ describe('Timeline Filters', () => {
     })
 
     it('shows all projects when filtering by all teams', () => {
-      const result = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const result = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1, 2]
       )
       expect(result).toHaveLength(3)
     })
 
     it('returns empty array when filtering by team with no project assignments', () => {
-      const result = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const result = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [999]
       )
       expect(result).toHaveLength(0)
@@ -114,19 +104,11 @@ describe('Timeline Filters', () => {
     // Issue: Timeline displayed all projects regardless of team selection
     it('regression: correctly filters projects when team is selected (not just renames)', () => {
       // This test ensures we use the actual filtered data, not just renamed raw data
-      const team1Projects = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const team1Projects = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1]
       )
 
-      const team2Projects = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const team2Projects = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [2]
       )
 
@@ -170,11 +152,7 @@ describe('Timeline Filters', () => {
 
   describe('applyProjectFilters', () => {
     it('applies both team and tentative filters', () => {
-      const result = applyProjectFilters(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const result = applyProjectFilters(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1], // Team 1 only
         false // Hide tentative
       )
@@ -188,11 +166,7 @@ describe('Timeline Filters', () => {
     })
 
     it('returns all projects when no filters applied', () => {
-      const result = applyProjectFilters(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const result = applyProjectFilters(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [], // No team filter
         true // Show tentative
       )

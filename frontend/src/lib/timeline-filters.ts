@@ -18,13 +18,17 @@ export function filterMembersByTeams(
     return members
   }
 
-  return members.filter((member) =>
-    teamMemberRelationships.some(
-      (rel) =>
-        rel.teamMemberId === member.id &&
-        selectedTeamIds.includes(rel.teamId)
-    )
-  )
+  // Create a Set for O(1) lookup of member IDs in selected teams
+  const selectedTeamIdSet = new Set(selectedTeamIds)
+  const memberIdsInSelectedTeams = new Set<number>()
+
+  teamMemberRelationships.forEach(rel => {
+    if (selectedTeamIdSet.has(rel.teamId)) {
+      memberIdsInSelectedTeams.add(rel.teamMemberId)
+    }
+  })
+
+  return members.filter((member) => memberIdsInSelectedTeams.has(member.id))
 }
 
 /**
@@ -35,7 +39,6 @@ export function filterMembersByTeams(
 export function filterProjectsByTeams(
   projects: any[],
   projectAssignments: any[],
-  members: any[],
   teamMemberRelationships: any[],
   selectedTeamIds: number[]
 ): any[] {
@@ -43,21 +46,38 @@ export function filterProjectsByTeams(
     return projects
   }
 
-  return projects.filter((project) => {
-    // Get all assignments for this project
-    const projectAssignmentsForProject = projectAssignments.filter(
-      (pa: any) => pa.projectId === project.id
-    )
+  // Create indexes for O(1) lookup instead of nested .find() calls
+  const memberIdToTeamIds = new Map<number, Set<number>>()
+  teamMemberRelationships.forEach(rel => {
+    if (!memberIdToTeamIds.has(rel.teamMemberId)) {
+      memberIdToTeamIds.set(rel.teamMemberId, new Set())
+    }
+    memberIdToTeamIds.get(rel.teamMemberId)!.add(rel.teamId)
+  })
 
-    // Check if any of these assignments have members from the selected teams
-    return projectAssignmentsForProject.some((assignment: any) => {
-      const member = members.find((m) => m.id === assignment.teamMemberId)
-      if (!member) return false
-      return teamMemberRelationships.some(
-        (rel) =>
-          rel.teamMemberId === member.id &&
-          selectedTeamIds.includes(rel.teamId)
-      )
+  const assignmentsByProject = new Map<number, any[]>()
+  projectAssignments.forEach(pa => {
+    if (!assignmentsByProject.has(pa.projectId)) {
+      assignmentsByProject.set(pa.projectId, [])
+    }
+    assignmentsByProject.get(pa.projectId)!.push(pa)
+  })
+
+  const selectedTeamIdSet = new Set(selectedTeamIds)
+
+  // Now filter with O(1) lookups instead of nested loops
+  return projects.filter((project) => {
+    const assignments = assignmentsByProject.get(project.id) || []
+
+    return assignments.some((assignment: any) => {
+      const teamIds = memberIdToTeamIds.get(assignment.teamMemberId)
+      if (!teamIds) return false
+
+      // Check if any team ID matches selected teams
+      for (const teamId of teamIds) {
+        if (selectedTeamIdSet.has(teamId)) return true
+      }
+      return false
     })
   })
 }
@@ -89,12 +109,13 @@ export function filterProjectsWithMembers(
   projects: any[],
   projectAssignments: any[]
 ): any[] {
-  return projects.filter((project) => {
-    const assignments = projectAssignments.filter(
-      (pa: any) => pa.projectId === project.id
-    )
-    return assignments.length > 0
+  // Create a Set of project IDs that have assignments
+  const projectIdsWithAssignments = new Set<number>()
+  projectAssignments.forEach(pa => {
+    projectIdsWithAssignments.add(pa.projectId)
   })
+
+  return projects.filter((project) => projectIdsWithAssignments.has(project.id))
 }
 
 /**
@@ -108,21 +129,34 @@ export function filterMembersWithProjects(
   projects: any[],
   showTentative: boolean
 ): any[] {
-  return members.filter((member) => {
-    const assignments = projectAssignments.filter(
-      (pa: any) => pa.teamMemberId === member.id
-    )
+  // Create project lookup map for O(1) access
+  const projectById = new Map<number, any>()
+  projects.forEach(p => {
+    projectById.set(p.id, p)
+  })
 
-    // Always filter out archived projects
+  // Index assignments by member ID
+  const assignmentsByMember = new Map<number, any[]>()
+  projectAssignments.forEach(pa => {
+    if (!assignmentsByMember.has(pa.teamMemberId)) {
+      assignmentsByMember.set(pa.teamMemberId, [])
+    }
+    assignmentsByMember.get(pa.teamMemberId)!.push(pa)
+  })
+
+  return members.filter((member) => {
+    const assignments = assignmentsByMember.get(member.id) || []
+
+    // Always filter out archived projects - use Map lookup instead of .find()
     const nonArchivedAssignments = assignments.filter((pa: any) => {
-      const project = projects.find((p) => p.id === pa.projectId)
+      const project = projectById.get(pa.projectId)
       return project && project.status !== 'archived'
     })
 
     // If showTentative is false, only count confirmed project assignments
     if (!showTentative) {
       const confirmedAssignments = nonArchivedAssignments.filter((pa: any) => {
-        const project = projects.find((p) => p.id === pa.projectId)
+        const project = projectById.get(pa.projectId)
         return project && project.status === 'confirmed'
       })
       return confirmedAssignments.length > 0
@@ -141,7 +175,6 @@ export function filterMembersWithProjects(
 export function applyProjectFilters(
   projects: any[],
   projectAssignments: any[],
-  members: any[],
   teamMemberRelationships: any[],
   selectedTeamIds: number[],
   showTentative: boolean
@@ -149,7 +182,6 @@ export function applyProjectFilters(
   let filtered = filterProjectsByTeams(
     projects,
     projectAssignments,
-    members,
     teamMemberRelationships,
     selectedTeamIds
   )

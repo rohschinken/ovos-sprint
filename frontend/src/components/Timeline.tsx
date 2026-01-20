@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import type { Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
@@ -104,6 +104,19 @@ export default function Timeline({
   const members = filteredMembersWithProjects
   const projects = filteredProjects
 
+  // Memoize work schedule parsing to avoid repeated JSON.parse calls
+  const workScheduleCache = useMemo(() => {
+    const cache = new Map<number, any>()
+    members.forEach(member => {
+      try {
+        cache.set(member.id, JSON.parse(member.workSchedule))
+      } catch {
+        cache.set(member.id, null)
+      }
+    })
+    return cache
+  }, [members])
+
   // Helper function to check if a date is a day-off for a specific member
   const isDayOff = (memberId: number, date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd')
@@ -120,17 +133,18 @@ export default function Timeline({
     // Check day-off first
     if (isDayOff(memberId, date)) return true
 
-    try {
-      const schedule = JSON.parse(member.workSchedule)
-      const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-      // Change from Sunday-first to Monday-first
-      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-      const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
-      return !schedule[dayKeys[dayIndex]]
-    } catch {
-      // If parsing fails, fall back to weekend check
+    // Use cached schedule instead of parsing every time
+    const schedule = workScheduleCache.get(memberId)
+    if (!schedule) {
+      // If parsing failed, fall back to weekend check
       return isWeekend(date)
     }
+
+    const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+    // Change from Sunday-first to Monday-first
+    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
+    return !schedule[dayKeys[dayIndex]]
   }
 
   // Helper function to check if current user can edit an assignment (by project assignment ID)
