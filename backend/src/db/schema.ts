@@ -50,7 +50,7 @@ export const projects = sqliteTable('projects', {
     .notNull()
     .references(() => customers.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  status: text('status', { enum: ['confirmed', 'tentative'] }).notNull().default('tentative'),
+  status: text('status', { enum: ['confirmed', 'tentative', 'archived'] }).notNull().default('tentative'),
   managerId: integer('manager_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: text('created_at')
     .notNull()
