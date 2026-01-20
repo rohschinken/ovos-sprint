@@ -6,6 +6,7 @@ import { format, addDays, startOfDay, isSameDay } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
+import { DragProvider } from '@/contexts/DragContext'
 import { useDragAssignment } from '@/hooks/useDragAssignment'
 import { useTimelineWarning } from '@/hooks/useTimelineWarning'
 import { useEditPopover } from '@/hooks/useEditPopover'
@@ -189,7 +190,7 @@ export default function Timeline({
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
-  const { dragState, handleMouseDown, handleMouseEnter } = useDragAssignment(
+  const { handleMouseDown, handleMouseEnter, isDayInDragRange } = useDragAssignment(
     projectAssignments,
     filteredMembersWithProjects,
     settings,
@@ -334,28 +335,6 @@ export default function Timeline({
     }
   }
 
-  const isDayInDragRange = (assignmentId: number, date: Date) => {
-    if (
-      dragState.assignmentId !== assignmentId ||
-      !dragState.startDate ||
-      !dragState.endDate
-    ) {
-      return false
-    }
-
-    const start =
-      dragState.startDate < dragState.endDate
-        ? dragState.startDate
-        : dragState.endDate
-    const end =
-      dragState.startDate > dragState.endDate
-        ? dragState.startDate
-        : dragState.endDate
-
-    return date >= start && date <= end
-  }
-
-
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
     if (!showOverlaps) return false
 
@@ -388,7 +367,6 @@ export default function Timeline({
       showOverlaps={showOverlaps}
       showTentative={showTentative}
       hideEmptyRows={hideEmptyRows}
-      dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}
       handleAssignmentClick={handleAssignmentClick}
@@ -424,7 +402,6 @@ export default function Timeline({
       showOverlaps={showOverlaps}
       showTentative={showTentative}
       hideEmptyRows={hideEmptyRows}
-      dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}
       handleAssignmentClick={handleAssignmentClick}
@@ -441,45 +418,47 @@ export default function Timeline({
   )
 
   return (
-    <TooltipProvider>
-      {content}
+    <DragProvider>
+      <TooltipProvider>
+        {content}
 
-      {/* Holiday/Non-Working Day Warning Dialog */}
-      <WarningDialog
-        open={!!timelineWarning}
-        onOpenChange={() => setTimelineWarning(null)}
-        title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
-        message={timelineWarning?.message || ''}
-        confirmLabel="Continue Anyway"
-        onConfirm={() => {
-          timelineWarning?.onConfirm()
-        }}
-      />
-
-      {/* Assignment Edit Popover */}
-      {editPopover && (
-        <AssignmentEditPopover
-          open={editPopover.open}
-          onOpenChange={(open) => {
-            if (!open) setEditPopover(null)
-          }}
-          position={editPopover.position}
-          group={editPopover.group}
-          projectAssignmentId={editPopover.projectAssignmentId}
-          dateRange={editPopover.dateRange}
-          onSave={(data) => {
-            saveAssignmentGroupMutation.mutate({
-              groupId: editPopover.group?.id,
-              projectAssignmentId: editPopover.projectAssignmentId,
-              startDate: editPopover.dateRange.start,
-              endDate: editPopover.dateRange.end,
-              priority: data.priority,
-              comment: data.comment,
-            })
-            setEditPopover(null)
+        {/* Holiday/Non-Working Day Warning Dialog */}
+        <WarningDialog
+          open={!!timelineWarning}
+          onOpenChange={() => setTimelineWarning(null)}
+          title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
+          message={timelineWarning?.message || ''}
+          confirmLabel="Continue Anyway"
+          onConfirm={() => {
+            timelineWarning?.onConfirm()
           }}
         />
-      )}
-    </TooltipProvider>
+
+        {/* Assignment Edit Popover */}
+        {editPopover && (
+          <AssignmentEditPopover
+            open={editPopover.open}
+            onOpenChange={(open) => {
+              if (!open) setEditPopover(null)
+            }}
+            position={editPopover.position}
+            group={editPopover.group}
+            projectAssignmentId={editPopover.projectAssignmentId}
+            dateRange={editPopover.dateRange}
+            onSave={(data) => {
+              saveAssignmentGroupMutation.mutate({
+                groupId: editPopover.group?.id,
+                projectAssignmentId: editPopover.projectAssignmentId,
+                startDate: editPopover.dateRange.start,
+                endDate: editPopover.dateRange.end,
+                priority: data.priority,
+                comment: data.comment,
+              })
+              setEditPopover(null)
+            }}
+          />
+        )}
+      </TooltipProvider>
+    </DragProvider>
   )
 }

@@ -56,7 +56,6 @@ import type { AssignmentRowProps } from './types'
  * @param projects - All projects
  * @param dayOffs - All day-off records
  * @param milestones - All milestones
- * @param dragState - Current drag state
  * @param handleMouseDown - Handler for mouse down (drag start)
  * @param handleMouseEnter - Handler for mouse enter (drag continue)
  * @param handleAssignmentClick - Handler for assignment click
@@ -85,7 +84,6 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   projects: _projects,
   dayOffs: _dayOffs,
   milestones,
-  dragState: _dragState,
   handleMouseDown,
   handleMouseEnter,
   handleAssignmentClick,
