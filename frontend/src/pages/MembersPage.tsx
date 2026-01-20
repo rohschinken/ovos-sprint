@@ -8,13 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,13 +24,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
-import { useViewMode } from '@/hooks/use-view-mode'
-import { ViewModeToggle } from '@/components/ViewModeToggle'
-import { Plus, Pencil, Trash2, Upload, Camera, Mail, UserPlus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Upload, Camera, UserPlus } from 'lucide-react'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { WarningDialog } from '@/components/ui/warning-dialog'
 import { AlertDialog } from '@/components/ui/alert-dialog'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type MemberSortKey = 'firstName' | 'email' | 'createdAt'
 
 export default function MembersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -75,7 +70,6 @@ export default function MembersPage() {
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { viewMode, setViewMode } = useViewMode('members')
 
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
@@ -244,6 +238,9 @@ export default function MembersPage() {
     return fullName.includes(query)
   })
 
+  const { sortedData: sortedMembers, sortKey, sortOrder, toggleSort } =
+    useSort<TeamMember, MemberSortKey>(filteredMembers, 'firstName')
+
   return (
     <div className="container mx-auto">
     <motion.div
@@ -277,144 +274,40 @@ export default function MembersPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
-      {viewMode === 'cards' ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredMembers.map((member, index) => (
-          <motion.div
-            key={member.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card>
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={member.avatarUrl || undefined} />
-                  <AvatarFallback
-                    style={{
-                      backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
-                      color: getAvatarColor(member.firstName, member.lastName).text,
-                    }}
-                  >
-                    {getInitials(member.firstName, member.lastName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle>
-                    {member.firstName} {member.lastName}
-                  </CardTitle>
-                  {member.email && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                      <Mail className="h-3 w-3" />
-                      {member.email}
-                    </div>
-                  )}
-                  <CardDescription>
-                    Added{' '}
-                    {new Date(member.createdAt).toLocaleDateString('de-AT')}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
-                {member.email && !member.userId && (
-                  <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => {
-                        setInviteDialog({
-                          memberId: member.id,
-                          email: member.email || '',
-                        })
-                      }}
-                      disabled={inviteMutation.isPending}
-                      className="gap-2 w-full"
-                    >
-                      <UserPlus className="h-3 w-3" />
-                      Invite User
-                  </Button>
-                )}
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setUploadingAvatarFor(member)}
-                    className="gap-2 w-full"
-                  >
-                    <Camera className="h-3 w-3" />
-                    Upload Avatar
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingMember(member)
-                        setFirstName(member.firstName)
-                        setLastName(member.lastName)
-                        setEmail(member.email || '')
-                        setWorkSchedule(JSON.parse(member.workSchedule))
-                      }}
-                      className="gap-2"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                  </Button>
-                  <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const response = await api.get(`/members/${member.id}/cascade-info`)
-                          setDeleteDialog({
-                            memberId: member.id,
-                            memberName: `${member.firstName} ${member.lastName}`,
-                            cascadeInfo: response.data,
-                          })
-                        } catch (error) {
-                          toast({
-                            title: 'Failed to load member info',
-                            description: 'Proceeding without cascade information',
-                            variant: 'destructive',
-                          })
-                          setDeleteDialog({
-                            memberId: member.id,
-                            memberName: `${member.firstName} ${member.lastName}`,
-                            cascadeInfo: null,
-                          })
-                        }
-                      }}
-                      className="gap-2"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-      ) : (
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Avatar</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <SortableTableHeader
+                label="Name"
+                sortKey="firstName"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
+              <SortableTableHeader
+                label="Email"
+                sortKey="email"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
               <TableHead>Schedule</TableHead>
-              <TableHead>Added</TableHead>
+              <SortableTableHeader
+                label="Added"
+                sortKey="createdAt"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMembers.map((member) => {
+            {sortedMembers.map((member) => {
               const schedule = JSON.parse(member.workSchedule) as WorkSchedule
               const workDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
                 .filter((day) => schedule[day as keyof WorkSchedule])
@@ -524,7 +417,6 @@ export default function MembersPage() {
           </TableBody>
         </Table>
       </div>
-      )}
 
       <Dialog
         open={isCreateOpen || !!editingMember}

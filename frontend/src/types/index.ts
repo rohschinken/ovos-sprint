@@ -76,7 +76,7 @@ export interface TeamMember {
 // Project & Assignment Types
 // ============================================================================
 
-export type ProjectStatus = 'confirmed' | 'tentative'
+export type ProjectStatus = 'confirmed' | 'tentative' | 'archived'
 
 export interface Project {
   id: number

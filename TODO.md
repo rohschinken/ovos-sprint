@@ -6,12 +6,8 @@
 
 ### Google Authentication
 
-- [ ] Google Authentication (Google Workspace Domain/Key must be configurable)
+- [ ] Add a new alternative login method: Google Authentication (Google Workspace Domain/Key must be configurable)
 
-### Archived Projects
-
-- [ ] New Status for Projects: "Archived" - Projects with this status should never appear in the Timeline View. Use a fitting icon and color code for this status. Total project statuses: Confirmed, Tentative, Archived
-- [ ] Allow changing the project status in /projects View from both the card view and list view modes by directly clicking on the status label. A select field should appear when clicking on the status label.
 
 ## Low Priority
 
@@ -72,3 +68,26 @@
   - **Branch**: `feature/vitest-testing-infrastructure`
   - **Location**: `src/**/tests/*.test.tsx` and `src/**/tests/*.test.ts`
   - **Commands**: `npm test` (runs all), `npm run test:frontend`, `npm run test:backend`
+- [x] Card View Removal
+  - [x] Removed card view from Teams, Members, Customers, and Projects pages
+  - [x] Simplified UI to list view only
+  - [x] Removed 550+ lines of code
+  - **Branch**: `feature/remove-card-view` → merged to `next`
+- [x] List View Sorting
+  - [x] Created reusable `useSort` hook for generic sorting
+  - [x] Created `SortableTableHeader` component with visual indicators
+  - [x] Added sorting to Teams (name, created date)
+  - [x] Added sorting to Members (name, email, added date)
+  - [x] Added sorting to Customers (name, manager, created date)
+  - [x] Added sorting to Projects (name, customer, status, manager)
+  - [x] Fixed sorting bugs in admin sections
+  - **Branch**: `feature/add-list-view-sorting` → merged to `next`
+- [x] Archived Project Status
+  - [x] Added 'archived' as third project status (Confirmed, Tentative, Archived)
+  - [x] Inline status editing with Select dropdown in list view
+  - [x] "Show archived projects" toggle (disabled by default)
+  - [x] Archived projects filtered from Projects page by default
+  - [x] Archived projects always filtered from Timeline view
+  - [x] Gray color and Archive icon for archived status
+  - [x] Updated backend schema and validation
+  - **Branch**: `feature/add-archived-projects` → merged to `next`

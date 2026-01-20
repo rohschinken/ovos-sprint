@@ -63,19 +63,23 @@ export function filterProjectsByTeams(
 }
 
 /**
- * Filter out tentative projects
- * If showTentative is true, returns all projects
- * If false, returns only confirmed projects
+ * Filter out tentative and archived projects
+ * If showTentative is true, returns all non-archived projects
+ * If false, returns only confirmed projects (non-archived)
+ * Archived projects are always filtered out from timeline
  */
 export function filterTentativeProjects(
   projects: any[],
   showTentative: boolean
 ): any[] {
+  // Always filter out archived projects from timeline
+  const nonArchivedProjects = projects.filter((project) => project.status !== 'archived')
+
   if (showTentative) {
-    return projects
+    return nonArchivedProjects
   }
 
-  return projects.filter((project) => project.status === 'confirmed')
+  return nonArchivedProjects.filter((project) => project.status === 'confirmed')
 }
 
 /**
@@ -96,6 +100,7 @@ export function filterProjectsWithMembers(
 /**
  * Filter out members without any project assignments
  * If showTentative is false, only counts confirmed project assignments
+ * Always excludes archived project assignments
  */
 export function filterMembersWithProjects(
   members: any[],
@@ -108,16 +113,22 @@ export function filterMembersWithProjects(
       (pa: any) => pa.teamMemberId === member.id
     )
 
+    // Always filter out archived projects
+    const nonArchivedAssignments = assignments.filter((pa: any) => {
+      const project = projects.find((p) => p.id === pa.projectId)
+      return project && project.status !== 'archived'
+    })
+
     // If showTentative is false, only count confirmed project assignments
     if (!showTentative) {
-      const confirmedAssignments = assignments.filter((pa: any) => {
+      const confirmedAssignments = nonArchivedAssignments.filter((pa: any) => {
         const project = projects.find((p) => p.id === pa.projectId)
         return project && project.status === 'confirmed'
       })
       return confirmedAssignments.length > 0
     }
 
-    return assignments.length > 0
+    return nonArchivedAssignments.length > 0
   })
 }
 

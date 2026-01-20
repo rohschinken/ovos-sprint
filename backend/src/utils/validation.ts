@@ -37,7 +37,7 @@ export const teamMemberSchema = z.object({
 export const projectSchema = z.object({
   customerId: z.number().int().positive(),
   name: z.string().min(1),
-  status: z.enum(['confirmed', 'tentative']),
+  status: z.enum(['confirmed', 'tentative', 'archived']),
   managerId: z.number().int().positive().optional().nullable(),
 })
 

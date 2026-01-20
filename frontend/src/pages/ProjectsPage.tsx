@@ -5,6 +5,7 @@ import { Project, ProjectStatus, Customer } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -13,13 +14,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import AssignMemberDialog from '@/components/AssignMemberDialog'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -38,13 +32,15 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { useViewMode } from '@/hooks/use-view-mode'
-import { ViewModeToggle } from '@/components/ViewModeToggle'
-import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users, Archive } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import type { ProjectCascadeInfo as CascadeInfo } from './types'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type ProjectSortKey = 'name' | 'status' | 'customerName' | 'managerEmail'
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -54,6 +50,7 @@ export default function ProjectsPage() {
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('confirmed')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showArchived, setShowArchived] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{
     projectId: number
     projectName: string
@@ -63,7 +60,6 @@ export default function ProjectsPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
-  const { viewMode, setViewMode } = useViewMode('projects')
 
   const isAdmin = user?.role === 'admin'
   const isProjectManager = user?.role === 'project_manager'
@@ -157,6 +153,12 @@ export default function ProjectsPage() {
   }
 
   const filteredProjects = projects.filter((project) => {
+    // Filter by archived status
+    if (!showArchived && project.status === 'archived') {
+      return false
+    }
+
+    // Filter by search query
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     const customerName = project.customer?.name?.toLowerCase() || ''
@@ -164,9 +166,24 @@ export default function ProjectsPage() {
     return customerName.includes(query) || projectName.includes(query)
   })
 
+  // Enrich projects with sortable fields
+  type EnrichedProject = Project & {
+    customerName: string
+    managerEmail: string
+  }
+
+  const enrichedProjects: EnrichedProject[] = filteredProjects.map(project => ({
+    ...project,
+    customerName: project.customer?.name || '',
+    managerEmail: project.manager?.email || '',
+  }))
+
+  const { sortedData: sortedProjects, sortKey, sortOrder, toggleSort } =
+    useSort<EnrichedProject, ProjectSortKey>(enrichedProjects, 'name')
+
   // Split projects for project managers
-  const myProjects = filteredProjects.filter((p) => p.managerId === user?.id)
-  const otherProjects = filteredProjects.filter((p) => p.managerId !== user?.id)
+  const myProjects = sortedProjects.filter((p) => p.managerId === user?.id)
+  const otherProjects = sortedProjects.filter((p) => p.managerId !== user?.id)
 
   const handleDeleteClick = async (project: Project) => {
     try {
@@ -190,77 +207,6 @@ export default function ProjectsPage() {
     }
   }
 
-  const ProjectCard = ({
-    project,
-    index,
-    canEdit,
-    onEdit,
-    onDelete,
-    onAssign,
-  }: {
-    project: Project
-    index: number
-    canEdit: boolean
-    onEdit: () => void
-    onDelete: () => void
-    onAssign: () => void
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
-      <Card className={cn(!canEdit && 'opacity-75')}>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle>{project.name}</CardTitle>
-              <CardDescription>
-                {project.customer?.icon && `${project.customer.icon} `}
-                {project.customer?.name || 'Unknown Customer'}
-              </CardDescription>
-            </div>
-            <div
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                project.status === 'confirmed'
-                  ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
-                  : 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
-              )}
-            >
-              {project.status === 'confirmed' ? (
-                <CheckCircle2 className="h-3 w-3" />
-              ) : (
-                <Clock className="h-3 w-3" />
-              )}
-              {project.status}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {canEdit ? (
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={onAssign} className="gap-2">
-                <Users className="h-3 w-3" />
-                Assign
-              </Button>
-              <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
-                <Pencil className="h-3 w-3" />
-                Edit
-              </Button>
-              <Button variant="destructive" size="sm" onClick={onDelete} className="gap-2">
-                <Trash2 className="h-3 w-3" />
-                Delete
-              </Button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">View only</p>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
-
   const ProjectTable = ({
     projects,
     canEdit,
@@ -278,10 +224,34 @@ export default function ProjectsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Manager</TableHead>
+            <SortableTableHeader
+              label="Name"
+              sortKey="name"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
+            <SortableTableHeader
+              label="Customer"
+              sortKey="customerName"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
+            <SortableTableHeader
+              label="Status"
+              sortKey="status"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
+            <SortableTableHeader
+              label="Manager"
+              sortKey="managerEmail"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -294,21 +264,62 @@ export default function ProjectsPage() {
                 {project.customer?.name || 'Unknown'}
               </TableCell>
               <TableCell>
-                <div
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                    project.status === 'confirmed'
-                      ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
-                      : 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
-                  )}
+                <Select
+                  value={project.status}
+                  onValueChange={(value) => {
+                    updateMutation.mutate({
+                      id: project.id,
+                      customerId: project.customerId,
+                      name: project.name,
+                      status: value as ProjectStatus,
+                    })
+                  }}
+                  disabled={!canEdit(project)}
                 >
-                  {project.status === 'confirmed' ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <Clock className="h-3 w-3" />
-                  )}
-                  {project.status}
-                </div>
+                  <SelectTrigger
+                    className={cn(
+                      'w-[130px] h-7 border-0',
+                      project.status === 'confirmed'
+                        ? 'bg-confirmed text-green-700 dark:bg-confirmed/40 dark:text-green-400'
+                        : project.status === 'tentative'
+                          ? 'bg-tentative text-slate-700 dark:bg-tentative/20 dark:text-slate-300'
+                          : 'bg-slate-400 text-slate-800 dark:bg-slate-600 dark:text-slate-200'
+                    )}
+                  >
+                    <SelectValue>
+                      <div className="flex items-center gap-1.5">
+                        {project.status === 'confirmed' ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : project.status === 'tentative' ? (
+                          <Clock className="h-3 w-3" />
+                        ) : (
+                          <Archive className="h-3 w-3" />
+                        )}
+                        <span className="capitalize">{project.status}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Confirmed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="tentative">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        Tentative
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="archived">
+                      <div className="flex items-center gap-1.5">
+                        <Archive className="h-3 w-3" />
+                        Archived
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {project.manager?.email || '-'}
@@ -375,7 +386,16 @@ export default function ProjectsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={showArchived}
+            onCheckedChange={setShowArchived}
+            id="show-archived"
+          />
+          <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+            Show archived projects
+          </Label>
+        </div>
       </div>
 
       {/* Project Manager: Show "My Projects" and "Other Projects" sections */}
@@ -385,39 +405,18 @@ export default function ProjectsPage() {
           {myProjects.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">My Projects</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myProjects.map((project, index) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      index={index}
-                      canEdit={isAdmin}
-                      onEdit={() => {
-                        setEditingProject(project)
-                        setCustomerId(project.customerId)
-                        setName(project.name)
-                        setStatus(project.status)
-                      }}
-                      onDelete={() => handleDeleteClick(project)}
-                      onAssign={() => setAssigningProject(project)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ProjectTable
-                  projects={myProjects}
-                  canEdit={() => isAdmin}
-                  onEdit={(project) => {
-                    setEditingProject(project)
-                    setCustomerId(project.customerId)
-                    setName(project.name)
-                    setStatus(project.status)
-                  }}
-                  onDelete={handleDeleteClick}
-                  onAssign={(project) => setAssigningProject(project)}
-                />
-              )}
+              <ProjectTable
+                projects={myProjects}
+                canEdit={() => isAdmin}
+                onEdit={(project) => {
+                  setEditingProject(project)
+                  setCustomerId(project.customerId)
+                  setName(project.name)
+                  setStatus(project.status)
+                }}
+                onDelete={handleDeleteClick}
+                onAssign={(project) => setAssigningProject(project)}
+              />
             </div>
           )}
 
@@ -425,29 +424,13 @@ export default function ProjectsPage() {
           {otherProjects.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-muted-foreground">Other Projects</h2>
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {otherProjects.map((project, index) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      index={index}
-                      canEdit={false}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                      onAssign={() => {}}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ProjectTable
-                  projects={otherProjects}
-                  canEdit={() => false}
-                  onEdit={() => {}}
-                  onDelete={() => {}}
-                  onAssign={() => {}}
-                />
-              )}
+              <ProjectTable
+                projects={otherProjects}
+                canEdit={() => false}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onAssign={() => {}}
+              />
             </div>
           )}
 
@@ -460,41 +443,20 @@ export default function ProjectsPage() {
       ) : (
         /* Admin: Show all projects together */
         <>
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProjects.map((project, index) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  index={index}
-                  canEdit={true}
-                  onEdit={() => {
-                    setEditingProject(project)
-                    setCustomerId(project.customerId)
-                    setName(project.name)
-                    setStatus(project.status)
-                  }}
-                  onDelete={() => handleDeleteClick(project)}
-                  onAssign={() => setAssigningProject(project)}
-                />
-              ))}
-            </div>
-          ) : (
-            <ProjectTable
-              projects={filteredProjects}
-              canEdit={() => true}
-              onEdit={(project) => {
-                setEditingProject(project)
-                setCustomerId(project.customerId)
-                setName(project.name)
-                setStatus(project.status)
-              }}
-              onDelete={handleDeleteClick}
-              onAssign={(project) => setAssigningProject(project)}
-            />
-          )}
+          <ProjectTable
+            projects={sortedProjects}
+            canEdit={() => true}
+            onEdit={(project) => {
+              setEditingProject(project)
+              setCustomerId(project.customerId)
+              setName(project.name)
+              setStatus(project.status)
+            }}
+            onDelete={handleDeleteClick}
+            onAssign={(project) => setAssigningProject(project)}
+          />
 
-          {filteredProjects.length === 0 && (
+          {sortedProjects.length === 0 && (
             <p className="text-center text-muted-foreground py-8">
               No projects found. Create your first project!
             </p>
@@ -569,6 +531,7 @@ export default function ProjectsPage() {
                   <SelectContent>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="tentative">Tentative</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
