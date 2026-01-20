@@ -41,7 +41,7 @@ export function MilestoneIndicator({
 
   return (
     <div
-      className="absolute top-0 bottom-0 right-0 left-0 text-sm text-center font-medium pointer-events-none"
+      className="absolute top-0 bottom-0 right-0 left-0 text-[10px] text-center font-medium pointer-events-none"
       onClick={canEdit ? handleClick : undefined}
       style={{ pointerEvents: canEdit ? 'auto' : 'none' }}
     >
