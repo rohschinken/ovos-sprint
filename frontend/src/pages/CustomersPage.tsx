@@ -28,6 +28,10 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/auth'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import type { CustomerCascadeInfo as CascadeInfo } from './types'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type CustomerSortKey = 'name' | 'createdAt'
 
 export default function CustomersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -146,9 +150,12 @@ export default function CustomersPage() {
     return customer.name.toLowerCase().includes(query)
   })
 
+  const { sortedData: sortedCustomers, sortKey, sortOrder, toggleSort } =
+    useSort<Customer, CustomerSortKey>(filteredCustomers, 'name')
+
   // Split customers for project managers
-  const myCustomers = filteredCustomers.filter((c) => c.managerId === user?.id)
-  const otherCustomers = filteredCustomers.filter((c) => c.managerId !== user?.id)
+  const myCustomers = sortedCustomers.filter((c) => c.managerId === user?.id)
+  const otherCustomers = sortedCustomers.filter((c) => c.managerId !== user?.id)
 
   const CustomerTable = ({
     customers,
@@ -166,9 +173,21 @@ export default function CustomersPage() {
         <TableHeader>
           <TableRow>
             <TableHead>Icon</TableHead>
-            <TableHead>Name</TableHead>
+            <SortableTableHeader
+              label="Name"
+              sortKey="name"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead>Manager</TableHead>
-            <TableHead>Created</TableHead>
+            <SortableTableHeader
+              label="Created"
+              sortKey="createdAt"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

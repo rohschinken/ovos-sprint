@@ -35,6 +35,10 @@ import { Plus, Pencil, Trash2, Users, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getInitials, getAvatarColor } from '@/lib/utils'
 import { AlertDialog } from '@/components/ui/alert-dialog'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type TeamSortKey = 'name' | 'createdAt'
 
 export default function TeamsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -179,6 +183,9 @@ export default function TeamsPage() {
     return team.name.toLowerCase().includes(query)
   })
 
+  const { sortedData: sortedTeams, sortKey, sortOrder, toggleSort } =
+    useSort<Team, TeamSortKey>(filteredTeams, 'name')
+
   const handleDeleteClick = async (team: Team) => {
     try {
       const response = await api.get(`/teams/${team.id}/cascade-info`)
@@ -240,13 +247,25 @@ export default function TeamsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Created</TableHead>
+              <SortableTableHeader
+                label="Name"
+                sortKey="name"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
+              <SortableTableHeader
+                label="Created"
+                sortKey="createdAt"
+                currentSortKey={sortKey}
+                currentSortOrder={sortOrder}
+                onSort={toggleSort}
+              />
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTeams.map((team) => (
+            {sortedTeams.map((team) => (
               <TableRow key={team.id}>
                 <TableCell className="font-medium">{team.name}</TableCell>
                 <TableCell className="text-muted-foreground">

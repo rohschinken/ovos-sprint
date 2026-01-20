@@ -36,6 +36,10 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import type { ProjectCascadeInfo as CascadeInfo } from './types'
+import { useSort } from '@/hooks/use-sort'
+import { SortableTableHeader } from '@/components/SortableTableHeader'
+
+type ProjectSortKey = 'name' | 'status'
 
 export default function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -154,9 +158,12 @@ export default function ProjectsPage() {
     return customerName.includes(query) || projectName.includes(query)
   })
 
+  const { sortedData: sortedProjects, sortKey, sortOrder, toggleSort } =
+    useSort<Project, ProjectSortKey>(filteredProjects, 'name')
+
   // Split projects for project managers
-  const myProjects = filteredProjects.filter((p) => p.managerId === user?.id)
-  const otherProjects = filteredProjects.filter((p) => p.managerId !== user?.id)
+  const myProjects = sortedProjects.filter((p) => p.managerId === user?.id)
+  const otherProjects = sortedProjects.filter((p) => p.managerId !== user?.id)
 
   const handleDeleteClick = async (project: Project) => {
     try {
@@ -197,9 +204,21 @@ export default function ProjectsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
+            <SortableTableHeader
+              label="Name"
+              sortKey="name"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead>
+            <SortableTableHeader
+              label="Status"
+              sortKey="status"
+              currentSortKey={sortKey}
+              currentSortOrder={sortOrder}
+              onSort={toggleSort}
+            />
             <TableHead>Manager</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
