@@ -4,6 +4,10 @@
 
 ## Medium Priority
 
+### regression: overlap indicator now shown
+
+- [x] A regression bug from when the Timeline View was refactored:  narrow assignment bar is not shown on collapsed member and project rowss (this includes the overlap indicator). 
+
 ### Google Authentication
 
 - [ ] Add a new alternative login method: Google Authentication (Google Workspace Domain/Key must be configurable)
