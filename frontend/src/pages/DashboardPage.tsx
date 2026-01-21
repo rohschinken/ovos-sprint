@@ -124,36 +124,48 @@ export default function DashboardPage() {
     }))
   }, [dates])
 
+  // Pre-compute assignment indexes to avoid triple-nested loops
+  const assignmentIndexes = useMemo(() => {
+    // Create index: assignmentId -> set of dates
+    const assignmentDates = new Map<number, Set<string>>()
+
+    dayAssignments.forEach((da: any) => {
+      if (da.projectAssignmentId && dateSet.has(da.date)) {
+        if (!assignmentDates.has(da.projectAssignmentId)) {
+          assignmentDates.set(da.projectAssignmentId, new Set())
+        }
+        assignmentDates.get(da.projectAssignmentId)!.add(da.date)
+      }
+    })
+
+    return assignmentDates
+  }, [dayAssignments, dateSet])
+
   // Calculate actually visible items (accounting for hideEmptyRows and filtering)
   const visibleItems = useMemo(() => {
     if (viewMode === 'by-project') {
       if (!hideEmptyRows) return filteredProjects
 
-      // Filter out projects with no assignments in date range
+      // O(n×m) instead of O(n×m×p)
       return filteredProjects.filter(project => {
-        const assignments = projectAssignments.filter((pa: any) => pa.projectId === project.id)
-        return assignments.some((assignment: any) =>
-          dayAssignments.some((da: any) =>
-            da.projectAssignmentId === assignment.id &&
-            dateSet.has(da.date) // O(1) lookup instead of O(n) date comparison
-          )
-        )
+        return projectAssignments.some((pa: any) => {
+          if (pa.projectId !== project.id) return false
+          const dates = assignmentIndexes.get(pa.id)
+          return dates && dates.size > 0
+        })
       })
     } else {
       if (!hideEmptyRows) return filteredMembers
 
-      // Filter out members with no assignments in date range
       return filteredMembers.filter(member => {
-        const assignments = projectAssignments.filter((pa: any) => pa.teamMemberId === member.id)
-        return assignments.some((assignment: any) =>
-          dayAssignments.some((da: any) =>
-            da.projectAssignmentId === assignment.id &&
-            dateSet.has(da.date) // O(1) lookup instead of O(n) date comparison
-          )
-        )
+        return projectAssignments.some((pa: any) => {
+          if (pa.teamMemberId !== member.id) return false
+          const dates = assignmentIndexes.get(pa.id)
+          return dates && dates.size > 0
+        })
       })
     }
-  }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, dayAssignments, dateSet])
+  }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, assignmentIndexes])
 
   // Calculate accurate "all expanded" state
   const isAllExpanded = useMemo(() => {

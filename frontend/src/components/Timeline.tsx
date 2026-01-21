@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import type { Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
@@ -119,21 +119,49 @@ function TimelineInner({
     return cache
   }, [members])
 
+  // Create lookup indexes for O(1) access (memoized)
+  const dayAssignmentIndex = useMemo(() => {
+    const index = new Map<string, any>() // key: "assignmentId-date"
+    dayAssignments.forEach((da: any) => {
+      if (da.projectAssignment?.id && da.date) {
+        const key = `${da.projectAssignment.id}-${da.date}`
+        index.set(key, da)
+      }
+    })
+    return index
+  }, [dayAssignments])
+
+  const memberIndex = useMemo(() => {
+    const index = new Map<number, any>()
+    members.forEach(m => index.set(m.id, m))
+    return index
+  }, [members])
+
+  const dayOffIndex = useMemo(() => {
+    const index = new Set<string>() // key: "memberId-date"
+    dayOffs.forEach((dayOff: any) => {
+      if (dayOff.teamMemberId && dayOff.date) {
+        const key = `${dayOff.teamMemberId}-${dayOff.date}`
+        index.add(key)
+      }
+    })
+    return index
+  }, [dayOffs])
+
   // Helper function to check if a date is a day-off for a specific member
-  const isDayOff = (memberId: number, date: Date): boolean => {
+  const isDayOff = useCallback((memberId: number, date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    return dayOffs.some(
-      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
-    )
-  }
+    const key = `${memberId}-${dateStr}`
+    return dayOffIndex.has(key)
+  }, [dayOffIndex])
 
   // Helper function to check if a date is a non-working day for a specific member
-  const isNonWorkingDay = (memberId: number, date: Date): boolean => {
-    const member = members.find((m) => m.id === memberId)
-    if (!member) return false
-
+  const isNonWorkingDay = useCallback((memberId: number, date: Date): boolean => {
     // Check day-off first
     if (isDayOff(memberId, date)) return true
+
+    const member = memberIndex.get(memberId)
+    if (!member) return false
 
     // Use cached schedule instead of parsing every time
     const schedule = workScheduleCache.get(memberId)
@@ -147,7 +175,7 @@ function TimelineInner({
     const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
     const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
     return !schedule[dayKeys[dayIndex]]
-  }
+  }, [memberIndex, isDayOff, workScheduleCache])
 
   // Helper function to check if current user can edit an assignment (by project assignment ID)
   const canEditAssignment = (projectAssignmentId: number): boolean => {
@@ -241,14 +269,11 @@ function TimelineInner({
     return false
   }
 
-  const getDayAssignmentId = (assignmentId: number, date: Date) => {
-    const dayAssignment = dayAssignments.find(
-      (da: any) =>
-        da.projectAssignment?.id === assignmentId &&
-        isSameDay(new Date(da.date), date)
-    )
-    return dayAssignment?.id
-  }
+  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const key = `${assignmentId}-${dateStr}`
+    return dayAssignmentIndex.get(key)?.id
+  }, [dayAssignmentIndex])
 
   const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
