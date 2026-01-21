@@ -4,15 +4,9 @@
 
 ## Medium Priority
 
-### regression: overlap indicator now shown
-
-- [x] A regression bug from when the Timeline View was refactored:  narrow assignment bar is not shown on collapsed member and project rowss (this includes the overlap indicator). 
-
 ### Performance optimizations
 
-- [x] Performance is really bad. Creating or deleting multiple assignments after another will take a lot of time. This is especially but not exclusively noticable when creating a long assignment bar via click & drag.
-- [x] 'message' handler takes a very long time sometimes >150ms
-- [x] "Expand All" btn in Dashboard for expanding collapsing all rows sometimes gets out of sync with actual row state.
+- [ ] performance is still not there yet. we still get lots of violation logs in chrome console on initial timeline load and also on assignment creation and deletion. click handlers (when applying filters) also take >150ms
 
 ### Google Authentication
 

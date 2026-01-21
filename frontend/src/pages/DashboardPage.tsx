@@ -126,6 +126,8 @@ export default function DashboardPage() {
 
   // Pre-compute assignment indexes to avoid triple-nested loops
   const assignmentIndexes = useMemo(() => {
+    const startTime = performance.now()
+
     // Create index: assignmentId -> set of dates
     const assignmentDates = new Map<number, Set<string>>()
 
@@ -138,33 +140,59 @@ export default function DashboardPage() {
       }
     })
 
+    const duration = performance.now() - startTime
+    console.log('[Performance Debug] assignmentIndexes computed:', {
+      indexSize: assignmentDates.size,
+      duration: `${duration.toFixed(2)}ms`,
+      timestamp: new Date().toISOString()
+    })
+
     return assignmentDates
   }, [dayAssignments, dateSet])
 
   // Calculate actually visible items (accounting for hideEmptyRows and filtering)
   const visibleItems = useMemo(() => {
+    const startTime = performance.now()
+
+    let result
     if (viewMode === 'by-project') {
-      if (!hideEmptyRows) return filteredProjects
-
-      // O(n×m) instead of O(n×m×p)
-      return filteredProjects.filter(project => {
-        return projectAssignments.some((pa: any) => {
-          if (pa.projectId !== project.id) return false
-          const dates = assignmentIndexes.get(pa.id)
-          return dates && dates.size > 0
+      if (!hideEmptyRows) {
+        result = filteredProjects
+      } else {
+        // O(n×m) instead of O(n×m×p)
+        result = filteredProjects.filter(project => {
+          return projectAssignments.some((pa: any) => {
+            if (pa.projectId !== project.id) return false
+            const dates = assignmentIndexes.get(pa.id)
+            return dates && dates.size > 0
+          })
         })
-      })
+      }
     } else {
-      if (!hideEmptyRows) return filteredMembers
-
-      return filteredMembers.filter(member => {
-        return projectAssignments.some((pa: any) => {
-          if (pa.teamMemberId !== member.id) return false
-          const dates = assignmentIndexes.get(pa.id)
-          return dates && dates.size > 0
+      if (!hideEmptyRows) {
+        result = filteredMembers
+      } else {
+        result = filteredMembers.filter(member => {
+          return projectAssignments.some((pa: any) => {
+            if (pa.teamMemberId !== member.id) return false
+            const dates = assignmentIndexes.get(pa.id)
+            return dates && dates.size > 0
+          })
         })
-      })
+      }
     }
+
+    const duration = performance.now() - startTime
+    console.log('[Performance Debug] visibleItems calculated:', {
+      viewMode,
+      hideEmptyRows,
+      totalItems: viewMode === 'by-project' ? filteredProjects.length : filteredMembers.length,
+      visibleItems: result.length,
+      duration: `${duration.toFixed(2)}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, assignmentIndexes])
 
   // Calculate accurate "all expanded" state
