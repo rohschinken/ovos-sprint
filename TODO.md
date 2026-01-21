@@ -29,6 +29,24 @@
 
 **Current State**: Application uses German locale (`de-AT`) for date formatting but all UI text is in English.
 
+### Code Splitting & Bundle Optimization
+
+- [ ] Implement route-based code splitting with React lazy/Suspense
+- [ ] Split heavy libraries (Framer Motion, date libraries) into separate chunks
+- [ ] Configure Vite rollupOptions for manual chunking
+- [ ] Lazy load admin-only components for non-admin users
+- [ ] Measure bundle size reduction and initial load time improvement
+
+**Current State**: Single 712KB JavaScript bundle. Bundle size warning from Vite suggests splitting.
+
+**Expected Impact**:
+- Initial bundle: 712KB → ~400KB (main) + smaller route chunks
+- Faster Time to Interactive (TTI)
+- Better Lighthouse score
+- Improved mobile performance
+
+**Note**: Runtime performance is already optimized (Phase 4 complete). Code splitting improves initial page load, not runtime violations.
+
 ## Completed Features
 
 - [x] shadcn/ui component library integration (19 components)
