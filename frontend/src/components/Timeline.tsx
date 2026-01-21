@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import type { Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
@@ -6,6 +6,7 @@ import { format, addDays, startOfDay, isSameDay } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
+import { DragProvider } from '@/contexts/DragContext'
 import { useDragAssignment } from '@/hooks/useDragAssignment'
 import { useTimelineWarning } from '@/hooks/useTimelineWarning'
 import { useEditPopover } from '@/hooks/useEditPopover'
@@ -23,7 +24,8 @@ import {
 } from '@/lib/timeline-helpers'
 import type { TimelineProps } from './types'
 
-export default function Timeline({
+// Inner Timeline component that uses drag context
+function TimelineInner({
   viewMode,
   prevDays,
   nextDays,
@@ -92,6 +94,7 @@ export default function Timeline({
     dayOffs,
     settings,
     assignmentGroups,
+    isLoading,
   } = useTimelineData(
     startDate,
     dates[dates.length - 1],
@@ -104,34 +107,76 @@ export default function Timeline({
   const members = filteredMembersWithProjects
   const projects = filteredProjects
 
+  // Memoize work schedule parsing to avoid repeated JSON.parse calls
+  const workScheduleCache = useMemo(() => {
+    const cache = new Map<number, any>()
+    members.forEach(member => {
+      try {
+        cache.set(member.id, JSON.parse(member.workSchedule))
+      } catch {
+        cache.set(member.id, null)
+      }
+    })
+    return cache
+  }, [members])
+
+  // Create lookup indexes for O(1) access (memoized)
+  const dayAssignmentIndex = useMemo(() => {
+    const index = new Map<string, any>() // key: "assignmentId-date"
+    dayAssignments.forEach((da: any) => {
+      if (da.projectAssignment?.id && da.date) {
+        const key = `${da.projectAssignment.id}-${da.date}`
+        index.set(key, da)
+      }
+    })
+    return index
+  }, [dayAssignments])
+
+  const memberIndex = useMemo(() => {
+    const index = new Map<number, any>()
+    members.forEach(m => index.set(m.id, m))
+    return index
+  }, [members])
+
+  const dayOffIndex = useMemo(() => {
+    const index = new Set<string>() // key: "memberId-date"
+    dayOffs.forEach((dayOff: any) => {
+      if (dayOff.teamMemberId && dayOff.date) {
+        const key = `${dayOff.teamMemberId}-${dayOff.date}`
+        index.add(key)
+      }
+    })
+    return index
+  }, [dayOffs])
+
   // Helper function to check if a date is a day-off for a specific member
-  const isDayOff = (memberId: number, date: Date): boolean => {
+  const isDayOff = useCallback((memberId: number, date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    return dayOffs.some(
-      dayOff => dayOff.teamMemberId === memberId && dayOff.date === dateStr
-    )
-  }
+    const key = `${memberId}-${dateStr}`
+    return dayOffIndex.has(key)
+  }, [dayOffIndex])
 
   // Helper function to check if a date is a non-working day for a specific member
-  const isNonWorkingDay = (memberId: number, date: Date): boolean => {
-    const member = members.find((m) => m.id === memberId)
-    if (!member) return false
-
+  const isNonWorkingDay = useCallback((memberId: number, date: Date): boolean => {
     // Check day-off first
     if (isDayOff(memberId, date)) return true
 
-    try {
-      const schedule = JSON.parse(member.workSchedule)
-      const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-      // Change from Sunday-first to Monday-first
-      const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-      const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
-      return !schedule[dayKeys[dayIndex]]
-    } catch {
-      // If parsing fails, fall back to weekend check
+    const member = memberIndex.get(memberId)
+    if (!member) return false
+
+    // Use cached schedule instead of parsing every time
+    const schedule = workScheduleCache.get(memberId)
+    if (!schedule) {
+      // If parsing failed, fall back to weekend check
       return isWeekend(date)
     }
-  }
+
+    const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+    // Change from Sunday-first to Monday-first
+    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1  // Convert Sun=0 to index 6
+    return !schedule[dayKeys[dayIndex]]
+  }, [memberIndex, isDayOff, workScheduleCache])
 
   // Helper function to check if current user can edit an assignment (by project assignment ID)
   const canEditAssignment = (projectAssignmentId: number): boolean => {
@@ -166,8 +211,8 @@ export default function Timeline({
   )
 
   const {
-    createDayAssignmentMutation,
     deleteDayAssignmentMutation,
+    createBatchDayAssignmentsMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
     createDayOffMutation,
@@ -175,13 +220,13 @@ export default function Timeline({
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
-  const { dragState, handleMouseDown, handleMouseEnter } = useDragAssignment(
+  const { handleMouseDown, handleMouseEnter, isDayInDragRange } = useDragAssignment(
     projectAssignments,
     filteredMembersWithProjects,
     settings,
     dayAssignments,
     dates,
-    createDayAssignmentMutation,
+    createBatchDayAssignmentsMutation,
     setTimelineWarning,
     isNonWorkingDay
   )
@@ -225,14 +270,11 @@ export default function Timeline({
     return false
   }
 
-  const getDayAssignmentId = (assignmentId: number, date: Date) => {
-    const dayAssignment = dayAssignments.find(
-      (da: any) =>
-        da.projectAssignment?.id === assignmentId &&
-        isSameDay(new Date(da.date), date)
-    )
-    return dayAssignment?.id
-  }
+  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const key = `${assignmentId}-${dateStr}`
+    return dayAssignmentIndex.get(key)?.id
+  }, [dayAssignmentIndex])
 
   const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
@@ -320,28 +362,6 @@ export default function Timeline({
     }
   }
 
-  const isDayInDragRange = (assignmentId: number, date: Date) => {
-    if (
-      dragState.assignmentId !== assignmentId ||
-      !dragState.startDate ||
-      !dragState.endDate
-    ) {
-      return false
-    }
-
-    const start =
-      dragState.startDate < dragState.endDate
-        ? dragState.startDate
-        : dragState.endDate
-    const end =
-      dragState.startDate > dragState.endDate
-        ? dragState.startDate
-        : dragState.endDate
-
-    return date >= start && date <= end
-  }
-
-
   const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
     if (!showOverlaps) return false
 
@@ -374,7 +394,6 @@ export default function Timeline({
       showOverlaps={showOverlaps}
       showTentative={showTentative}
       hideEmptyRows={hideEmptyRows}
-      dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}
       handleAssignmentClick={handleAssignmentClick}
@@ -410,7 +429,6 @@ export default function Timeline({
       showOverlaps={showOverlaps}
       showTentative={showTentative}
       hideEmptyRows={hideEmptyRows}
-      dragState={dragState}
       handleMouseDown={handleMouseDown}
       handleMouseEnter={handleMouseEnter}
       handleAssignmentClick={handleAssignmentClick}
@@ -425,6 +443,16 @@ export default function Timeline({
       getGroupPriority={getGroupPriority}
     />
   )
+
+  // Show loading state until all data is ready
+  // This prevents multiple re-renders with empty/partial data during React Query cascade
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Loading timeline data...</div>
+      </div>
+    )
+  }
 
   return (
     <TooltipProvider>
@@ -467,5 +495,14 @@ export default function Timeline({
         />
       )}
     </TooltipProvider>
+  )
+}
+
+// Outer Timeline component that provides drag context
+export default function Timeline(props: TimelineProps) {
+  return (
+    <DragProvider>
+      <TimelineInner {...props} />
+    </DragProvider>
   )
 }

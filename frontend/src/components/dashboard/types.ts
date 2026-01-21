@@ -19,10 +19,8 @@ export interface DashboardControlsProps {
   onZoomChange: (level: number) => void
   /** Callback to toggle expand/collapse all items */
   onToggleExpandAll: () => void
-  /** Number of currently expanded items */
-  expandedItemsCount: number
-  /** Total number of expandable items */
-  totalItemsCount: number
+  /** Whether all visible items are currently expanded */
+  isAllExpanded: boolean
 }
 
 /**

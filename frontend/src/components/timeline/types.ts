@@ -45,12 +45,6 @@ export interface TimelineViewContentProps {
   showOverlaps: boolean
   showTentative: boolean
   hideEmptyRows: boolean
-  // State
-  dragState: {
-    assignmentId: number | null
-    startDate: Date | null
-    endDate: Date | null
-  }
   // Handlers
   handleMouseDown: (assignmentId: number, date: Date, e: React.MouseEvent) => void
   handleMouseEnter: (date: Date) => void
@@ -87,12 +81,6 @@ export interface AssignmentRowProps {
   projects: Project[]
   dayOffs: DayOff[]
   milestones: Milestone[]
-  // State
-  dragState: {
-    assignmentId: number | null
-    startDate: Date | null
-    endDate: Date | null
-  }
   // Handlers
   handleMouseDown: (assignmentId: number, date: Date, e: React.MouseEvent) => void
   handleMouseEnter: (date: Date) => void

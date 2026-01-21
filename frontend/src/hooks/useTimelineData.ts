@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { format } from 'date-fns'
 import api from '@/api/client'
 import { applyProjectFilters, applyMemberFilters } from '@/lib/timeline-filters'
@@ -158,25 +159,54 @@ export function useTimelineData(
     },
   })
 
-  // Apply filters to projects
-  const filteredProjects = applyProjectFilters(
-    projects,
-    projectAssignments,
-    members,
-    teamMemberRelationships,
-    selectedTeamIds,
-    showTentative
-  )
+  // Memoize filtered projects to avoid recalculating on every render
+  const filteredProjects = useMemo(() => {
+    const start = performance.now()
 
-  // Apply filters to members
-  const filteredMembers = applyMemberFilters(
-    members,
-    teamMemberRelationships,
-    selectedTeamIds,
-    projectAssignments,
-    projects,
-    showTentative
-  )
+    if (!projects || !projectAssignments || !teamMemberRelationships) {
+      return []
+    }
+
+    const result = applyProjectFilters(
+      projects,
+      projectAssignments,
+      teamMemberRelationships,
+      selectedTeamIds,
+      showTentative
+    )
+
+    const duration = performance.now() - start
+    if (duration > 50) {
+      console.warn(`[Performance] Project filtering took ${duration.toFixed(2)}ms`)
+    }
+
+    return result
+  }, [projects, projectAssignments, teamMemberRelationships, selectedTeamIds, showTentative])
+
+  // Memoize filtered members to avoid recalculating on every render
+  const filteredMembers = useMemo(() => {
+    const start = performance.now()
+
+    if (!members || !projectAssignments || !projects || !teamMemberRelationships) {
+      return []
+    }
+
+    const result = applyMemberFilters(
+      members,
+      teamMemberRelationships,
+      selectedTeamIds,
+      projectAssignments,
+      projects,
+      showTentative
+    )
+
+    const duration = performance.now() - start
+    if (duration > 50) {
+      console.warn(`[Performance] Member filtering took ${duration.toFixed(2)}ms`)
+    }
+
+    return result
+  }, [members, teamMemberRelationships, selectedTeamIds, projectAssignments, projects, showTentative])
 
   // Check if any data is still loading
   const isLoading =

@@ -67,6 +67,56 @@ export function useTimelineMutations() {
   })
 
   /**
+   * Batch create multiple day assignments at once
+   */
+  const createBatchDayAssignmentsMutation = useMutation({
+    mutationFn: async (data: { projectAssignmentId: number; dates: string[] }) => {
+      const response = await api.post('/assignments/days/batch', data)
+      return response.data
+    },
+    onMutate: async () => {
+      // Cancel outgoing refetches to avoid race conditions
+      await queryClient.cancelQueries({ queryKey: ['assignments', 'days'] })
+
+      // Snapshot previous value for potential rollback
+      const previousDays = queryClient.getQueryData(['assignments', 'days'])
+
+      return { previousDays }
+    },
+    onError: (_err, _newData, context) => {
+      // Rollback on error
+      if (context?.previousDays) {
+        queryClient.setQueryData(['assignments', 'days'], context.previousDays)
+      }
+    },
+    onSettled: () => {
+      // Refetch once after mutation settles (success or error)
+      queryClient.invalidateQueries({ queryKey: ['assignments', 'days'] })
+      queryClient.invalidateQueries({ queryKey: ['assignment-groups'] })
+    },
+  })
+
+  /**
+   * Batch delete multiple day assignments at once
+   */
+  const deleteBatchDayAssignmentsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await api.delete('/assignments/days/batch', { data: { ids } })
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ['assignments', 'days'],
+        type: 'all'
+      })
+      await queryClient.refetchQueries({
+        queryKey: ['assignment-groups'],
+        type: 'all'
+      })
+      toast({ title: 'Assignments deleted' })
+    },
+  })
+
+  /**
    * Create a new milestone
    */
   const createMilestoneMutation = useMutation({
@@ -195,6 +245,8 @@ export function useTimelineMutations() {
   return {
     createDayAssignmentMutation,
     deleteDayAssignmentMutation,
+    createBatchDayAssignmentsMutation,
+    deleteBatchDayAssignmentsMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
     createDayOffMutation,

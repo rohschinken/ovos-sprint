@@ -50,7 +50,6 @@ import type { TimelineViewContentProps } from './types'
  * @param isAdmin - Whether current user has admin permissions
  * @param showOverlaps - Whether to show overlap visualization
  * @param showTentative - Whether to show tentative projects
- * @param dragState - Current drag state
  * @param handleMouseDown - Handler for mouse down (drag start)
  * @param handleMouseEnter - Handler for mouse enter (drag continue)
  * @param handleAssignmentClick - Handler for assignment click
@@ -84,7 +83,6 @@ export function TimelineViewContent({
   showOverlaps,
   showTentative,
   hideEmptyRows,
-  dragState,
   handleMouseDown,
   handleMouseEnter,
   handleAssignmentClick,
@@ -173,7 +171,6 @@ export function TimelineViewContent({
                         projects={projects}
                         dayOffs={dayOffs}
                         milestones={milestones}
-                        dragState={dragState}
                         handleMouseDown={handleMouseDown}
                         handleMouseEnter={handleMouseEnter}
                         handleAssignmentClick={handleAssignmentClick}
@@ -276,7 +273,6 @@ export function TimelineViewContent({
                       projects={projects}
                       dayOffs={dayOffs}
                       milestones={milestones}
-                      dragState={dragState}
                       handleMouseDown={handleMouseDown}
                       handleMouseEnter={handleMouseEnter}
                       handleAssignmentClick={handleAssignmentClick}
