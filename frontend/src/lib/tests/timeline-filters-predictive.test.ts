@@ -79,11 +79,7 @@ describe('Timeline Filters - Predictive Tests for Future Bugs', () => {
      */
     it('predicts filters should be applied in correct order (team then tentative)', () => {
       // Step 1: Filter by team first
-      const teamFiltered = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const teamFiltered = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1] // Team 1
       )
 
@@ -103,20 +99,12 @@ describe('Timeline Filters - Predictive Tests for Future Bugs', () => {
     it('predicts combining filters incorrectly could show wrong data', () => {
       // WRONG WAY: Filtering in wrong order might show different results
       const tentativeFiltered = filterTentativeProjects(mockProjects, false)
-      const wrongOrder = filterProjectsByTeams(
-        tentativeFiltered,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const wrongOrder = filterProjectsByTeams(tentativeFiltered, mockProjectAssignments, mockTeamMemberRelationships,
         [1]
       )
 
       // RIGHT WAY: Team filter then tentative filter
-      const teamFiltered = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const teamFiltered = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1]
       )
       const rightOrder = filterTentativeProjects(teamFiltered, false)
@@ -164,11 +152,7 @@ describe('Timeline Filters - Predictive Tests for Future Bugs', () => {
      * UI might break or show error instead of empty state.
      */
     it('predicts filtering with no matches should return empty array, not undefined', () => {
-      const noMatches = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const noMatches = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [999] // Non-existent team
       )
 
@@ -180,11 +164,7 @@ describe('Timeline Filters - Predictive Tests for Future Bugs', () => {
 
     it('predicts multiple filters with no matches should not throw error', () => {
       expect(() => {
-        const teamFiltered = filterProjectsByTeams(
-          mockProjects,
-          mockProjectAssignments,
-          mockMembers,
-          mockTeamMemberRelationships,
+        const teamFiltered = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
           [999]
         )
 
@@ -241,11 +221,7 @@ describe('Timeline Filters - Predictive Tests for Future Bugs', () => {
      */
     it('predicts view mode switches should maintain filter state', () => {
       // Simulate by-project view: filtered projects
-      const projectView = filterProjectsByTeams(
-        mockProjects,
-        mockProjectAssignments,
-        mockMembers,
-        mockTeamMemberRelationships,
+      const projectView = filterProjectsByTeams(mockProjects, mockProjectAssignments, mockTeamMemberRelationships,
         [1]
       )
 

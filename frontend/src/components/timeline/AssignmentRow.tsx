@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { format, isSameDay, isFirstDayOfMonth, getDay, getISOWeek } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { Clock } from 'lucide-react'
@@ -38,6 +39,8 @@ import type { AssignmentRowProps } from './types'
  * - Interactive drag-to-assign functionality
  * - Click/right-click to delete assignments
  *
+ * Memoized to prevent unnecessary re-renders during drag operations.
+ *
  * @param viewMode - Current view mode ('by-project' or 'by-member')
  * @param assignment - The project assignment to render
  * @param parentItem - The expanded parent (project or member)
@@ -53,7 +56,6 @@ import type { AssignmentRowProps } from './types'
  * @param projects - All projects
  * @param dayOffs - All day-off records
  * @param milestones - All milestones
- * @param dragState - Current drag state
  * @param handleMouseDown - Handler for mouse down (drag start)
  * @param handleMouseEnter - Handler for mouse enter (drag continue)
  * @param handleAssignmentClick - Handler for assignment click
@@ -66,7 +68,7 @@ import type { AssignmentRowProps } from './types'
  * @param canEditProject - Check if project can be edited
  * @param getGroupPriority - Get priority for assignment on date
  */
-export function AssignmentRow({
+const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   viewMode,
   assignment,
   parentItem,
@@ -82,7 +84,6 @@ export function AssignmentRow({
   projects: _projects,
   dayOffs: _dayOffs,
   milestones,
-  dragState: _dragState,
   handleMouseDown,
   handleMouseEnter,
   handleAssignmentClick,
@@ -94,7 +95,7 @@ export function AssignmentRow({
   canEditAssignment: _canEditAssignment,
   canEditProject,
   getGroupPriority,
-}: AssignmentRowProps) {
+}) => {
   const today = new Date()
 
   /**
@@ -140,66 +141,81 @@ export function AssignmentRow({
             {member.firstName} {member.lastName}
           </span>
         </div>
-        {dates.map((date, dateIndex) => (
+        {/* Pre-compute date properties for the entire row */}
+        {useMemo(() => {
+          const dateProperties = dates.map((date, index) => ({
+            date,
+            isWeekend: isWeekend(date),
+            isHoliday: isHoliday(date),
+            isDayOff: isDayOff(member.id, date),
+            isToday: isSameDay(date, today),
+            isFirstDayOfMonth: isFirstDayOfMonth(date),
+            isWeekStart: isWeekStart(date, index),
+            dateStr: date.toISOString()
+          }))
+
+          return dateProperties.map((props) => (
           <div
-            key={date.toISOString()}
+            key={props.dateStr}
             className={cn(
               columnWidth, 'border-r group relative flex items-center justify-center select-none',
               project.status === 'tentative' && 'bg-background',
-              isWeekend(date) && 'bg-weekend',
-              isHoliday(date) && 'bg-holiday',
-              isDayOff(member.id, date) && 'bg-dayOff',
-              isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+              props.isWeekend && 'bg-weekend',
+              props.isHoliday && 'bg-holiday',
+              props.isDayOff && 'bg-dayOff',
+              props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
               isAdmin && 'cursor-pointer',
-              isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-              isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
+              props.isFirstDayOfMonth && 'border-l-4 border-l-border',
+              props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
             )}
             onMouseDown={(_e) =>
-              handleMouseDown(assignment.id, date, _e)
+              handleMouseDown(assignment.id, props.date, _e)
             }
-            onMouseEnter={() => handleMouseEnter(date)}
+            onMouseEnter={() => handleMouseEnter(props.date)}
             onClick={(e) => {
-              if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
-                handleDeleteDayAssignment(assignment.id, date, e)
+              if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                handleDeleteDayAssignment(assignment.id, props.date, e)
               }
             }}
             onContextMenu={(_e) => {
               _e.preventDefault() // Prevent browser context menu
-              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                handleDeleteDayAssignment(assignment.id, date, _e)
+              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                handleDeleteDayAssignment(assignment.id, props.date, _e)
               }
             }}
           >
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/60 font-medium">
-                {format(date, 'EEE', { locale: enGB })}
+                {format(props.date, 'EEE', { locale: enGB })}
               </span>
             </div>
             <ExpandedAssignmentBar
               assignmentId={assignment.id}
-              date={date}
+              date={props.date}
               projectAssignments={projectAssignments}
               dayAssignments={dayAssignments}
               project={project}
-              isDayInDragRange={isDayInDragRange(assignment.id, date)}
+              isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
               isAdmin={isAdmin}
-              hasOverlap={hasOverlap(member.id, date, 'member')}
+              hasOverlap={hasOverlap(member.id, props.date, 'member')}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
-                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                  handleAssignmentClick(assignment.id, date, e)
+                if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                  handleAssignmentClick(assignment.id, props.date, e)
                 }
               }}
               onContextMenu={(e) => {
                 e.preventDefault()
-                if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                  handleDeleteDayAssignment(assignment.id, date, e)
+                if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                  handleDeleteDayAssignment(assignment.id, props.date, e)
                 }
               }}
               getGroupPriority={getGroupPriority}
             />
           </div>
-        ))}
+        ))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
         {/* Comment overlay rendered at row level to appear above all bar segments */}
         <AssignmentCommentOverlay
           assignmentId={assignment.id}
@@ -246,73 +262,88 @@ export function AssignmentRow({
           {project.customer?.name}
         </div>
       </div>
-      {dates.map((date, dateIndex) => (
+      {/* Pre-compute date properties for the entire row */}
+      {useMemo(() => {
+        const dateProperties = dates.map((date, index) => ({
+          date,
+          isWeekend: isWeekend(date),
+          isHoliday: isHoliday(date),
+          isDayOff: isDayOff(member.id, date),
+          isToday: isSameDay(date, today),
+          isFirstDayOfMonth: isFirstDayOfMonth(date),
+          isWeekStart: isWeekStart(date, index),
+          dateStr: date.toISOString()
+        }))
+
+        return dateProperties.map((props) => (
         <div
-          key={date.toISOString()}
+          key={props.dateStr}
           className={cn(
             columnWidth, 'border-r group relative flex items-center justify-center select-none',
             project.status === 'tentative' && 'bg-background',
-            isWeekend(date) && 'bg-weekend',
-            isHoliday(date) && 'bg-holiday',
-            isDayOff(member.id, date) && 'bg-dayOff',
-            isSameDay(date, today) && 'bg-primary/10 border-x-2 border-x-primary',
+            props.isWeekend && 'bg-weekend',
+            props.isHoliday && 'bg-holiday',
+            props.isDayOff && 'bg-dayOff',
+            props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
             isAdmin && 'cursor-pointer',
-            isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
-            isWeekStart(date, dateIndex) && !isFirstDayOfMonth(date) && 'border-l-4 border-l-muted-foreground'
+            props.isFirstDayOfMonth && 'border-l-4 border-l-border',
+            props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
           )}
           onMouseDown={(_e) =>
-            handleMouseDown(assignment.id, date, _e)
+            handleMouseDown(assignment.id, props.date, _e)
           }
-          onMouseEnter={() => handleMouseEnter(date)}
+          onMouseEnter={() => handleMouseEnter(props.date)}
           onClick={(e) => {
-            if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, date)) {
-              handleDeleteDayAssignment(assignment.id, date, e)
+            if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, props.date)) {
+              handleDeleteDayAssignment(assignment.id, props.date, e)
             }
           }}
           onContextMenu={(_e) => {
             _e.preventDefault() // Prevent browser context menu
-            if (isDayAssigned(dayAssignments, assignment.id, date)) {
-              handleDeleteDayAssignment(assignment.id, date, _e)
+            if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+              handleDeleteDayAssignment(assignment.id, props.date, _e)
             }
           }}
         >
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
-              {format(date, 'EEE', { locale: enGB })}
+              {format(props.date, 'EEE', { locale: enGB })}
             </span>
           </div>
           <MilestoneIndicator
             projectId={project.id}
-            date={date}
+            date={props.date}
             milestones={milestones}
             canEdit={canEditProject(project.id)}
             onToggle={handleProjectCellClick}
           />
           <ExpandedAssignmentBar
             assignmentId={assignment.id}
-            date={date}
+            date={props.date}
             projectAssignments={projectAssignments}
             dayAssignments={dayAssignments}
             project={project}
-            isDayInDragRange={isDayInDragRange(assignment.id, date)}
+            isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
             isAdmin={isAdmin}
             hasOverlap={false}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
-              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                handleAssignmentClick(assignment.id, date, e)
+              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                handleAssignmentClick(assignment.id, props.date, e)
               }
             }}
             onContextMenu={(e) => {
               e.preventDefault()
-              if (isDayAssigned(dayAssignments, assignment.id, date)) {
-                handleDeleteDayAssignment(assignment.id, date, e)
+              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                handleDeleteDayAssignment(assignment.id, props.date, e)
               }
             }}
             getGroupPriority={getGroupPriority}
           />
         </div>
-      ))}
+      ))
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
       {/* Comment overlay rendered at row level to appear above all bar segments */}
       <AssignmentCommentOverlay
         assignmentId={assignment.id}
@@ -330,3 +361,7 @@ export function AssignmentRow({
     </div>
   )
 }
+
+// Memoize the component to prevent re-renders when props haven't changed
+// This is critical for performance during drag operations
+export const AssignmentRow = memo(AssignmentRowComponent)
