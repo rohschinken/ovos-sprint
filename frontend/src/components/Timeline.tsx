@@ -94,6 +94,7 @@ function TimelineInner({
     dayOffs,
     settings,
     assignmentGroups,
+    isLoading,
   } = useTimelineData(
     startDate,
     dates[dates.length - 1],
@@ -101,6 +102,16 @@ function TimelineInner({
     showTentative,
     dates
   )
+
+  // Show loading state until all data is ready
+  // This prevents multiple re-renders with empty/partial data during React Query cascade
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Loading timeline data...</div>
+      </div>
+    )
+  }
 
   // Get reference to data for helper functions
   const members = filteredMembersWithProjects
