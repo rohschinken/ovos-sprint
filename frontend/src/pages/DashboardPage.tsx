@@ -126,8 +126,6 @@ export default function DashboardPage() {
 
   // Pre-compute assignment indexes to avoid triple-nested loops
   const assignmentIndexes = useMemo(() => {
-    const startTime = performance.now()
-
     // Create index: assignmentId -> set of dates
     const assignmentDates = new Map<number, Set<string>>()
 
@@ -140,20 +138,11 @@ export default function DashboardPage() {
       }
     })
 
-    const duration = performance.now() - startTime
-    console.log('[Performance Debug] assignmentIndexes computed:', {
-      indexSize: assignmentDates.size,
-      duration: `${duration.toFixed(2)}ms`,
-      timestamp: new Date().toISOString()
-    })
-
     return assignmentDates
   }, [dayAssignments, dateSet])
 
   // Calculate actually visible items (accounting for hideEmptyRows and filtering)
   const visibleItems = useMemo(() => {
-    const startTime = performance.now()
-
     let result
     if (viewMode === 'by-project') {
       if (!hideEmptyRows) {
@@ -181,16 +170,6 @@ export default function DashboardPage() {
         })
       }
     }
-
-    const duration = performance.now() - startTime
-    console.log('[Performance Debug] visibleItems calculated:', {
-      viewMode,
-      hideEmptyRows,
-      totalItems: viewMode === 'by-project' ? filteredProjects.length : filteredMembers.length,
-      visibleItems: result.length,
-      duration: `${duration.toFixed(2)}ms`,
-      timestamp: new Date().toISOString()
-    })
 
     return result
   }, [viewMode, filteredProjects, filteredMembers, hideEmptyRows, projectAssignments, assignmentIndexes])

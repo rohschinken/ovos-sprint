@@ -143,8 +143,6 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
         </div>
         {/* Pre-compute date properties for the entire row */}
         {useMemo(() => {
-          const startTime = performance.now()
-
           const dateProperties = dates.map((date, index) => ({
             date,
             isWeekend: isWeekend(date),
@@ -155,16 +153,6 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
             isWeekStart: isWeekStart(date, index),
             dateStr: date.toISOString()
           }))
-
-          const duration = performance.now() - startTime
-          if (duration > 5) {
-            console.log(`[Performance Debug] AssignmentRow dateProperties (by-project) pre-computed:`, {
-              projectId: project.id,
-              memberId: member.id,
-              cellCount: dates.length,
-              duration: `${duration.toFixed(2)}ms`
-            })
-          }
 
           return dateProperties.map((props) => (
           <div
@@ -276,8 +264,6 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
       </div>
       {/* Pre-compute date properties for the entire row */}
       {useMemo(() => {
-        const startTime = performance.now()
-
         const dateProperties = dates.map((date, index) => ({
           date,
           isWeekend: isWeekend(date),
@@ -288,16 +274,6 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
           isWeekStart: isWeekStart(date, index),
           dateStr: date.toISOString()
         }))
-
-        const duration = performance.now() - startTime
-        if (duration > 5) {
-          console.log(`[Performance Debug] AssignmentRow dateProperties (by-member) pre-computed:`, {
-            projectId: project.id,
-            memberId: member.id,
-            cellCount: dates.length,
-            duration: `${duration.toFixed(2)}ms`
-          })
-        }
 
         return dateProperties.map((props) => (
         <div

@@ -149,40 +149,15 @@ function TimelineInner({
     return index
   }, [dayOffs])
 
-  // Debug logging for index creation
-  useEffect(() => {
-    console.log('[Performance Debug] Timeline indexes created:', {
-      dayAssignmentIndex: dayAssignmentIndex.size,
-      memberIndex: memberIndex.size,
-      dayOffIndex: dayOffIndex.size,
-      timestamp: new Date().toISOString()
-    })
-  }, [dayAssignmentIndex, memberIndex, dayOffIndex])
-
-  // Call counter for isDayOff
-  const isDayOffCallCount = useRef(0)
-
   // Helper function to check if a date is a day-off for a specific member
   const isDayOff = useCallback((memberId: number, date: Date): boolean => {
-    isDayOffCallCount.current++
-    if (isDayOffCallCount.current <= 5) {
-      console.log(`[Performance Debug] isDayOff called (${isDayOffCallCount.current}) - using O(1) lookup`)
-    }
     const dateStr = format(date, 'yyyy-MM-dd')
     const key = `${memberId}-${dateStr}`
     return dayOffIndex.has(key)
   }, [dayOffIndex])
 
-  // Call counter for isNonWorkingDay
-  const isNonWorkingDayCallCount = useRef(0)
-
   // Helper function to check if a date is a non-working day for a specific member
   const isNonWorkingDay = useCallback((memberId: number, date: Date): boolean => {
-    isNonWorkingDayCallCount.current++
-    if (isNonWorkingDayCallCount.current <= 5) {
-      console.log(`[Performance Debug] isNonWorkingDay called (${isNonWorkingDayCallCount.current}) - using O(1) memberIndex lookup`)
-    }
-
     // Check day-off first
     if (isDayOff(memberId, date)) return true
 
@@ -295,14 +270,7 @@ function TimelineInner({
     return false
   }
 
-  // Call counter for getDayAssignmentId
-  const getDayAssignmentIdCallCount = useRef(0)
-
   const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
-    getDayAssignmentIdCallCount.current++
-    if (getDayAssignmentIdCallCount.current <= 5) {
-      console.log(`[Performance Debug] getDayAssignmentId called (${getDayAssignmentIdCallCount.current}) - using O(1) dayAssignmentIndex lookup`)
-    }
     const dateStr = format(date, 'yyyy-MM-dd')
     const key = `${assignmentId}-${dateStr}`
     return dayAssignmentIndex.get(key)?.id
