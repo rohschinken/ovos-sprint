@@ -34,6 +34,11 @@ export function DisplaySettingsPopover({
 }: DisplaySettingsPopoverProps) {
   const canEditTimeline = currentUserRole === 'admin' || currentUserRole === 'project_manager'
 
+  // Helper function to clamp values to valid range
+  const clampValue = (val: number, min: number, max: number) => {
+    return Math.max(min, Math.min(max, val))
+  }
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -124,11 +129,21 @@ export function DisplaySettingsPopover({
                   id="prev-days"
                   type="number"
                   min="0"
-                  max="365"
+                  max="999"
                   value={prevDays}
                   onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (!isNaN(val)) {
+                      const clamped = clampValue(val, 0, 999)
+                      onSettingChange('prevDays', clamped)
+                    }
+                  }}
+                  onBlur={(e) => {
                     const val = parseInt(e.target.value) || 0
-                    onSettingChange('prevDays', val)
+                    const clamped = clampValue(val, 0, 999)
+                    if (val !== clamped) {
+                      onSettingChange('prevDays', clamped)
+                    }
                   }}
                   className="h-8"
                 />
@@ -141,11 +156,21 @@ export function DisplaySettingsPopover({
                   id="next-days"
                   type="number"
                   min="0"
-                  max="365"
+                  max="999"
                   value={nextDays}
                   onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (!isNaN(val)) {
+                      const clamped = clampValue(val, 0, 999)
+                      onSettingChange('nextDays', clamped)
+                    }
+                  }}
+                  onBlur={(e) => {
                     const val = parseInt(e.target.value) || 0
-                    onSettingChange('nextDays', val)
+                    const clamped = clampValue(val, 0, 999)
+                    if (val !== clamped) {
+                      onSettingChange('nextDays', clamped)
+                    }
                   }}
                   className="h-8"
                 />

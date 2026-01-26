@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { sql, relations } from 'drizzle-orm'
 
 export const users = sqliteTable('users', {
@@ -143,7 +143,9 @@ export const settings = sqliteTable('settings', {
   createdAt: text('created_at')
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
-})
+}, (table) => ({
+  userKeyIdx: uniqueIndex('idx_settings_user_key').on(table.userId, table.key),
+}))
 
 export const milestones = sqliteTable('milestones', {
   id: integer('id').primaryKey({ autoIncrement: true }),

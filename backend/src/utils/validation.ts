@@ -57,6 +57,29 @@ export const settingsSchema = z.object({
   value: z.string(),
 })
 
+export const TIMELINE_SETTINGS_CONSTRAINTS = {
+  timelinePrevDays: { min: 0, max: 999 },
+  timelineNextDays: { min: 0, max: 999 },
+} as const
+
+export const timelineSettingsSchema = z.object({
+  key: z.enum(['timelinePrevDays', 'timelineNextDays']),
+  value: z.string().refine(
+    (val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 0 && num <= 999
+    },
+    { message: 'Value must be a number between 0 and 999' }
+  ),
+})
+
+export function validateSettingByKey(key: string) {
+  if (key === 'timelinePrevDays' || key === 'timelineNextDays') {
+    return timelineSettingsSchema
+  }
+  return settingsSchema
+}
+
 export const updateUserRoleSchema = z.object({
   role: z.enum(['user', 'project_manager', 'admin']),
 })
