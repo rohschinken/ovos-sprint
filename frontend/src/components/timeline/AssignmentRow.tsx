@@ -91,6 +91,7 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   handleProjectCellClick,
   isDayInDragRange,
   isDayOff,
+  isNonWorkingDay,
   hasOverlap,
   canEditAssignment: _canEditAssignment,
   canEditProject,
@@ -195,6 +196,7 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               projectAssignments={projectAssignments}
               dayAssignments={dayAssignments}
               project={project}
+              member={member}
               isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
               isAdmin={isAdmin}
               hasOverlap={hasOverlap(member.id, props.date, 'member')}
@@ -211,6 +213,8 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
                 }
               }}
               getGroupPriority={getGroupPriority}
+              isNonWorkingDay={isNonWorkingDay}
+              isHoliday={isHoliday}
             />
           </div>
         ))
@@ -323,6 +327,7 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
             projectAssignments={projectAssignments}
             dayAssignments={dayAssignments}
             project={project}
+            member={member}
             isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
             isAdmin={isAdmin}
             hasOverlap={false}
@@ -339,6 +344,8 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               }
             }}
             getGroupPriority={getGroupPriority}
+            isNonWorkingDay={isNonWorkingDay}
+            isHoliday={isHoliday}
           />
         </div>
       ))

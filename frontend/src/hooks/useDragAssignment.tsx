@@ -4,6 +4,7 @@ import { format, addDays } from 'date-fns'
 import debounce from 'lodash.debounce'
 import { isHoliday, getHolidayName } from '@/lib/holidays'
 import { useDragContext } from '@/contexts/DragContext'
+import type { TimelineWarning } from '@/components/timeline/types'
 
 /**
  * Custom hook for managing drag-to-assign functionality in the timeline
@@ -31,11 +32,7 @@ export function useDragAssignment(
   _dayAssignments: any[],
   _dates: Date[],
   createBatchDayAssignmentsMutation: UseMutationResult<any, unknown, { projectAssignmentId: number; dates: string[] }, unknown>,
-  setTimelineWarning: (warning: {
-    type: 'holiday' | 'non-working-day'
-    message: string | React.ReactNode
-    onConfirm: () => void
-  } | null) => void,
+  setTimelineWarning: (warning: TimelineWarning | null) => void,
   isNonWorkingDay: (memberId: number, date: Date) => boolean
 ) {
   // Use DragContext instead of local state to prevent Timeline re-renders
@@ -172,7 +169,7 @@ export function useDragAssignment(
             type: holidays.length > 0 ? 'holiday' : 'non-working-day',
             message,
             onConfirm: () => {
-              // User confirmed, create all assignments in batch
+              // User confirmed, create all assignments in batch including non-working days
               const dates: string[] = []
               for (let i = 0; i <= daysDiff; i++) {
                 const date = addDays(start, i)
@@ -182,6 +179,25 @@ export function useDragAssignment(
                 projectAssignmentId: dragState.assignmentId!,
                 dates,
               })
+              setTimelineWarning(null)
+            },
+            onSkip: () => {
+              // User chose to skip non-working days, filter them out
+              const workingDates: string[] = []
+              for (let i = 0; i <= daysDiff; i++) {
+                const date = addDays(start, i)
+                // Only include working days (skip holidays and non-working days)
+                if (!isHoliday(date) && !isNonWorkingDay(assignment.teamMemberId, date)) {
+                  workingDates.push(format(date, 'yyyy-MM-dd'))
+                }
+              }
+              // Only create assignments if there are working days in the range
+              if (workingDates.length > 0) {
+                createBatchDayAssignmentsMutation.mutate({
+                  projectAssignmentId: dragState.assignmentId!,
+                  dates: workingDates,
+                })
+              }
               setTimelineWarning(null)
             },
           })

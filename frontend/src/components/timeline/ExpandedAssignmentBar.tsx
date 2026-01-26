@@ -49,7 +49,7 @@ export function ExpandedAssignmentBar({
   projectAssignments: _projectAssignments,
   dayAssignments,
   project,
-  member: _member,
+  member,
   isDayInDragRange,
   isAdmin,
   hasOverlap,
@@ -57,6 +57,8 @@ export function ExpandedAssignmentBar({
   onClick,
   onContextMenu,
   getGroupPriority,
+  isNonWorkingDay,
+  isHoliday,
 }: ExpandedAssignmentBarProps) {
   // Check if this day is assigned
   const isAssigned = isDayAssigned(dayAssignments, assignmentId, date)
@@ -73,18 +75,35 @@ export function ExpandedAssignmentBar({
   // Get priority for this date
   const priority = isAssigned ? getGroupPriority(assignmentId, date) : 'normal'
 
+  // Check if this date is a non-working day
+  const isOnNonWorkingDay = isAssigned && (
+    isHoliday(date) ||
+    isNonWorkingDay(member.id, date)
+  )
+
   // Determine color based on overlap
   const colorClasses = hasOverlap
     ? 'bg-orange-500/40 border-orange-400'
     : 'bg-confirmed border-emerald-400'
 
+  // Dynamic height classes based on non-working day
+  const heightClasses = isOnNonWorkingDay
+    ? 'h-0 border-t-[2px]' // Thin line: zero height + 2px top border
+    : 'h-5' // Normal height (20px)
+
+  // Dynamic border classes
+  const borderClasses = isOnNonWorkingDay
+    ? 'border-t-[2px]' // Only top border for thin line
+    : getAssignmentBorderClass(hasPrevDay, hasNextDay) // Full borders
+
   return (
     <div
       className={cn(
-        'h-5 shadow-sm relative z-20',
+        heightClasses, // Dynamic height based on non-working day
+        'shadow-sm relative z-20',
         getAssignmentWidthClass(hasNextDay),
         getAssignmentRoundedClass(hasPrevDay, hasNextDay),
-        getAssignmentBorderClass(hasPrevDay, hasNextDay),
+        borderClasses, // Dynamic border classes
         colorClasses,
         project.status === 'tentative' && !hasOverlap && 'opacity-60',
         isDayInDragRange && 'opacity-50',
@@ -95,8 +114,8 @@ export function ExpandedAssignmentBar({
       onContextMenu={onContextMenu}
       style={{ pointerEvents: 'auto' }}
     >
-      {/* Priority indicators - only show on last day of range */}
-      {isAssigned && isLastDay && (
+      {/* Priority indicators - only show on last day of range and not on thin lines (no space) */}
+      {isAssigned && isLastDay && !isOnNonWorkingDay && (
         <>
           {priority === 'high' && (
             <span className="absolute top-1/2 -translate-y-1/2 right-0 text-[9px] leading-none z-30 pointer-events-none">

@@ -92,6 +92,7 @@ export function TimelineViewContent({
   canEditProject,
   canEditAssignment,
   isDayOff,
+  isNonWorkingDay,
   isDayInDragRange,
   hasOverlap,
   getGroupPriority,
@@ -178,6 +179,7 @@ export function TimelineViewContent({
                         handleProjectCellClick={handleProjectCellClick}
                         isDayInDragRange={isDayInDragRange}
                         isDayOff={isDayOff}
+                        isNonWorkingDay={isNonWorkingDay}
                         hasOverlap={hasOverlap}
                         canEditAssignment={canEditAssignment}
                         canEditProject={canEditProject}
@@ -243,6 +245,7 @@ export function TimelineViewContent({
                 dayAssignments={dayAssignments}
                 projects={projects}
                 hasOverlap={hasOverlap}
+                isNonWorkingDay={isNonWorkingDay}
               />
 
               {expandedItems.has(member.id) &&
@@ -280,6 +283,7 @@ export function TimelineViewContent({
                       handleProjectCellClick={handleProjectCellClick}
                       isDayInDragRange={isDayInDragRange}
                       isDayOff={isDayOff}
+                      isNonWorkingDay={isNonWorkingDay}
                       hasOverlap={hasOverlap}
                       canEditAssignment={canEditAssignment}
                       canEditProject={canEditProject}

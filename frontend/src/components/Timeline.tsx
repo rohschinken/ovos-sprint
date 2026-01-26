@@ -403,6 +403,7 @@ function TimelineInner({
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}
+      isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
@@ -438,6 +439,7 @@ function TimelineInner({
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}
+      isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
@@ -465,9 +467,11 @@ function TimelineInner({
         title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
         message={timelineWarning?.message || ''}
         confirmLabel="Continue Anyway"
+        skipLabel={timelineWarning?.onSkip ? "Skip Non-Working Days" : undefined}
         onConfirm={() => {
           timelineWarning?.onConfirm()
         }}
+        onSkip={timelineWarning?.onSkip}
       />
 
       {/* Assignment Edit Popover */}

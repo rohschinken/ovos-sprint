@@ -12,6 +12,18 @@
 - [ ] When creating a multi-day assingment that overlaps non-working days AND if "show non-working-day warning" option is enabled, give the user the option to either: 1) "Cancel": aborts the whole opration (do not create any assignments) 2) Create one large assignment-bar that overlaps non-wokring days (as usual) 3) "Skip non-working days": Creates the assignment but skips all non-working days - this can result in the creastion of multiple not-connected assignments
 - [ ] All assigments on non-working days (holidys, days-off and vacation days) should appear narrow (zero height and only 1px border - so it appears basically as a horizontal line)
 
+### Feature: Improve UX for deleting assignments
+- [ ] allow deletion of multiple assignments within a row at once with right-click and drag (or holding CTRL/CMD and left-click and drag). While dragging display a visual indicator (red bars in cells) that shows which assignments will be deleted once the mouse btn is lifted.
+
+### Feature: Improve UX for managing relations
+- [ ] Assigning members to teams must not only be possible in Team View but also in Members View
+- [ ] When editing a team: allow (un)assigning of multiple members at once
+- [ ] When editing a member: allow (un)assigning from multiple teams at once
+- [ ] When editing a project: allow (un)assigning of multiple members at once
+
+### Feature: Improve UX for creating projects
+- [ ] allow typing the name of a customer to filter customers (allows for quicker finding the customer if there are a lot)
+
 ## Low Priority
 
 ### Google Authentication
