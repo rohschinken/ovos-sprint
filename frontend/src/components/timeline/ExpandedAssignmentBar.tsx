@@ -51,6 +51,7 @@ export function ExpandedAssignmentBar({
   project,
   member,
   isDayInDragRange,
+  dragMode,
   isAdmin,
   hasOverlap,
   onMouseDown,
@@ -64,6 +65,11 @@ export function ExpandedAssignmentBar({
   const isAssigned = isDayAssigned(dayAssignments, assignmentId, date)
 
   if (!isAssigned && !isDayInDragRange) {
+    return null
+  }
+
+  // Don't render the bar during delete drag - only show red overlay
+  if (isDayInDragRange && dragMode === 'delete') {
     return null
   }
 
@@ -106,7 +112,8 @@ export function ExpandedAssignmentBar({
         borderClasses, // Dynamic border classes
         colorClasses,
         project.status === 'tentative' && !hasOverlap && 'opacity-60',
-        isDayInDragRange && 'opacity-50',
+        isDayInDragRange && dragMode === 'create' && 'opacity-50',
+        // Don't show opacity on bars during delete mode - only red overlay shows
         isAdmin && 'cursor-pointer'
       )}
       onMouseDown={onMouseDown}

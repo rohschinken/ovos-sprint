@@ -213,6 +213,7 @@ function TimelineInner({
   const {
     deleteDayAssignmentMutation,
     createBatchDayAssignmentsMutation,
+    deleteBatchDayAssignmentsMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
     createDayOffMutation,
@@ -220,7 +221,13 @@ function TimelineInner({
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
-  const { handleMouseDown, handleMouseEnter, isDayInDragRange } = useDragAssignment(
+  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const key = `${assignmentId}-${dateStr}`
+    return dayAssignmentIndex.get(key)?.id
+  }, [dayAssignmentIndex])
+
+  const { handleMouseDown, handleMouseEnter, isDayInDragRange, getDragMode } = useDragAssignment(
     projectAssignments,
     filteredMembersWithProjects,
     settings,
@@ -228,7 +235,9 @@ function TimelineInner({
     dates,
     createBatchDayAssignmentsMutation,
     setTimelineWarning,
-    isNonWorkingDay
+    isNonWorkingDay,
+    getDayAssignmentId,
+    deleteBatchDayAssignmentsMutation
   )
 
   // Reset initialization flag when view mode changes
@@ -269,12 +278,6 @@ function TimelineInner({
     }
     return false
   }
-
-  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    const key = `${assignmentId}-${dateStr}`
-    return dayAssignmentIndex.get(key)?.id
-  }, [dayAssignmentIndex])
 
   const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
@@ -405,6 +408,7 @@ function TimelineInner({
       isDayOff={isDayOff}
       isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
+      getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
     />
@@ -441,6 +445,7 @@ function TimelineInner({
       isDayOff={isDayOff}
       isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
+      getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
     />
