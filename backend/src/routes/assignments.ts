@@ -392,9 +392,28 @@ router.post('/days/batch', authenticate, requireAdminOrProjectManager, async (re
       }
     }
 
-    // Run group merge ONCE after all days are created
-    if (createdAssignments.length > 0) {
-      await handleGroupMergeOnDayAdd(data.projectAssignmentId, data.dates[0])
+    // Run group merge for each discontinuous segment
+    if (data.dates.length > 0) {
+      // Sort dates to identify segments
+      const sortedDates = [...data.dates].sort()
+
+      // Find the start of each discontinuous segment
+      const segmentStarts: string[] = [sortedDates[0]]
+      for (let i = 1; i < sortedDates.length; i++) {
+        const prevDate = new Date(sortedDates[i - 1])
+        const currDate = new Date(sortedDates[i])
+        const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        // If gap > 1 day, this is a new segment
+        if (dayDiff > 1) {
+          segmentStarts.push(sortedDates[i])
+        }
+      }
+
+      // Run merge logic for each segment start
+      for (const segmentStart of segmentStarts) {
+        await handleGroupMergeOnDayAdd(data.projectAssignmentId, segmentStart)
+      }
     }
 
     res.json(createdAssignments)
