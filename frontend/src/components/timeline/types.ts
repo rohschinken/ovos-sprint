@@ -58,6 +58,7 @@ export interface TimelineViewContentProps {
   isDayOff: (memberId: number, date: Date) => boolean
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
+  getDragMode: () => 'create' | 'delete' | null
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
 }
@@ -90,6 +91,7 @@ export interface AssignmentRowProps {
   handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
   // Helper functions
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
+  getDragMode: () => 'create' | 'delete' | null
   isDayOff: (memberId: number, date: Date) => boolean
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
@@ -159,6 +161,7 @@ export interface ExpandedAssignmentBarProps {
   project: any
   member: any
   isDayInDragRange: boolean
+  dragMode: 'create' | 'delete' | null
   isAdmin: boolean
   hasOverlap: boolean
   onMouseDown: (e: React.MouseEvent) => void

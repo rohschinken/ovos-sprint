@@ -94,6 +94,7 @@ export function TimelineViewContent({
   isDayOff,
   isNonWorkingDay,
   isDayInDragRange,
+  getDragMode,
   hasOverlap,
   getGroupPriority,
 }: TimelineViewContentProps) {
@@ -178,6 +179,7 @@ export function TimelineViewContent({
                         handleDeleteDayAssignment={handleDeleteDayAssignment}
                         handleProjectCellClick={handleProjectCellClick}
                         isDayInDragRange={isDayInDragRange}
+                        getDragMode={getDragMode}
                         isDayOff={isDayOff}
                         isNonWorkingDay={isNonWorkingDay}
                         hasOverlap={hasOverlap}
@@ -282,6 +284,7 @@ export function TimelineViewContent({
                       handleDeleteDayAssignment={handleDeleteDayAssignment}
                       handleProjectCellClick={handleProjectCellClick}
                       isDayInDragRange={isDayInDragRange}
+                      getDragMode={getDragMode}
                       isDayOff={isDayOff}
                       isNonWorkingDay={isNonWorkingDay}
                       hasOverlap={hasOverlap}

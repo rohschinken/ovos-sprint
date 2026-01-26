@@ -16,6 +16,7 @@ interface DragState {
   assignmentId: number | null
   startDate: Date | null
   endDate: Date | null
+  mode: 'create' | 'delete' | null
 }
 
 interface DragContextValue {
@@ -41,6 +42,7 @@ export function DragProvider({ children }: DragProviderProps) {
     assignmentId: null,
     startDate: null,
     endDate: null,
+    mode: null,
   })
 
   // Subscribers that want to be notified of drag updates
