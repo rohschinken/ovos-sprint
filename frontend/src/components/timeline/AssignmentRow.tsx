@@ -8,6 +8,7 @@ import { isDayAssigned } from '@/lib/timeline-helpers'
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar'
 import { ExpandedAssignmentBar } from './ExpandedAssignmentBar'
 import { AssignmentCommentOverlay } from './AssignmentCommentOverlay'
+import { DeleteDragOverlay } from './DeleteDragOverlay'
 import { MilestoneIndicator } from './MilestoneIndicator'
 import type { TeamMember, Project } from '@/types'
 import type { AssignmentRowProps } from './types'
@@ -90,7 +91,9 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   handleDeleteDayAssignment,
   handleProjectCellClick,
   isDayInDragRange,
+  getDragMode,
   isDayOff,
+  isNonWorkingDay,
   hasOverlap,
   canEditAssignment: _canEditAssignment,
   canEditProject,
@@ -173,15 +176,15 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
             }
             onMouseEnter={() => handleMouseEnter(props.date)}
             onClick={(e) => {
-              if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                handleDeleteDayAssignment(assignment.id, props.date, e)
+              // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
+              // Only handle regular clicks here
+              if (!e.ctrlKey && !e.metaKey) {
+                // Regular click - no action on cell
               }
             }}
             onContextMenu={(_e) => {
               _e.preventDefault() // Prevent browser context menu
-              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                handleDeleteDayAssignment(assignment.id, props.date, _e)
-              }
+              // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
             }}
           >
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -195,22 +198,31 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               projectAssignments={projectAssignments}
               dayAssignments={dayAssignments}
               project={project}
+              member={member}
               isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
+              dragMode={getDragMode()}
               isAdmin={isAdmin}
               hasOverlap={hasOverlap(member.id, props.date, 'member')}
-              onMouseDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => {
+                // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
+                if (!isDeleteTrigger) {
+                  e.stopPropagation() // Only stop for regular clicks
+                }
+              }}
               onClick={(e) => {
-                if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                // Ctrl/Cmd+click handled by drag system, regular click opens edit
+                if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
                   handleAssignmentClick(assignment.id, props.date, e)
                 }
               }}
               onContextMenu={(e) => {
                 e.preventDefault()
-                if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                  handleDeleteDayAssignment(assignment.id, props.date, e)
-                }
+                // Right-click delete now handled via drag system
               }}
               getGroupPriority={getGroupPriority}
+              isNonWorkingDay={isNonWorkingDay}
+              isHoliday={isHoliday}
             />
           </div>
         ))
@@ -229,6 +241,14 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
           onCommentContextMenu={(assignmentId, date, e) => {
             handleDeleteDayAssignment(assignmentId, date, e)
           }}
+        />
+        {/* Delete drag overlay */}
+        <DeleteDragOverlay
+          assignmentId={assignment.id}
+          dates={dates}
+          isDayInDragRange={isDayInDragRange}
+          getDragMode={getDragMode}
+          zoomLevel={zoomLevel}
         />
       </div>
     )
@@ -294,15 +314,15 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
           }
           onMouseEnter={() => handleMouseEnter(props.date)}
           onClick={(e) => {
-            if ((e.ctrlKey || e.metaKey) && isDayAssigned(dayAssignments, assignment.id, props.date)) {
-              handleDeleteDayAssignment(assignment.id, props.date, e)
+            // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
+            // Only handle regular clicks here
+            if (!e.ctrlKey && !e.metaKey) {
+              // Regular click - no action on cell
             }
           }}
           onContextMenu={(_e) => {
             _e.preventDefault() // Prevent browser context menu
-            if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
-              handleDeleteDayAssignment(assignment.id, props.date, _e)
-            }
+            // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
           }}
         >
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -323,22 +343,31 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
             projectAssignments={projectAssignments}
             dayAssignments={dayAssignments}
             project={project}
+            member={member}
             isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
+            dragMode={getDragMode()}
             isAdmin={isAdmin}
             hasOverlap={false}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+              const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
+              if (!isDeleteTrigger) {
+                e.stopPropagation() // Only stop for regular clicks
+              }
+            }}
             onClick={(e) => {
-              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
+              // Ctrl/Cmd+click handled by drag system, regular click opens edit
+              if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
                 handleAssignmentClick(assignment.id, props.date, e)
               }
             }}
             onContextMenu={(e) => {
               e.preventDefault()
-              if (isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                handleDeleteDayAssignment(assignment.id, props.date, e)
-              }
+              // Right-click delete now handled via drag system
             }}
             getGroupPriority={getGroupPriority}
+            isNonWorkingDay={isNonWorkingDay}
+            isHoliday={isHoliday}
           />
         </div>
       ))
@@ -357,6 +386,14 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
         onCommentContextMenu={(assignmentId, date, e) => {
           handleDeleteDayAssignment(assignmentId, date, e)
         }}
+      />
+      {/* Delete drag overlay */}
+      <DeleteDragOverlay
+        assignmentId={assignment.id}
+        dates={dates}
+        isDayInDragRange={isDayInDragRange}
+        getDragMode={getDragMode}
+        zoomLevel={zoomLevel}
       />
     </div>
   )

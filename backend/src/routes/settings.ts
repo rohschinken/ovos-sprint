@@ -1,8 +1,9 @@
 import { Router } from 'express'
 import { db, settings } from '../db/index.js'
-import { settingsSchema } from '../utils/validation.js'
+import { validateSettingByKey } from '../utils/validation.js'
 import { authenticate, AuthRequest } from '../middleware/auth.js'
 import { eq, and } from 'drizzle-orm'
+import { z } from 'zod'
 
 const router = Router()
 
@@ -54,7 +55,10 @@ router.put('/:key', authenticate, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.userId
     const key = req.params.key
-    const { value } = settingsSchema.parse({ key, value: req.body.value })
+
+    // Use key-specific validation
+    const validationSchema = validateSettingByKey(key)
+    const { value } = validationSchema.parse({ key, value: req.body.value })
 
     // Check if setting exists
     const existing = await db.query.settings.findFirst({
@@ -81,6 +85,12 @@ router.put('/:key', authenticate, async (req: AuthRequest, res) => {
       res.status(201).json(created)
     }
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: error.errors
+      })
+    }
     console.error('Update setting error:', error)
     res.status(400).json({ error: 'Invalid request' })
   }

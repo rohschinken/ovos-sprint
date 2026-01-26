@@ -57,6 +57,7 @@ export function TimelineItemHeader({
   dayAssignments,
   projects,
   hasOverlap,
+  isNonWorkingDay,
 }: TimelineItemHeaderProps) {
   const today = new Date()
 
@@ -211,6 +212,9 @@ export function TimelineItemHeader({
                   projects={projects || []}
                   hasOverlap={hasOverlap((item as TeamMember).id, date, 'member')}
                   showOverlaps={showOverlaps}
+                  memberId={(item as TeamMember).id}
+                  isNonWorkingDay={isNonWorkingDay}
+                  isHoliday={isHoliday}
                 />
               )}
 

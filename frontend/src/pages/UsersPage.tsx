@@ -174,201 +174,200 @@ export default function UsersPage() {
         transition={{ duration: 0.3 }}
         className="space-y-6"
       >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex justify-between items-center"
-      >
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Invite and manage users</p>
-        </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Invite User
-          </Button>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex justify-between items-center"
+        >
+          <div>
+            <h1 className="text-3xl font-bold">User Management</h1>
+            <p className="text-muted-foreground">Invite and manage users</p>
+          </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Invite User
+            </Button>
+          </motion.div>
         </motion.div>
-      </motion.div>
 
-      {/* Existing Users */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-      >
-        <Card>
-        <CardHeader>
-          <CardTitle>Registered Users</CardTitle>
-          <CardDescription>
-            Users who have completed their registration
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {users.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No users yet. Invite users to get started!
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {users.map((user, index) => (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium">{user.email}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Joined{' '}
-                      {new Date(user.createdAt).toLocaleDateString('de-AT')}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {currentUser?.id === user.id ? (
-                      <div
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'admin'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                            : user.role === 'project_manager'
-                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                        }`}
-                      >
-                        {user.role === 'project_manager' ? 'PM' : user.role}
+        {/* Existing Users */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Registered Users</CardTitle>
+              <CardDescription>
+                Users who have completed their registration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {users.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No users yet. Invite users to get started!
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {users.map((user, index) => (
+                    <motion.div
+                      key={user.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{user.email}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Joined{' '}
+                          {new Date(user.createdAt).toLocaleDateString('de-AT')}
+                        </div>
                       </div>
-                    ) : (
-                      <Select
-                        value={user.role}
-                        onValueChange={(newRole: 'user' | 'project_manager' | 'admin') => {
-                          setConfirmRoleChange({ userId: user.id, newRole })
-                        }}
-                      >
-                        <SelectTrigger className="w-[140px] h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">
-                            <span>User</span>
-                          </SelectItem>
-                          <SelectItem value="project_manager">
-                            <div className="flex items-center gap-2">
-                              <Briefcase className="h-3 w-3" />
-                              <span>Project Manager</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-3 w-3" />
-                              <span>Admin</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {currentUser?.id !== user.id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteUser(user)}
-                        disabled={deleteMutation.isPending}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                      <div className="flex items-center gap-2">
+                        {currentUser?.id === user.id ? (
+                          <div
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                : user.role === 'project_manager'
+                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                              }`}
+                          >
+                            {user.role === 'project_manager' ? 'PM' : user.role}
+                          </div>
+                        ) : (
+                          <Select
+                            value={user.role}
+                            onValueChange={(newRole: 'user' | 'project_manager' | 'admin') => {
+                              setConfirmRoleChange({ userId: user.id, newRole })
+                            }}
+                          >
+                            <SelectTrigger className="w-[175px] h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">
+                                <span>User</span>
+                              </SelectItem>
+                              <SelectItem value="project_manager">
+                                <div className="flex items-center gap-2">
+                                  <Briefcase className="h-3 w-3" />
+                                  <span>Project Manager</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-3 w-3" />
+                                  <span>Admin</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {currentUser?.id !== user.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={deleteMutation.isPending}
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Invite Dialog */}
+        <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite New User</DialogTitle>
+              <DialogDescription>
+                Enter the email address of the user you want to invite. They will
+                receive a registration link.
+              </DialogDescription>
+            </DialogHeader>
+
+            {!invitationLink ? (
+              <form onSubmit={handleInvite}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="user@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Invite Dialog */}
-      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite New User</DialogTitle>
-            <DialogDescription>
-              Enter the email address of the user you want to invite. They will
-              receive a registration link.
-            </DialogDescription>
-          </DialogHeader>
-
-          {!invitationLink ? (
-            <form onSubmit={handleInvite}>
+                  <div className="space-y-2">
+                    <Label>Role</Label>
+                    <RadioGroup value={role} onValueChange={(value) => setRole(value as 'user' | 'project_manager' | 'admin')}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="user" id="role-user" />
+                        <Label htmlFor="role-user" className="font-normal cursor-pointer">
+                          User - Can view and interact with the timeline
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="project_manager" id="role-pm" />
+                        <Label htmlFor="role-pm" className="font-normal cursor-pointer">
+                          Project Manager - Can manage their own projects and customers
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="admin" id="role-admin" />
+                        <Label htmlFor="role-admin" className="font-normal cursor-pointer">
+                          Admin - Full access including user management
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsInviteOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={inviteMutation.isPending}>
+                    {inviteMutation.isPending ? 'Creating...' : 'Create Invitation'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            ) : (
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="user@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'user' | 'project_manager' | 'admin')}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="user" id="role-user" />
-                      <Label htmlFor="role-user" className="font-normal cursor-pointer">
-                        User - Can view and interact with the timeline
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="project_manager" id="role-pm" />
-                      <Label htmlFor="role-pm" className="font-normal cursor-pointer">
-                        Project Manager - Can manage their own projects and customers
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="admin" id="role-admin" />
-                      <Label htmlFor="role-admin" className="font-normal cursor-pointer">
-                        Admin - Full access including user management
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsInviteOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={inviteMutation.isPending}>
-                  {inviteMutation.isPending ? 'Creating...' : 'Create Invitation'}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : (
-            <div className="space-y-4 py-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-blue-900 mb-1">
-                      Invitation Link Created
-                    </h4>
-                    <p className="text-sm text-blue-700 mb-3">
-                      Copy this link and send it to the user via email. The
-                      link expires in 7 days.
-                    </p>
-                    <div className="bg-white dark:text-black rounded border border-blue-300 p-3 mb-3">
-                      <code className="text-xs break-all">
-                        {invitationLink}
-                      </code>
-                    </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-blue-900 mb-1">
+                        Invitation Link Created
+                      </h4>
+                      <p className="text-sm text-blue-700 mb-3">
+                        Copy this link and send it to the user via email. The
+                        link expires in 7 days.
+                      </p>
+                      <div className="bg-white dark:text-black rounded border border-blue-300 p-3 mb-3">
+                        <code className="text-xs break-all">
+                          {invitationLink}
+                        </code>
+                      </div>
                       <Button
                         onClick={() => copyToClipboard(invitationLink)}
                         className="gap-2"
@@ -377,103 +376,103 @@ export default function UsersPage() {
                         <Copy className="h-4 w-4" />
                         Copy Link
                       </Button>
+                    </div>
                   </div>
                 </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800">
+                    <strong>Note:</strong> The link has also been sent to the email provided.
+                  </p>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    onClick={() => {
+                      setIsInviteOpen(false)
+                      setInvitationLink(null)
+                      setEmail('')
+                    }}
+                  >
+                    Done
+                  </Button>
+                </DialogFooter>
               </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800">
-                  <strong>Note:</strong> The link has also been sent to the email provided.
-                </p>
-              </div>
+        {/* Role Change Confirmation Dialog */}
+        <Dialog open={!!confirmRoleChange} onOpenChange={() => setConfirmRoleChange(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Role Change</DialogTitle>
+              <DialogDescription>
+                {confirmRoleChange && (
+                  <>
+                    Are you sure you want to change this user's role to{' '}
+                    <strong>{confirmRoleChange.newRole === 'project_manager' ? 'Project Manager' : confirmRoleChange.newRole}</strong>?
+                    {confirmRoleChange.newRole === 'admin' && (
+                      <div className="mt-2 text-amber-600 dark:text-amber-500">
+                        This will grant the user full administrative privileges including user management.
+                      </div>
+                    )}
+                    {confirmRoleChange.newRole === 'project_manager' && (
+                      <div className="mt-2 text-purple-600 dark:text-purple-500">
+                        This will allow the user to create and manage their own projects and customers.
+                      </div>
+                    )}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setConfirmRoleChange(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (confirmRoleChange) {
+                    updateRoleMutation.mutate({
+                      userId: confirmRoleChange.userId,
+                      role: confirmRoleChange.newRole,
+                    })
+                  }
+                }}
+                disabled={updateRoleMutation.isPending}
+              >
+                {updateRoleMutation.isPending ? 'Updating...' : 'Confirm'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-              <DialogFooter>
-                <Button
-                  onClick={() => {
-                    setIsInviteOpen(false)
-                    setInvitationLink(null)
-                    setEmail('')
-                  }}
-                >
-                  Done
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Role Change Confirmation Dialog */}
-      <Dialog open={!!confirmRoleChange} onOpenChange={() => setConfirmRoleChange(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Role Change</DialogTitle>
-            <DialogDescription>
-              {confirmRoleChange && (
-                <>
-                  Are you sure you want to change this user's role to{' '}
-                  <strong>{confirmRoleChange.newRole === 'project_manager' ? 'Project Manager' : confirmRoleChange.newRole}</strong>?
-                  {confirmRoleChange.newRole === 'admin' && (
-                    <div className="mt-2 text-amber-600 dark:text-amber-500">
-                      This will grant the user full administrative privileges including user management.
-                    </div>
-                  )}
-                  {confirmRoleChange.newRole === 'project_manager' && (
-                    <div className="mt-2 text-purple-600 dark:text-purple-500">
-                      This will allow the user to create and manage their own projects and customers.
-                    </div>
-                  )}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmRoleChange(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (confirmRoleChange) {
-                  updateRoleMutation.mutate({
-                    userId: confirmRoleChange.userId,
-                    role: confirmRoleChange.newRole,
-                  })
-                }
-              }}
-              disabled={updateRoleMutation.isPending}
-            >
-              {updateRoleMutation.isPending ? 'Updating...' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete User Confirmation Dialog */}
-      <AlertDialog
-        open={!!deleteDialog}
-        onOpenChange={() => setDeleteDialog(null)}
-        title="Delete User"
-        description="This will permanently delete the user and all associated data. This action cannot be undone."
-        entityName={deleteDialog?.userEmail}
-        cascadeWarning={deleteDialog?.cascadeInfo ? {
-          items: [
-            { type: 'user settings', count: deleteDialog.cascadeInfo.settings },
-            { type: 'linked team member profiles', count: deleteDialog.cascadeInfo.linkedTeamMembers },
-          ].filter(item => item.count > 0)
-        } : undefined}
-        confirmLabel="Delete User"
-        onConfirm={() => {
-          if (deleteDialog) {
-            deleteMutation.mutate(deleteDialog.userId)
-            setDeleteDialog(null)
-          }
-        }}
-        isLoading={deleteMutation.isPending}
-      />
-    </motion.div>
+        {/* Delete User Confirmation Dialog */}
+        <AlertDialog
+          open={!!deleteDialog}
+          onOpenChange={() => setDeleteDialog(null)}
+          title="Delete User"
+          description="This will permanently delete the user and all associated data. This action cannot be undone."
+          entityName={deleteDialog?.userEmail}
+          cascadeWarning={deleteDialog?.cascadeInfo ? {
+            items: [
+              { type: 'user settings', count: deleteDialog.cascadeInfo.settings },
+              { type: 'linked team member profiles', count: deleteDialog.cascadeInfo.linkedTeamMembers },
+            ].filter(item => item.count > 0)
+          } : undefined}
+          confirmLabel="Delete User"
+          onConfirm={() => {
+            if (deleteDialog) {
+              deleteMutation.mutate(deleteDialog.userId)
+              setDeleteDialog(null)
+            }
+          }}
+          isLoading={deleteMutation.isPending}
+        />
+      </motion.div>
     </div>
   )
 }

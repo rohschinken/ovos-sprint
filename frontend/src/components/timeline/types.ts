@@ -56,7 +56,9 @@ export interface TimelineViewContentProps {
   canEditProject: (projectId: number) => boolean
   canEditAssignment: (assignmentId: number) => boolean
   isDayOff: (memberId: number, date: Date) => boolean
+  isNonWorkingDay: (memberId: number, date: Date) => boolean
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
+  getDragMode: () => 'create' | 'delete' | null
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
 }
@@ -89,7 +91,9 @@ export interface AssignmentRowProps {
   handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
   // Helper functions
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
+  getDragMode: () => 'create' | 'delete' | null
   isDayOff: (memberId: number, date: Date) => boolean
+  isNonWorkingDay: (memberId: number, date: Date) => boolean
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   canEditAssignment: (assignmentId: number) => boolean
   canEditProject: (projectId: number) => boolean
@@ -143,6 +147,7 @@ export interface TimelineItemHeaderProps {
   dayAssignments: DayAssignment[]
   projects?: Project[] // Only needed for member view
   hasOverlap?: (id: number, date: Date, type: 'member' | 'project') => boolean // Only for member view
+  isNonWorkingDay?: (memberId: number, date: Date) => boolean // Only for member view thin-line styling
 }
 
 /**
@@ -154,14 +159,17 @@ export interface ExpandedAssignmentBarProps {
   projectAssignments: any[]
   dayAssignments: any[]
   project: any
-  member?: any
+  member: any
   isDayInDragRange: boolean
+  dragMode: 'create' | 'delete' | null
   isAdmin: boolean
   hasOverlap: boolean
   onMouseDown: (e: React.MouseEvent) => void
   onClick: (e: React.MouseEvent) => void
   onContextMenu: (e: React.MouseEvent) => void
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
+  isNonWorkingDay: (memberId: number, date: Date) => boolean
+  isHoliday: (date: Date) => boolean
 }
 
 /**
@@ -177,6 +185,10 @@ export interface CollapsedAssignmentBarProps {
   isTentative?: boolean
   hasOverlap: boolean
   showOverlaps: boolean
+  // For member view thin-line styling:
+  memberId?: number
+  isNonWorkingDay?: (memberId: number, date: Date) => boolean
+  isHoliday?: (date: Date) => boolean
 }
 
 /**
@@ -210,6 +222,7 @@ export interface TimelineWarning {
   type: 'holiday' | 'non-working-day'
   message: string | React.ReactNode
   onConfirm: () => void
+  onSkip?: () => void
 }
 
 /**

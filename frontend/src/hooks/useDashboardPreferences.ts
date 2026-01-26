@@ -88,10 +88,14 @@ export function useDashboardPreferences({
   // Extract date range and display settings from backend settings
   useEffect(() => {
     if (settings.timelinePrevDays) {
-      setPrevDays(parseInt(settings.timelinePrevDays))
+      const val = parseInt(settings.timelinePrevDays)
+      // Clamp to valid range (0-999) for defensive programming
+      setPrevDays(Math.max(0, Math.min(999, val || 0)))
     }
     if (settings.timelineNextDays) {
-      setNextDays(parseInt(settings.timelineNextDays))
+      const val = parseInt(settings.timelineNextDays)
+      // Clamp to valid range (0-999) for defensive programming
+      setNextDays(Math.max(0, Math.min(999, val || 0)))
     }
     if (settings.showOverlapVisualization !== undefined) {
       setShowOverlaps(settings.showOverlapVisualization !== 'false')

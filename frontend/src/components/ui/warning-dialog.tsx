@@ -16,7 +16,9 @@ interface WarningDialogProps {
   message: string | React.ReactNode
   confirmLabel?: string
   cancelLabel?: string
+  skipLabel?: string
   onConfirm: () => void
+  onSkip?: () => void
 }
 
 export function WarningDialog({
@@ -26,11 +28,13 @@ export function WarningDialog({
   message,
   confirmLabel = "Continue",
   cancelLabel = "Cancel",
+  skipLabel,
   onConfirm,
+  onSkip,
 }: WarningDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
@@ -49,6 +53,17 @@ export function WarningDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {cancelLabel}
           </Button>
+          {onSkip && skipLabel && (
+            <Button
+              onClick={() => {
+                onSkip()
+                onOpenChange(false)
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              {skipLabel}
+            </Button>
+          )}
           <Button
             onClick={() => {
               onConfirm()

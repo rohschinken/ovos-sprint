@@ -4,6 +4,7 @@ import { format, addDays } from 'date-fns'
 import debounce from 'lodash.debounce'
 import { isHoliday, getHolidayName } from '@/lib/holidays'
 import { useDragContext } from '@/contexts/DragContext'
+import type { TimelineWarning } from '@/components/timeline/types'
 
 /**
  * Custom hook for managing drag-to-assign functionality in the timeline
@@ -17,11 +18,13 @@ import { useDragContext } from '@/contexts/DragContext'
  * @param projectAssignments - Array of project assignments
  * @param members - Array of team members
  * @param settings - Settings object with configuration
- * @param dayAssignments - Array of day assignments
- * @param dates - Array of dates in the timeline
- * @param createDayAssignmentMutation - Mutation for creating day assignments
+ * @param _dayAssignments - Array of day assignments (unused, kept for API compatibility)
+ * @param _dates - Array of dates in the timeline (unused, kept for API compatibility)
+ * @param createBatchDayAssignmentsMutation - Mutation for creating batch day assignments
  * @param setTimelineWarning - Function to set timeline warning state
  * @param isNonWorkingDay - Function to check if a date is a non-working day for a member
+ * @param getDayAssignmentId - Function to get day assignment ID for a specific date
+ * @param deleteBatchDayAssignmentsMutation - Mutation for deleting batch day assignments
  * @returns Object with drag state and handler functions
  */
 export function useDragAssignment(
@@ -31,12 +34,10 @@ export function useDragAssignment(
   _dayAssignments: any[],
   _dates: Date[],
   createBatchDayAssignmentsMutation: UseMutationResult<any, unknown, { projectAssignmentId: number; dates: string[] }, unknown>,
-  setTimelineWarning: (warning: {
-    type: 'holiday' | 'non-working-day'
-    message: string | React.ReactNode
-    onConfirm: () => void
-  } | null) => void,
-  isNonWorkingDay: (memberId: number, date: Date) => boolean
+  setTimelineWarning: (warning: TimelineWarning | null) => void,
+  isNonWorkingDay: (memberId: number, date: Date) => boolean,
+  getDayAssignmentId: (assignmentId: number, date: Date) => number | undefined,
+  deleteBatchDayAssignmentsMutation: UseMutationResult<any, unknown, number[], unknown>
 ) {
   // Use DragContext instead of local state to prevent Timeline re-renders
   const { getDragState, setDragState: setContextDragState, isDayInDragRange } = useDragContext()
@@ -45,7 +46,7 @@ export function useDragAssignment(
    * Debounced version of setDragState for smooth drag updates (~60fps)
    */
   const debouncedSetDragState = useMemo(
-    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null }) => {
+    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null; mode: 'create' | 'delete' | null }) => {
       setContextDragState(newState)
     }, 16), // ~60fps
     [setContextDragState]
@@ -74,18 +75,31 @@ export function useDragAssignment(
    * Handle mouse down on assignment cell to start drag
    */
   const handleMouseDown = useCallback((assignmentId: number, date: Date, event: React.MouseEvent) => {
-    if (!canEditAssignment(assignmentId)) return
-
-    // Don't start drag if it's a right-click or CTRL/CMD+click (these are for deletion)
-    if (event.button === 2 || event.ctrlKey || event.metaKey) {
+    if (!canEditAssignment(assignmentId)) {
       return
     }
 
-    // Always set drag state - warnings will be checked in handleMouseUp
+    // Detect delete mode (right-click or CTRL/CMD+click)
+    const isDeleteTrigger = event.button === 2 || event.ctrlKey || event.metaKey
+
+    if (isDeleteTrigger) {
+      // Start DELETE drag (from any cell - assigned or not)
+      // Only assigned cells in the range will be deleted on mouseup
+      setContextDragState({
+        assignmentId,
+        startDate: date,
+        endDate: date,
+        mode: 'delete',
+      })
+      return
+    }
+
+    // Start CREATE drag (existing behavior)
     setContextDragState({
       assignmentId,
       startDate: date,
       endDate: date,
+      mode: 'create',
     })
   }, [setContextDragState])
 
@@ -125,6 +139,28 @@ export function useDragAssignment(
       const daysDiff = Math.floor(
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
       )
+
+      // Handle DELETE mode
+      if (dragState.mode === 'delete') {
+        // Collect day assignment IDs for all assigned dates in range
+        const idsToDelete: number[] = []
+        for (let i = 0; i <= daysDiff; i++) {
+          const date = addDays(start, i)
+          const dayAssignmentId = getDayAssignmentId(dragState.assignmentId, date)
+          if (dayAssignmentId) {
+            idsToDelete.push(dayAssignmentId)
+          }
+        }
+
+        // Execute batch delete if we have IDs
+        if (idsToDelete.length > 0) {
+          deleteBatchDayAssignmentsMutation.mutate(idsToDelete)
+        }
+
+        // Clear drag state
+        setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+        return
+      }
 
       // Get the assignment to check member and warnings
       const assignment = projectAssignments.find((pa: any) => pa.id === dragState.assignmentId)
@@ -172,7 +208,7 @@ export function useDragAssignment(
             type: holidays.length > 0 ? 'holiday' : 'non-working-day',
             message,
             onConfirm: () => {
-              // User confirmed, create all assignments in batch
+              // User confirmed, create all assignments in batch including non-working days
               const dates: string[] = []
               for (let i = 0; i <= daysDiff; i++) {
                 const date = addDays(start, i)
@@ -184,10 +220,29 @@ export function useDragAssignment(
               })
               setTimelineWarning(null)
             },
+            onSkip: () => {
+              // User chose to skip non-working days, filter them out
+              const workingDates: string[] = []
+              for (let i = 0; i <= daysDiff; i++) {
+                const date = addDays(start, i)
+                // Only include working days (skip holidays and non-working days)
+                if (!isHoliday(date) && !isNonWorkingDay(assignment.teamMemberId, date)) {
+                  workingDates.push(format(date, 'yyyy-MM-dd'))
+                }
+              }
+              // Only create assignments if there are working days in the range
+              if (workingDates.length > 0) {
+                createBatchDayAssignmentsMutation.mutate({
+                  projectAssignmentId: dragState.assignmentId!,
+                  dates: workingDates,
+                })
+              }
+              setTimelineWarning(null)
+            },
           })
 
           // Clear drag state but don't create assignments yet (waiting for confirmation)
-          setContextDragState({ assignmentId: null, startDate: null, endDate: null })
+          setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
           return
         }
       }
@@ -204,8 +259,8 @@ export function useDragAssignment(
       })
     }
 
-    setContextDragState({ assignmentId: null, startDate: null, endDate: null })
-  }, [getDragState, setContextDragState, projectAssignments, members, settings, isNonWorkingDay, setTimelineWarning, createBatchDayAssignmentsMutation])
+    setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+  }, [getDragState, setContextDragState, projectAssignments, members, settings, isNonWorkingDay, setTimelineWarning, createBatchDayAssignmentsMutation, getDayAssignmentId, deleteBatchDayAssignmentsMutation])
 
   // Global mouseup listener to complete drag even if mouse leaves component
   useEffect(() => {
@@ -220,11 +275,19 @@ export function useDragAssignment(
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
   }, [getDragState, handleMouseUp])
 
+  /**
+   * Get current drag mode
+   */
+  const getDragMode = useCallback(() => {
+    return getDragState().mode
+  }, [getDragState])
+
   return {
     handleMouseDown,
     handleMouseEnter,
     handleMouseUp,
     isDayInDragRange,
+    getDragMode,
     canEditAssignment,
   }
 }

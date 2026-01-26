@@ -213,6 +213,7 @@ function TimelineInner({
   const {
     deleteDayAssignmentMutation,
     createBatchDayAssignmentsMutation,
+    deleteBatchDayAssignmentsMutation,
     createMilestoneMutation,
     deleteMilestoneMutation,
     createDayOffMutation,
@@ -220,7 +221,13 @@ function TimelineInner({
     saveAssignmentGroupMutation,
   } = useTimelineMutations()
 
-  const { handleMouseDown, handleMouseEnter, isDayInDragRange } = useDragAssignment(
+  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const key = `${assignmentId}-${dateStr}`
+    return dayAssignmentIndex.get(key)?.id
+  }, [dayAssignmentIndex])
+
+  const { handleMouseDown, handleMouseEnter, isDayInDragRange, getDragMode } = useDragAssignment(
     projectAssignments,
     filteredMembersWithProjects,
     settings,
@@ -228,7 +235,9 @@ function TimelineInner({
     dates,
     createBatchDayAssignmentsMutation,
     setTimelineWarning,
-    isNonWorkingDay
+    isNonWorkingDay,
+    getDayAssignmentId,
+    deleteBatchDayAssignmentsMutation
   )
 
   // Reset initialization flag when view mode changes
@@ -269,12 +278,6 @@ function TimelineInner({
     }
     return false
   }
-
-  const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    const key = `${assignmentId}-${dateStr}`
-    return dayAssignmentIndex.get(key)?.id
-  }, [dayAssignmentIndex])
 
   const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
@@ -403,7 +406,9 @@ function TimelineInner({
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}
+      isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
+      getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
     />
@@ -438,7 +443,9 @@ function TimelineInner({
       canEditProject={canEditProject}
       canEditAssignment={canEditAssignment}
       isDayOff={isDayOff}
+      isNonWorkingDay={isNonWorkingDay}
       isDayInDragRange={isDayInDragRange}
+      getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
     />
@@ -465,9 +472,11 @@ function TimelineInner({
         title={timelineWarning?.type === 'holiday' ? 'Holiday Warning' : 'Non-Working Day'}
         message={timelineWarning?.message || ''}
         confirmLabel="Continue Anyway"
+        skipLabel={timelineWarning?.onSkip ? "Skip Non-Working Days" : undefined}
         onConfirm={() => {
           timelineWarning?.onConfirm()
         }}
+        onSkip={timelineWarning?.onSkip}
       />
 
       {/* Assignment Edit Popover */}

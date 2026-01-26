@@ -43,6 +43,9 @@ export function CollapsedAssignmentBar({
   isTentative = false,
   hasOverlap,
   showOverlaps,
+  memberId,
+  isNonWorkingDay,
+  isHoliday,
 }: CollapsedAssignmentBarProps) {
   // Check if there's an assignment on this date
   const hasAssignment = type === 'project'
@@ -62,19 +65,35 @@ export function CollapsedAssignmentBar({
     ? projectHasAssignmentOnNextDay(projectAssignments, dayAssignments, id, date)
     : memberHasAssignmentOnNextDay(projectAssignments, dayAssignments, id, date)
 
+  // Check if this date is a non-working day (member view only)
+  const isOnNonWorkingDay = type === 'member' && memberId && (
+    isHoliday?.(date) ||
+    isNonWorkingDay?.(memberId, date)
+  )
+
   // Determine color based on type and overlap
   const isOverlap = showOverlaps && hasOverlap
   const colorClasses = isOverlap
     ? 'bg-orange-500/40 border-orange-400'
     : 'bg-confirmed border-emerald-400'
 
+  // Dynamic height and border classes based on non-working day
+  const heightClasses = isOnNonWorkingDay
+    ? 'h-0 border-t-[2px]' // Thin line: zero height + 2px top border
+    : 'h-3' // Normal collapsed height (12px)
+
+  const borderClasses = isOnNonWorkingDay
+    ? 'border-t-[2px]' // Only top border for thin line
+    : getCollapsedBarBorderClass(hasPrevDay, hasNextDay) // Full borders
+
   return (
     <div
       className={cn(
-        'h-3 shadow-sm',
+        heightClasses, // CHANGED from static 'h-3'
+        'shadow-sm',
         getCollapsedBarWidthClass(hasNextDay),
         getCollapsedBarRoundedClass(hasPrevDay, hasNextDay),
-        getCollapsedBarBorderClass(hasPrevDay, hasNextDay),
+        borderClasses, // CHANGED from getCollapsedBarBorderClass()
         colorClasses,
         // Apply opacity for tentative projects (only in project view)
         type === 'project' && isTentative && 'opacity-60'
