@@ -35,7 +35,6 @@ describe('Teams Batch Operations', () => {
     // Create test team
     const [team] = await db.insert(teams).values({
       name: 'Test Team',
-      icon: '🧪',
     }).returning()
     testTeamId = team.id
 
