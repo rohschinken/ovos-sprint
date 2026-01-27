@@ -4,12 +4,6 @@
 
 ## Medium Priority
 
-### Feature: Improve UX for managing relations
-- [ ] Assigning members to teams must not only be possible in Team View but also in Members View
-- [ ] When editing a team: allow (un)assigning of multiple members at once
-- [ ] When editing a member: allow (un)assigning from multiple teams at once
-- [ ] When editing a project: allow (un)assigning of multiple members at once
-
 ### Feature: Improve UX for creating projects
 - [ ] allow typing the name of a customer to filter customers (allows for quicker finding the customer if there are a lot)
 
