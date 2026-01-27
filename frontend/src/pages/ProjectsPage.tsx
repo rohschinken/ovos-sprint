@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import AssignMemberDialog from '@/components/AssignMemberDialog'
 import {
   Dialog,
@@ -32,7 +35,7 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users, Archive } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Clock, Users, Archive, Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
@@ -47,6 +50,7 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [assigningProject, setAssigningProject] = useState<Project | null>(null)
   const [customerId, setCustomerId] = useState<number | ''>('')
+  const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('confirmed')
   const [searchQuery, setSearchQuery] = useState('')
@@ -488,22 +492,60 @@ export default function ProjectsPage() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="customerId">Customer</Label>
-                <Select
-                  value={customerId === '' ? undefined : String(customerId)}
-                  onValueChange={(value) => setCustomerId(Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={String(customer.id)}>
-                        {customer.icon ? `${customer.icon} ` : ''}{customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Customer</Label>
+                <Popover open={customerSelectOpen} onOpenChange={setCustomerSelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerSelectOpen}
+                      className="w-full justify-between"
+                    >
+                      {customerId !== '' ? (
+                        <>
+                          {customers.find((c) => c.id === customerId)?.icon && (
+                            <span className="mr-2">
+                              {customers.find((c) => c.id === customerId)?.icon}
+                            </span>
+                          )}
+                          {customers.find((c) => c.id === customerId)?.name}
+                        </>
+                      ) : (
+                        'Select a customer'
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search customers..." />
+                      <CommandEmpty>No customer found.</CommandEmpty>
+                      <CommandGroup>
+                        <ScrollArea className="h-64">
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={customer.name}
+                              onSelect={() => {
+                                setCustomerId(customer.id)
+                                setCustomerSelectOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  customerId === customer.id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {customer.icon && <span className="mr-2">{customer.icon}</span>}
+                              {customer.name}
+                            </CommandItem>
+                          ))}
+                        </ScrollArea>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {customers.length === 0 && (
                   <p className="text-xs text-muted-foreground">
                     No customers available. Create one first in the Customers page.
