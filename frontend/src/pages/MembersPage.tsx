@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Pencil, Trash2, Upload, Camera, UserPlus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Upload, Camera, UserPlus, Users, X } from 'lucide-react'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { WarningDialog } from '@/components/ui/warning-dialog'
@@ -67,6 +68,9 @@ export default function MembersPage() {
       teamLinks: number
     } | null
   } | null>(null)
+  const [selectedMemberForTeams, setSelectedMemberForTeams] = useState<TeamMember | null>(null)
+  const [showManageTeamsDialog, setShowManageTeamsDialog] = useState(false)
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -76,6 +80,14 @@ export default function MembersPage() {
     queryFn: async () => {
       const response = await api.get('/members')
       return response.data as TeamMember[]
+    },
+  })
+
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const response = await api.get('/teams')
+      return response.data
     },
   })
 
@@ -231,6 +243,54 @@ export default function MembersPage() {
     }
   }
 
+  const handleManageTeams = async (member: TeamMember) => {
+    setSelectedMemberForTeams(member)
+    setShowManageTeamsDialog(true)
+
+    // Load member's current teams
+    try {
+      const response = await api.get('/teams/members/relationships')
+      const memberTeams = response.data
+        .filter((rel: any) => rel.teamMemberId === member.id)
+        .map((rel: any) => rel.teamId)
+      setSelectedTeamIds(memberTeams)
+    } catch (error) {
+      setSelectedTeamIds([])
+    }
+  }
+
+  const handleToggleTeam = async (teamId: number, isCurrentlyAssigned: boolean) => {
+    if (!selectedMemberForTeams) return
+
+    try {
+      if (isCurrentlyAssigned) {
+        // Remove from team
+        await api.delete(`/teams/${teamId}/members/${selectedMemberForTeams.id}`)
+        setSelectedTeamIds(prev => prev.filter(id => id !== teamId))
+        toast({
+          title: 'Success',
+          description: 'Member removed from team',
+        })
+      } else {
+        // Add to team
+        await api.post(`/teams/${teamId}/members/${selectedMemberForTeams.id}`)
+        setSelectedTeamIds(prev => [...prev, teamId])
+        toast({
+          title: 'Success',
+          description: 'Member added to team',
+        })
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: isCurrentlyAssigned ? 'Failed to remove from team' : 'Failed to add to team',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const filteredMembers = members.filter((member) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
@@ -379,6 +439,14 @@ export default function MembersPage() {
                         title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleManageTeams(member)}
+                        title="Manage Teams"
+                      >
+                        <Users className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -664,6 +732,61 @@ export default function MembersPage() {
         }}
         isLoading={deleteMutation.isPending}
       />
+
+      {/* Manage Teams Dialog */}
+      <Dialog open={showManageTeamsDialog} onOpenChange={setShowManageTeamsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Teams - {selectedMemberForTeams?.firstName} {selectedMemberForTeams?.lastName}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Teams</Label>
+              <ScrollArea className="h-64 rounded-md border p-4">
+                <div className="space-y-2">
+                  {allTeams.map((team: any) => {
+                    const isAssigned = selectedTeamIds.includes(team.id)
+                    return (
+                      <div
+                        key={team.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted"
+                      >
+                        <span className="text-sm">{team.name}</span>
+                        <Button
+                          size="sm"
+                          variant={isAssigned ? 'destructive' : 'default'}
+                          onClick={() => handleToggleTeam(team.id, isAssigned)}
+                        >
+                          {isAssigned ? (
+                            <>
+                              <X className="h-4 w-4 mr-1" />
+                              Remove
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Add
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowManageTeamsDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
     </div>
   )
