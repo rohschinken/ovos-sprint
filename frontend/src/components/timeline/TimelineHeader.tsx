@@ -50,7 +50,7 @@ export function TimelineHeader({
   }
 
   return (
-    <div className="sticky top-0 bg-background z-30 shadow-sm">
+    <div className="sticky top-0 bg-background z-[60] shadow-sm">
       {/* Month labels row */}
       <div className="flex border-b">
         <div className="w-64 border-r bg-muted/30"></div>
@@ -94,8 +94,8 @@ export function TimelineHeader({
                 isToday && 'bg-muted/50',
                 isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                 isWeekStart(date, dateIndex) &&
-                  !isFirstDayOfMonth(date) &&
-                  'border-l-4 border-l-muted-foreground'
+                !isFirstDayOfMonth(date) &&
+                'border-l-4 border-l-muted-foreground'
               )}
             >
               <div className={cn('font-medium', isToday && 'text-primary')}>
