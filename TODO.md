@@ -4,9 +4,6 @@
 
 ## Medium Priority
 
-### Feature: Improve UX for creating projects
-- [ ] allow typing the name of a customer to filter customers (allows for quicker finding the customer if there are a lot)
-
 ## Low Priority
 
 ### Feature: add a new toggle for abstract week view
