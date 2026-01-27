@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { db, teams, teamMembers, teamTeamMembers } from '../db/index.js'
 import { teamSchema } from '../utils/validation.js'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 
 const router = Router()
 
@@ -124,6 +124,88 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) 
     res.status(204).send()
   } catch (error) {
     console.error('Delete team error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Batch add multiple members to a team (admin only) - MUST come before /:id/members/:memberId
+router.post('/:id/members/batch', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const teamId = parseInt(req.params.id)
+    const data = req.body as { memberIds: number[] }
+
+    if (!Array.isArray(data.memberIds)) {
+      return res.status(400).json({ error: 'Invalid request: memberIds array required' })
+    }
+
+    // Verify team exists
+    const team = await db.query.teams.findFirst({
+      where: (teams, { eq }) => eq(teams.id, teamId)
+    })
+
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' })
+    }
+
+    // Verify all members exist
+    const members = await db.query.teamMembers.findMany({
+      where: (teamMembers, { inArray }) => inArray(teamMembers.id, data.memberIds)
+    })
+
+    if (members.length !== data.memberIds.length) {
+      return res.status(404).json({ error: 'Some members not found' })
+    }
+
+    // Get existing relationships to avoid duplicates
+    const existing = await db.query.teamTeamMembers.findMany({
+      where: (ttm, { eq }) => eq(ttm.teamId, teamId)
+    })
+    const existingIds = new Set(existing.map(e => e.teamMemberId))
+
+    // Filter to only new members
+    const newMemberIds = data.memberIds.filter(id => !existingIds.has(id))
+
+    // Insert new relationships
+    if (newMemberIds.length > 0) {
+      await db.insert(teamTeamMembers).values(
+        newMemberIds.map(memberId => ({
+          teamId,
+          teamMemberId: memberId
+        }))
+      )
+    }
+
+    res.status(201).json({
+      added: newMemberIds.length,
+      skipped: data.memberIds.length - newMemberIds.length
+    })
+  } catch (error) {
+    console.error('Batch add members to team error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Batch remove multiple members from a team (admin only) - MUST come before /:id/members/:memberId
+router.delete('/:id/members/batch', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const teamId = parseInt(req.params.id)
+    const data = req.body as { memberIds: number[] }
+
+    if (!Array.isArray(data.memberIds)) {
+      return res.status(400).json({ error: 'Invalid request: memberIds array required' })
+    }
+
+    // Delete all specified relationships
+    await db.delete(teamTeamMembers).where(
+      and(
+        eq(teamTeamMembers.teamId, teamId),
+        inArray(teamTeamMembers.teamMemberId, data.memberIds)
+      )
+    )
+
+    res.status(204).send()
+  } catch (error) {
+    console.error('Batch remove members from team error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })
