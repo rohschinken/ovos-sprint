@@ -359,271 +359,271 @@ export default function ProjectsPage() {
 
   return (
     <div className="container mx-auto">
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex justify-between items-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-6"
       >
-        <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">Manage your projects</p>
-        </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Project
-          </Button>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex justify-between items-center"
+        >
+          <div>
+            <h1 className="text-3xl font-bold">Projects</h1>
+            <p className="text-muted-foreground">Manage your projects</p>
+          </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Project
+            </Button>
+          </motion.div>
         </motion.div>
-      </motion.div>
 
-      <div className="flex items-center gap-4">
-        <Input
-          placeholder="Search projects by name or customer..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={showArchived}
-            onCheckedChange={setShowArchived}
-            id="show-archived"
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search projects by name or customer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md"
           />
-          <Label htmlFor="show-archived" className="text-sm cursor-pointer">
-            Show archived projects
-          </Label>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={showArchived}
+              onCheckedChange={setShowArchived}
+              id="show-archived"
+            />
+            <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+              Show archived projects
+            </Label>
+          </div>
         </div>
-      </div>
 
-      {/* Project Manager: Show "My Projects" and "Other Projects" sections */}
-      {isProjectManager ? (
-        <>
-          {/* My Projects Section */}
-          {myProjects.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">My Projects</h2>
-              <ProjectTable
-                projects={myProjects}
-                canEdit={() => isAdmin}
-                onEdit={(project) => {
-                  setEditingProject(project)
-                  setCustomerId(project.customerId)
-                  setName(project.name)
-                  setStatus(project.status)
-                }}
-                onDelete={handleDeleteClick}
-                onAssign={(project) => setAssigningProject(project)}
-              />
-            </div>
-          )}
-
-          {/* Other Projects Section */}
-          {otherProjects.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-muted-foreground">Other Projects</h2>
-              <ProjectTable
-                projects={otherProjects}
-                canEdit={() => false}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                onAssign={() => {}}
-              />
-            </div>
-          )}
-
-          {myProjects.length === 0 && otherProjects.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">
-              No projects found. Create your first project!
-            </p>
-          )}
-        </>
-      ) : (
-        /* Admin: Show all projects together */
-        <>
-          <ProjectTable
-            projects={sortedProjects}
-            canEdit={() => true}
-            onEdit={(project) => {
-              setEditingProject(project)
-              setCustomerId(project.customerId)
-              setName(project.name)
-              setStatus(project.status)
-            }}
-            onDelete={handleDeleteClick}
-            onAssign={(project) => setAssigningProject(project)}
-          />
-
-          {sortedProjects.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">
-              No projects found. Create your first project!
-            </p>
-          )}
-        </>
-      )}
-
-      <Dialog
-        open={isCreateOpen || !!editingProject}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsCreateOpen(false)
-            setEditingProject(null)
-            resetForm()
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingProject ? 'Edit Project' : 'Create Project'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingProject
-                ? 'Update the project details'
-                : 'Create a new project'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Customer</Label>
-                <Popover open={customerSelectOpen} onOpenChange={setCustomerSelectOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerSelectOpen}
-                      className="w-full justify-between"
-                    >
-                      {customerId !== '' ? (
-                        <>
-                          {customers.find((c) => c.id === customerId)?.icon && (
-                            <span className="mr-2">
-                              {customers.find((c) => c.id === customerId)?.icon}
-                            </span>
-                          )}
-                          {customers.find((c) => c.id === customerId)?.name}
-                        </>
-                      ) : (
-                        'Select a customer'
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search customers..." />
-                      <CommandEmpty>No customer found.</CommandEmpty>
-                      <CommandGroup>
-                        <ScrollArea className="h-64">
-                          {customers.map((customer) => (
-                            <CommandItem
-                              key={customer.id}
-                              value={customer.name}
-                              onSelect={() => {
-                                setCustomerId(customer.id)
-                                setCustomerSelectOpen(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  'mr-2 h-4 w-4',
-                                  customerId === customer.id ? 'opacity-100' : 'opacity-0'
-                                )}
-                              />
-                              {customer.icon && <span className="mr-2">{customer.icon}</span>}
-                              {customer.name}
-                            </CommandItem>
-                          ))}
-                        </ScrollArea>
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {customers.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No customers available. Create one first in the Customers page.
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+        {/* Project Manager: Show "My Projects" and "Other Projects" sections */}
+        {isProjectManager ? (
+          <>
+            {/* My Projects Section */}
+            {myProjects.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">My Projects</h2>
+                <ProjectTable
+                  projects={myProjects}
+                  canEdit={() => isAdmin}
+                  onEdit={(project) => {
+                    setEditingProject(project)
+                    setCustomerId(project.customerId)
+                    setName(project.name)
+                    setStatus(project.status)
+                  }}
+                  onDelete={handleDeleteClick}
+                  onAssign={(project) => setAssigningProject(project)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={status}
-                  onValueChange={(value) => setStatus(value as ProjectStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="tentative">Tentative</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
+            )}
+
+            {/* Other Projects Section */}
+            {otherProjects.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-muted-foreground">Other Projects</h2>
+                <ProjectTable
+                  projects={otherProjects}
+                  canEdit={() => false}
+                  onEdit={() => { }}
+                  onDelete={() => { }}
+                  onAssign={() => { }}
+                />
               </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? (editingProject ? 'Saving...' : 'Creating...')
-                  : (editingProject ? 'Update' : 'Create')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            )}
 
-      {assigningProject && (
-        <AssignMemberDialog
-          project={assigningProject}
-          open={!!assigningProject}
-          onOpenChange={(open) => !open && setAssigningProject(null)}
+            {myProjects.length === 0 && otherProjects.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No projects found. Create your first project!
+              </p>
+            )}
+          </>
+        ) : (
+          /* Admin: Show all projects together */
+          <>
+            <ProjectTable
+              projects={sortedProjects}
+              canEdit={() => true}
+              onEdit={(project) => {
+                setEditingProject(project)
+                setCustomerId(project.customerId)
+                setName(project.name)
+                setStatus(project.status)
+              }}
+              onDelete={handleDeleteClick}
+              onAssign={(project) => setAssigningProject(project)}
+            />
+
+            {sortedProjects.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No projects found. Create your first project!
+              </p>
+            )}
+          </>
+        )}
+
+        <Dialog
+          open={isCreateOpen || !!editingProject}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsCreateOpen(false)
+              setEditingProject(null)
+              resetForm()
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingProject ? 'Edit Project' : 'Create Project'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingProject
+                  ? 'Update the project details'
+                  : 'Create a new project'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Customer</Label>
+                  <Popover open={customerSelectOpen} onOpenChange={setCustomerSelectOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerSelectOpen}
+                        className="w-full justify-start"
+                      >
+                        {customerId !== '' ? (
+                          <>
+                            {customers.find((c) => c.id === customerId)?.icon && (
+                              <span className="mr-2">
+                                {customers.find((c) => c.id === customerId)?.icon}
+                              </span>
+                            )}
+                            <span className="text-left w-full">{customers.find((c) => c.id === customerId)?.name}</span>
+                          </>
+                        ) : (
+                          <span className="text-left w-full">Select a customer</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search customers..." />
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup>
+                          <ScrollArea className="h-64">
+                            {customers.map((customer) => (
+                              <CommandItem
+                                key={customer.id}
+                                value={customer.name}
+                                onSelect={() => {
+                                  setCustomerId(customer.id)
+                                  setCustomerSelectOpen(false)
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    customerId === customer.id ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                {customer.icon && <span className="mr-2">{customer.icon}</span>}
+                                {customer.name}
+                              </CommandItem>
+                            ))}
+                          </ScrollArea>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {customers.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      No customers available. Create one first in the Customers page.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Project Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={status}
+                    onValueChange={(value) => setStatus(value as ProjectStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="tentative">Tentative</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? (editingProject ? 'Saving...' : 'Creating...')
+                    : (editingProject ? 'Update' : 'Create')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {assigningProject && (
+          <AssignMemberDialog
+            project={assigningProject}
+            open={!!assigningProject}
+            onOpenChange={(open) => !open && setAssigningProject(null)}
+          />
+        )}
+
+        {/* Delete Project Confirmation Dialog */}
+        <AlertDialog
+          open={!!deleteDialog}
+          onOpenChange={() => setDeleteDialog(null)}
+          title="Delete Project"
+          description="This will permanently delete the project and all associated data. This action cannot be undone."
+          entityName={deleteDialog?.projectName}
+          cascadeWarning={deleteDialog?.cascadeInfo ? {
+            items: [
+              { type: 'project assignments', count: deleteDialog.cascadeInfo.assignments },
+              { type: 'day assignments', count: deleteDialog.cascadeInfo.dayAssignments },
+              { type: 'milestones', count: deleteDialog.cascadeInfo.milestones },
+            ].filter(item => item.count > 0)
+          } : undefined}
+          confirmLabel="Delete Project"
+          onConfirm={() => {
+            if (deleteDialog) {
+              deleteMutation.mutate(deleteDialog.projectId)
+              setDeleteDialog(null)
+            }
+          }}
+          isLoading={deleteMutation.isPending}
         />
-      )}
-
-      {/* Delete Project Confirmation Dialog */}
-      <AlertDialog
-        open={!!deleteDialog}
-        onOpenChange={() => setDeleteDialog(null)}
-        title="Delete Project"
-        description="This will permanently delete the project and all associated data. This action cannot be undone."
-        entityName={deleteDialog?.projectName}
-        cascadeWarning={deleteDialog?.cascadeInfo ? {
-          items: [
-            { type: 'project assignments', count: deleteDialog.cascadeInfo.assignments },
-            { type: 'day assignments', count: deleteDialog.cascadeInfo.dayAssignments },
-            { type: 'milestones', count: deleteDialog.cascadeInfo.milestones },
-          ].filter(item => item.count > 0)
-        } : undefined}
-        confirmLabel="Delete Project"
-        onConfirm={() => {
-          if (deleteDialog) {
-            deleteMutation.mutate(deleteDialog.projectId)
-            setDeleteDialog(null)
-          }
-        }}
-        isLoading={deleteMutation.isPending}
-      />
-    </motion.div>
+      </motion.div>
     </div>
   )
 }
