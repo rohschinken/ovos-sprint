@@ -129,6 +129,92 @@ router.get('/members/:memberId', authenticate, async (req, res) => {
   }
 })
 
+// Batch assign multiple members to a project - MUST come before /projects/:id
+router.post('/projects/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
+  try {
+    const data = req.body as { projectId: number; memberIds: number[] }
+
+    if (!data.projectId || !Array.isArray(data.memberIds)) {
+      return res.status(400).json({ error: 'Invalid request: projectId and memberIds array required' })
+    }
+
+    // Check if user can modify this project
+    if (!await canModifyProject(req.user!.userId, req.user!.role, data.projectId)) {
+      return res.status(403).json({ error: 'You can only assign members to your own projects' })
+    }
+
+    // Get existing assignments to avoid duplicates
+    const existing = await db.query.projectAssignments.findMany({
+      where: (pa, { eq }) => eq(pa.projectId, data.projectId)
+    })
+    const existingIds = new Set(existing.map(e => e.teamMemberId))
+
+    // Filter to only new members
+    const newMemberIds = data.memberIds.filter(id => !existingIds.has(id))
+
+    // Insert new assignments
+    const results = []
+    if (newMemberIds.length > 0) {
+      for (const memberId of newMemberIds) {
+        const [assignment] = await db
+          .insert(projectAssignments)
+          .values({
+            projectId: data.projectId,
+            teamMemberId: memberId
+          })
+          .returning()
+        results.push(assignment)
+      }
+    }
+
+    res.status(201).json({
+      added: newMemberIds.length,
+      skipped: data.memberIds.length - newMemberIds.length,
+      assignments: results
+    })
+  } catch (error) {
+    console.error('Batch assign members to project error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Batch unassign multiple members from a project - MUST come before /projects/:id
+router.delete('/projects/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
+  try {
+    const data = req.body as { ids: number[] }
+
+    if (!Array.isArray(data.ids)) {
+      return res.status(400).json({ error: 'Invalid request: ids array required' })
+    }
+
+    // Get assignments to check permissions
+    const assignments = await db.query.projectAssignments.findMany({
+      where: (pa, { inArray }) => inArray(pa.id, data.ids)
+    })
+
+    if (assignments.length !== data.ids.length) {
+      return res.status(404).json({ error: 'Some assignments not found' })
+    }
+
+    // Check project ownership for all assignments
+    for (const assignment of assignments) {
+      if (!await canModifyProject(req.user!.userId, req.user!.role, assignment.projectId)) {
+        return res.status(403).json({ error: 'You can only unassign members from your own projects' })
+      }
+    }
+
+    // Delete assignments
+    await db.delete(projectAssignments).where(
+      inArray(projectAssignments.id, data.ids)
+    )
+
+    res.status(204).send()
+  } catch (error) {
+    console.error('Batch unassign members from project error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 // Create project assignment (admin or project manager for their own projects)
 router.post('/projects', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {

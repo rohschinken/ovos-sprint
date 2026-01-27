@@ -7,13 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -45,13 +39,9 @@ export default function TeamsPage() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [managingTeam, setManagingTeam] = useState<Team | null>(null)
   const [teamName, setTeamName] = useState('')
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([])
+  const [selectedCurrentIds, setSelectedCurrentIds] = useState<number[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [removeDialog, setRemoveDialog] = useState<{
-    teamId: number
-    memberId: number
-    memberName: string
-  } | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     teamId: number
     teamName: string
@@ -124,26 +114,48 @@ export default function TeamsPage() {
     },
   })
 
-  const addMemberMutation = useMutation({
-    mutationFn: async ({ teamId, memberId }: { teamId: number; memberId: number }) => {
-      await api.post(`/teams/${teamId}/members/${memberId}`)
+  const batchAddMembersMutation = useMutation({
+    mutationFn: async ({ teamId, memberIds }: { teamId: number; memberIds: number[] }) => {
+      const response = await api.post(`/teams/${teamId}/members/batch`, { memberIds })
+      return response.data
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['teams', 'members', 'relationships'] })
-      setSelectedMemberId('')
-      toast({ title: 'Member added to team' })
+      toast({
+        title: 'Success',
+        description: `Added ${data.added} member(s)${data.skipped > 0 ? `, ${data.skipped} already assigned` : ''}`,
+      })
+      setSelectedMemberIds([])
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to add members to team',
+        variant: 'destructive',
+      })
     },
   })
 
-  const removeMemberMutation = useMutation({
-    mutationFn: async ({ teamId, memberId }: { teamId: number; memberId: number }) => {
-      await api.delete(`/teams/${teamId}/members/${memberId}`)
+  const batchRemoveMembersMutation = useMutation({
+    mutationFn: async ({ teamId, memberIds }: { teamId: number; memberIds: number[] }) => {
+      await api.delete(`/teams/${teamId}/members/batch`, { data: { memberIds } })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['teams', 'members', 'relationships'] })
-      toast({ title: 'Member removed from team' })
+      toast({
+        title: 'Success',
+        description: 'Members removed from team',
+      })
+      setSelectedCurrentIds([])
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to remove members',
+        variant: 'destructive',
+      })
     },
   })
 
@@ -156,21 +168,22 @@ export default function TeamsPage() {
     }
   }
 
-  const handleAddMember = () => {
-    if (!managingTeam || !selectedMemberId) return
-    addMemberMutation.mutate({
-      teamId: managingTeam.id,
-      memberId: parseInt(selectedMemberId),
-    })
+  const handleBatchAddMembers = () => {
+    if (managingTeam && selectedMemberIds.length > 0) {
+      batchAddMembersMutation.mutate({
+        teamId: managingTeam.id,
+        memberIds: selectedMemberIds
+      })
+    }
   }
 
-  const handleRemoveMember = (memberId: number, memberName: string) => {
-    if (!managingTeam) return
-    setRemoveDialog({
-      teamId: managingTeam.id,
-      memberId,
-      memberName,
-    })
+  const handleBatchRemoveMembers = () => {
+    if (managingTeam && selectedCurrentIds.length > 0) {
+      batchRemoveMembersMutation.mutate({
+        teamId: managingTeam.id,
+        memberIds: selectedCurrentIds
+      })
+    }
   }
 
   const availableMembers = allMembers.filter(
@@ -360,7 +373,8 @@ export default function TeamsPage() {
         onOpenChange={(open) => {
           if (!open) {
             setManagingTeam(null)
-            setSelectedMemberId('')
+            setSelectedMemberIds([])
+            setSelectedCurrentIds([])
           }
         }}
       >
@@ -372,41 +386,64 @@ export default function TeamsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            {/* Current Members */}
+            {/* Current Members - Multi-select */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Current Members</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">
+                  Current Members ({teamDetails?.members?.length || 0})
+                </h3>
+                {teamDetails?.members && teamDetails.members.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBatchRemoveMembers}
+                    disabled={selectedCurrentIds.length === 0 || batchRemoveMembersMutation.isPending}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove Selected ({selectedCurrentIds.length})
+                  </Button>
+                )}
+              </div>
               <ScrollArea className="h-48 rounded-md border p-4">
                 {teamDetails?.members && teamDetails.members.length > 0 ? (
                   <div className="space-y-2">
                     {teamDetails.members.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted"
+                        className="flex items-center p-2 rounded-lg hover:bg-muted cursor-pointer"
+                        onClick={() => {
+                          setSelectedCurrentIds(prev =>
+                            prev.includes(member.id)
+                              ? prev.filter(id => id !== member.id)
+                              : [...prev, member.id]
+                          )
+                        }}
                       >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={member.avatarUrl || undefined} />
-                            <AvatarFallback
-                              style={{
-                                backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
-                                color: getAvatarColor(member.firstName, member.lastName).text,
-                              }}
-                            >
-                              {getInitials(member.firstName, member.lastName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">
-                            {member.firstName} {member.lastName}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMember(member.id, `${member.firstName} ${member.lastName}`)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <Checkbox
+                          checked={selectedCurrentIds.includes(member.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedCurrentIds(prev =>
+                              checked
+                                ? [...prev, member.id]
+                                : prev.filter(id => id !== member.id)
+                            )
+                          }}
+                          className="mr-3"
+                        />
+                        <Avatar className="h-8 w-8 mr-3">
+                          <AvatarImage src={member.avatarUrl || undefined} />
+                          <AvatarFallback
+                            style={{
+                              backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                              color: getAvatarColor(member.firstName, member.lastName).text,
+                            }}
+                          >
+                            {getInitials(member.firstName, member.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">
+                          {member.firstName} {member.lastName}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -418,80 +455,81 @@ export default function TeamsPage() {
               </ScrollArea>
             </div>
 
-            {/* Add Member */}
+            {/* Available Members - Multi-select */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Add Member</h3>
-              <div className="flex gap-2">
-                <Select
-                  value={selectedMemberId}
-                  onValueChange={setSelectedMemberId}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMembers.length > 0 ? (
-                      availableMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={member.avatarUrl || undefined} />
-                              <AvatarFallback
-                                className="text-xs"
-                                style={{
-                                  backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
-                                  color: getAvatarColor(member.firstName, member.lastName).text,
-                                }}
-                              >
-                                {getInitials(member.firstName, member.lastName)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>
-                              {member.firstName} {member.lastName}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="none" disabled>
-                        All members already assigned
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+              <h3 className="text-sm font-medium">Available Members</h3>
+              <ScrollArea className="h-48 rounded-md border p-4">
+                {availableMembers.length > 0 ? (
+                  <div className="space-y-2">
+                    {availableMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center p-2 rounded-lg hover:bg-muted cursor-pointer"
+                        onClick={() => {
+                          setSelectedMemberIds(prev =>
+                            prev.includes(member.id)
+                              ? prev.filter(id => id !== member.id)
+                              : [...prev, member.id]
+                          )
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedMemberIds.includes(member.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedMemberIds(prev =>
+                              checked
+                                ? [...prev, member.id]
+                                : prev.filter(id => id !== member.id)
+                            )
+                          }}
+                          className="mr-3"
+                        />
+                        <Avatar className="h-8 w-8 mr-3">
+                          <AvatarImage src={member.avatarUrl || undefined} />
+                          <AvatarFallback
+                            style={{
+                              backgroundColor: getAvatarColor(member.firstName, member.lastName).bg,
+                              color: getAvatarColor(member.firstName, member.lastName).text,
+                            }}
+                          >
+                            {getInitials(member.firstName, member.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">
+                          {member.firstName} {member.lastName}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    All members already assigned
+                  </p>
+                )}
+              </ScrollArea>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between">
                 <Button
-                  onClick={handleAddMember}
-                  disabled={!selectedMemberId || availableMembers.length === 0}
+                  variant="outline"
+                  onClick={() => setSelectedMemberIds(availableMembers.map(m => m.id))}
+                  disabled={availableMembers.length === 0}
+                >
+                  Select All
+                </Button>
+                <Button
+                  onClick={handleBatchAddMembers}
+                  disabled={selectedMemberIds.length === 0 || batchAddMembersMutation.isPending}
                   className="gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  Add
+                  Add {selectedMemberIds.length > 0 ? `(${selectedMemberIds.length})` : ''}
                 </Button>
               </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Remove Team Member Confirmation Dialog */}
-      <AlertDialog
-        open={!!removeDialog}
-        onOpenChange={() => setRemoveDialog(null)}
-        title="Remove Team Member"
-        description="This will remove the member from this team. The member's profile will not be deleted."
-        entityName={removeDialog?.memberName}
-        confirmLabel="Remove Member"
-        onConfirm={() => {
-          if (removeDialog) {
-            removeMemberMutation.mutate({
-              teamId: removeDialog.teamId,
-              memberId: removeDialog.memberId,
-            })
-            setRemoveDialog(null)
-          }
-        }}
-        isLoading={removeMemberMutation.isPending}
-      />
 
       {/* Delete Team Confirmation Dialog */}
       <AlertDialog
