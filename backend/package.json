@@ -11,6 +11,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "migrate:fix-avatar-colors": "tsx src/migrations/fix-avatar-colors.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
