@@ -76,7 +76,7 @@ export function TimelineItemHeader({
     if (type === 'project') {
       const project = item as Project
       return (
-        <div className="sticky left-0 z-50 w-64 p-3 border-r-2 border-border bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+        <div className="sticky left-0 z-50 w-64 p-3 bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
           {isExpanded ? (
             <ChevronDown className={cn(
               "h-4 w-4",
@@ -110,7 +110,7 @@ export function TimelineItemHeader({
     } else {
       const member = item as TeamMember
       return (
-        <div className="sticky left-0 z-50 w-64 p-3 border-r-2 border-border bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+        <div className="sticky left-0 z-50 w-64 p-3 bg-background flex items-center gap-2 shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-primary" />
           ) : (
@@ -169,23 +169,23 @@ export function TimelineItemHeader({
                 isToday && 'bg-primary/10 border-x-2 border-x-primary',
                 isFirstDayOfMonth(date) && 'border-l-4 border-l-border',
                 isWeekStart(date, dateIndex) &&
-                  !isFirstDayOfMonth(date) &&
-                  'border-l-4 border-l-muted-foreground',
+                !isFirstDayOfMonth(date) &&
+                'border-l-4 border-l-muted-foreground',
                 canEdit && (type === 'project' || type === 'member') && 'cursor-pointer'
               )}
               onClick={
                 type === 'project' && onMilestoneToggle
                   ? (e) => onMilestoneToggle((item as Project).id, date, e)
                   : type === 'member' && onDayOffToggle
-                  ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
-                  : undefined
+                    ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
+                    : undefined
               }
               onContextMenu={
                 type === 'project' && onMilestoneToggle
                   ? (e) => onMilestoneToggle((item as Project).id, date, e)
                   : type === 'member' && onDayOffToggle
-                  ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
-                  : undefined
+                    ? (e) => onDayOffToggle((item as TeamMember).id, date, e)
+                    : undefined
               }
             >
               {/* Render CollapsedAssignmentBar when NOT expanded */}
@@ -250,7 +250,7 @@ export function TimelineItemHeader({
   return (
     <div
       className={cn(
-        "flex border-b-4 border-border cursor-pointer transition-colors",
+        "flex border-t-4 border-border cursor-pointer transition-colors",
         type === 'project' && (item as Project).status === 'tentative'
           ? 'bg-muted hover:bg-muted/90'
           : 'bg-muted/70 hover:bg-muted/90'

@@ -126,8 +126,9 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
     const project = parentItem as Project
 
     return (
-      <div key={assignment.id} className="flex border-b bg-background hover:bg-muted/20 transition-colors relative">
-        <div className="sticky left-0 z-50 w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+      <div key={assignment.id} className="flex border-t bg-background hover:bg-muted/20 transition-colors relative">
+        <div className="sticky left-0 z-50 w-64 p-2.5 pl-12 border-r flex items-center gap-2 bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+          <span className="absolute top-[11px] left-[38px] w-1.5 h-3 border-l-2 border-b-2 border-gray-300"></span>
           <Avatar className="h-6 w-6 ring-1 ring-border/50">
             <AvatarImage src={member.avatarUrl || undefined} />
             <AvatarFallback
@@ -158,75 +159,75 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
           }))
 
           return dateProperties.map((props) => (
-          <div
-            key={props.dateStr}
-            className={cn(
-              columnWidth, 'border-r group relative flex items-center justify-center select-none',
-              project.status === 'tentative' && 'bg-background',
-              props.isWeekend && 'bg-weekend',
-              props.isHoliday && 'bg-holiday',
-              props.isDayOff && 'bg-dayOff',
-              props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
-              isAdmin && 'cursor-pointer',
-              props.isFirstDayOfMonth && 'border-l-4 border-l-border',
-              props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
-            )}
-            onMouseDown={(_e) =>
-              handleMouseDown(assignment.id, props.date, _e)
-            }
-            onMouseEnter={() => handleMouseEnter(props.date)}
-            onClick={(e) => {
-              // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
-              // Only handle regular clicks here
-              if (!e.ctrlKey && !e.metaKey) {
-                // Regular click - no action on cell
+            <div
+              key={props.dateStr}
+              className={cn(
+                columnWidth, 'border-r group relative flex items-center justify-center select-none',
+                project.status === 'tentative' && 'bg-background',
+                props.isWeekend && 'bg-weekend',
+                props.isHoliday && 'bg-holiday',
+                props.isDayOff && 'bg-dayOff',
+                props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
+                isAdmin && 'cursor-pointer',
+                props.isFirstDayOfMonth && 'border-l-4 border-l-border',
+                props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
+              )}
+              onMouseDown={(_e) =>
+                handleMouseDown(assignment.id, props.date, _e)
               }
-            }}
-            onContextMenu={(_e) => {
-              _e.preventDefault() // Prevent browser context menu
-              // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/60 font-medium">
-                {format(props.date, 'EEE', { locale: enGB })}
-              </span>
-            </div>
-            <ExpandedAssignmentBar
-              assignmentId={assignment.id}
-              date={props.date}
-              projectAssignments={projectAssignments}
-              dayAssignments={dayAssignments}
-              project={project}
-              member={member}
-              isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
-              dragMode={getDragMode()}
-              isAdmin={isAdmin}
-              hasOverlap={hasOverlap(member.id, props.date, 'member')}
-              onMouseDown={(e) => {
-                // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
-                const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-                if (!isDeleteTrigger) {
-                  e.stopPropagation() // Only stop for regular clicks
-                }
-              }}
+              onMouseEnter={() => handleMouseEnter(props.date)}
               onClick={(e) => {
-                // Ctrl/Cmd+click handled by drag system, regular click opens edit
-                if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                  handleAssignmentClick(assignment.id, props.date, e)
+                // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
+                // Only handle regular clicks here
+                if (!e.ctrlKey && !e.metaKey) {
+                  // Regular click - no action on cell
                 }
               }}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                // Right-click delete now handled via drag system
+              onContextMenu={(_e) => {
+                _e.preventDefault() // Prevent browser context menu
+                // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
               }}
-              getGroupPriority={getGroupPriority}
-              isNonWorkingDay={isNonWorkingDay}
-              isHoliday={isHoliday}
-            />
-          </div>
-        ))
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+            >
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/60 font-medium">
+                  {format(props.date, 'EEE', { locale: enGB })}
+                </span>
+              </div>
+              <ExpandedAssignmentBar
+                assignmentId={assignment.id}
+                date={props.date}
+                projectAssignments={projectAssignments}
+                dayAssignments={dayAssignments}
+                project={project}
+                member={member}
+                isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
+                dragMode={getDragMode()}
+                isAdmin={isAdmin}
+                hasOverlap={hasOverlap(member.id, props.date, 'member')}
+                onMouseDown={(e) => {
+                  // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                  const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
+                  if (!isDeleteTrigger) {
+                    e.stopPropagation() // Only stop for regular clicks
+                  }
+                }}
+                onClick={(e) => {
+                  // Ctrl/Cmd+click handled by drag system, regular click opens edit
+                  if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                    handleAssignmentClick(assignment.id, props.date, e)
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  // Right-click delete now handled via drag system
+                }}
+                getGroupPriority={getGroupPriority}
+                isNonWorkingDay={isNonWorkingDay}
+                isHoliday={isHoliday}
+              />
+            </div>
+          ))
+          // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
         {/* Comment overlay rendered at row level to appear above all bar segments */}
         <AssignmentCommentOverlay
@@ -259,8 +260,9 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   const member = parentItem as TeamMember
 
   return (
-    <div key={assignment.id} className="flex border-b bg-background hover:bg-muted/20 transition-colors relative">
-      <div className="sticky left-0 z-50 w-64 p-2 pl-10 border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+    <div key={assignment.id} className="flex border-t bg-background hover:bg-muted/20 transition-colors relative">
+      <div className="sticky left-0 z-50 w-64 p-2 pl-12 border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+        <span className="absolute top-[8px] left-[38px] w-1.5 h-3 border-l-2 border-b-2 border-gray-300"></span>
         <div className="flex items-center gap-1.5">
           <div className={cn(
             "text-sm font-medium",
@@ -296,82 +298,82 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
         }))
 
         return dateProperties.map((props) => (
-        <div
-          key={props.dateStr}
-          className={cn(
-            columnWidth, 'border-r group relative flex items-center justify-center select-none',
-            project.status === 'tentative' && 'bg-background',
-            props.isWeekend && 'bg-weekend',
-            props.isHoliday && 'bg-holiday',
-            props.isDayOff && 'bg-dayOff',
-            props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
-            isAdmin && 'cursor-pointer',
-            props.isFirstDayOfMonth && 'border-l-4 border-l-border',
-            props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
-          )}
-          onMouseDown={(_e) =>
-            handleMouseDown(assignment.id, props.date, _e)
-          }
-          onMouseEnter={() => handleMouseEnter(props.date)}
-          onClick={(e) => {
-            // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
-            // Only handle regular clicks here
-            if (!e.ctrlKey && !e.metaKey) {
-              // Regular click - no action on cell
+          <div
+            key={props.dateStr}
+            className={cn(
+              columnWidth, 'border-r group relative flex items-center justify-center select-none',
+              project.status === 'tentative' && 'bg-background',
+              props.isWeekend && 'bg-weekend',
+              props.isHoliday && 'bg-holiday',
+              props.isDayOff && 'bg-dayOff',
+              props.isToday && 'bg-primary/10 border-x-2 border-x-primary',
+              isAdmin && 'cursor-pointer',
+              props.isFirstDayOfMonth && 'border-l-4 border-l-border',
+              props.isWeekStart && !props.isFirstDayOfMonth && 'border-l-4 border-l-muted-foreground'
+            )}
+            onMouseDown={(_e) =>
+              handleMouseDown(assignment.id, props.date, _e)
             }
-          }}
-          onContextMenu={(_e) => {
-            _e.preventDefault() // Prevent browser context menu
-            // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
-          }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
-              {format(props.date, 'EEE', { locale: enGB })}
-            </span>
-          </div>
-          <MilestoneIndicator
-            projectId={project.id}
-            date={props.date}
-            milestones={milestones}
-            canEdit={canEditProject(project.id)}
-            onToggle={handleProjectCellClick}
-          />
-          <ExpandedAssignmentBar
-            assignmentId={assignment.id}
-            date={props.date}
-            projectAssignments={projectAssignments}
-            dayAssignments={dayAssignments}
-            project={project}
-            member={member}
-            isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
-            dragMode={getDragMode()}
-            isAdmin={isAdmin}
-            hasOverlap={false}
-            onMouseDown={(e) => {
-              // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
-              const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-              if (!isDeleteTrigger) {
-                e.stopPropagation() // Only stop for regular clicks
-              }
-            }}
+            onMouseEnter={() => handleMouseEnter(props.date)}
             onClick={(e) => {
-              // Ctrl/Cmd+click handled by drag system, regular click opens edit
-              if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
-                handleAssignmentClick(assignment.id, props.date, e)
+              // Ctrl/Cmd + click now triggers delete drag via handleMouseDown
+              // Only handle regular clicks here
+              if (!e.ctrlKey && !e.metaKey) {
+                // Regular click - no action on cell
               }
             }}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              // Right-click delete now handled via drag system
+            onContextMenu={(_e) => {
+              _e.preventDefault() // Prevent browser context menu
+              // Right-click delete now handled via drag system (handleMouseDown -> handleMouseUp)
             }}
-            getGroupPriority={getGroupPriority}
-            isNonWorkingDay={isNonWorkingDay}
-            isHoliday={isHoliday}
-          />
-        </div>
-      ))
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+          >
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="text-xs text-muted-foreground/40 dark:text-muted-foreground/80 font-medium">
+                {format(props.date, 'EEE', { locale: enGB })}
+              </span>
+            </div>
+            <MilestoneIndicator
+              projectId={project.id}
+              date={props.date}
+              milestones={milestones}
+              canEdit={canEditProject(project.id)}
+              onToggle={handleProjectCellClick}
+            />
+            <ExpandedAssignmentBar
+              assignmentId={assignment.id}
+              date={props.date}
+              projectAssignments={projectAssignments}
+              dayAssignments={dayAssignments}
+              project={project}
+              member={member}
+              isDayInDragRange={isDayInDragRange(assignment.id, props.date)}
+              dragMode={getDragMode()}
+              isAdmin={isAdmin}
+              hasOverlap={false}
+              onMouseDown={(e) => {
+                // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
+                if (!isDeleteTrigger) {
+                  e.stopPropagation() // Only stop for regular clicks
+                }
+              }}
+              onClick={(e) => {
+                // Ctrl/Cmd+click handled by drag system, regular click opens edit
+                if (!e.ctrlKey && !e.metaKey && isDayAssigned(dayAssignments, assignment.id, props.date)) {
+                  handleAssignmentClick(assignment.id, props.date, e)
+                }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                // Right-click delete now handled via drag system
+              }}
+              getGroupPriority={getGroupPriority}
+              isNonWorkingDay={isNonWorkingDay}
+              isHoliday={isHoliday}
+            />
+          </div>
+        ))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
       {/* Comment overlay rendered at row level to appear above all bar segments */}
       <AssignmentCommentOverlay
