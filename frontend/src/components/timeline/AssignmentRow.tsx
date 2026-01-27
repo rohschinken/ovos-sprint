@@ -127,7 +127,8 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
 
     return (
       <div key={assignment.id} className="flex border-t bg-background hover:bg-muted/20 transition-colors relative">
-        <div className="sticky left-0 z-50 w-64 p-2.5 pl-10 border-r flex items-center gap-2 bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+        <div className="sticky left-0 z-50 w-64 p-2.5 pl-12 border-r flex items-center gap-2 bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+          <span className="absolute top-[11px] left-[38px] w-1.5 h-3 border-l-2 border-b-2 border-gray-300"></span>
           <Avatar className="h-6 w-6 ring-1 ring-border/50">
             <AvatarImage src={member.avatarUrl || undefined} />
             <AvatarFallback
@@ -260,7 +261,8 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
 
   return (
     <div key={assignment.id} className="flex border-t bg-background hover:bg-muted/20 transition-colors relative">
-      <div className="sticky left-0 z-50 w-64 p-2 pl-10 border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+      <div className="sticky left-0 z-50 w-64 p-2 pl-12 border-r bg-background shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+        <span className="absolute top-[8px] left-[38px] w-1.5 h-3 border-l-2 border-b-2 border-gray-300"></span>
         <div className="flex items-center gap-1.5">
           <div className={cn(
             "text-sm font-medium",
