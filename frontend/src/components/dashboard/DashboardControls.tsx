@@ -120,7 +120,7 @@ export function DashboardControls({
             min={1}
             max={4}
             step={1}
-            className="w-32"
+            className="w-24"
           />
           <span className="text-sm font-medium w-16">
             {zoomLabels[zoomLevel - 1]}

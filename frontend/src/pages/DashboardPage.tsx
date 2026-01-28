@@ -239,7 +239,7 @@ export default function DashboardPage() {
           transition={{ duration: 0.4 }}
           className="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
         >
-        <div className="min-w-max">
+        <div className="min-w-max mr-3">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-sm md:text-base text-muted-foreground">
             Workload management timeline
