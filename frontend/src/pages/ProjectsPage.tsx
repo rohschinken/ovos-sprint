@@ -241,6 +241,7 @@ export default function ProjectsPage() {
               currentSortKey={sortKey}
               currentSortOrder={sortOrder}
               onSort={toggleSort}
+              className="hidden md:table-cell"
             />
             <SortableTableHeader
               label="Status"
@@ -255,7 +256,7 @@ export default function ProjectsPage() {
               currentSortKey={sortKey}
               currentSortOrder={sortOrder}
               onSort={toggleSort}
-              className="hidden md:table-cell"
+              className="hidden lg:table-cell"
             />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -264,7 +265,7 @@ export default function ProjectsPage() {
           {projects.map((project) => (
             <TableRow key={project.id} className={cn(!canEdit(project) && 'opacity-75')}>
               <TableCell className="font-medium">{project.name}</TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell" >
                 {project.customer?.icon && `${project.customer.icon} `}
                 {project.customer?.name || 'Unknown'}
               </TableCell>
@@ -326,7 +327,7 @@ export default function ProjectsPage() {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell className="hidden md:table-cell text-muted-foreground">
+              <TableCell className="hidden lg:table-cell text-muted-foreground">
                 {project.manager?.email || '-'}
               </TableCell>
               <TableCell className="text-right">
