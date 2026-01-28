@@ -44,12 +44,12 @@ export function DashboardControls({
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
         className={cn(
-          "flex items-center gap-3 px-3 xl:px-4 h-12 rounded-md border bg-background",
+          "flex items-center gap-3 px-2 xl:px-4 h-12 rounded-md border bg-background",
           viewMode === 'by-project' ? 'border-mode-project' : 'border-mode-member'
         )}
       >
         <span className="hidden xl:inline text-sm font-medium">By Member</span>
-        <div className="relative">
+        <div className="relative -bottom-[2px]">
           <Switch
             checked={viewMode === 'by-project'}
             onCheckedChange={(checked) =>
@@ -108,7 +108,7 @@ export function DashboardControls({
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex items-center gap-2 xl:gap-3 px-3 xl:px-4 h-12 rounded-md border bg-background"
+        className="flex items-center gap-2 xl:gap-3 px-2 xl:px-4 h-12 rounded-md border bg-background"
       >
         <ZoomIn className="h-4 w-4 text-muted-foreground" />
 
