@@ -196,6 +196,7 @@ export default function CustomersPage() {
               currentSortKey={sortKey}
               currentSortOrder={sortOrder}
               onSort={toggleSort}
+              className="hidden md:table-cell"
             />
             <SortableTableHeader
               label="Created"
@@ -212,7 +213,7 @@ export default function CustomersPage() {
             <TableRow key={customer.id} className={cn(!canEdit(customer) && 'opacity-75')}>
               <TableCell className="text-2xl">{customer.icon || '-'}</TableCell>
               <TableCell className="font-medium">{customer.name}</TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="hidden md:table-cell text-muted-foreground">
                 {customer.manager?.email || '-'}
               </TableCell>
               <TableCell className="text-muted-foreground">

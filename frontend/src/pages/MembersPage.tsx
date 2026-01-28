@@ -355,7 +355,7 @@ export default function MembersPage() {
                   currentSortOrder={sortOrder}
                   onSort={toggleSort}
                 />
-                <TableHead>Schedule</TableHead>
+                <TableHead className="hidden md:table-cell">Schedule</TableHead>
                 <SortableTableHeader
                   label="Added"
                   sortKey="createdAt"
@@ -394,7 +394,7 @@ export default function MembersPage() {
                     <TableCell className="text-muted-foreground">
                       {member.email || '-'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                       {workDays || 'No schedule'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

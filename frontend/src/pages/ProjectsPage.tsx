@@ -255,6 +255,7 @@ export default function ProjectsPage() {
               currentSortKey={sortKey}
               currentSortOrder={sortOrder}
               onSort={toggleSort}
+              className="hidden md:table-cell"
             />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -325,7 +326,7 @@ export default function ProjectsPage() {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="hidden md:table-cell text-muted-foreground">
                 {project.manager?.email || '-'}
               </TableCell>
               <TableCell className="text-right">
