@@ -46,7 +46,7 @@ export function DashboardControls({
           viewMode === 'by-project' ? 'border-mode-project' : 'border-mode-member'
         )}
       >
-        <span className="text-sm font-medium">By Member</span>
+        <span className="text-sm font-medium">Member</span>
         <div className="relative">
           <Switch
             checked={viewMode === 'by-project'}
@@ -73,7 +73,7 @@ export function DashboardControls({
             </div>
           </div>
         </div>
-        <span className="text-sm font-medium">By Project</span>
+        <span className="text-sm font-medium">Project</span>
       </motion.div>
 
       {/* Expand/Collapse All Button */}
@@ -110,7 +110,7 @@ export function DashboardControls({
           min={1}
           max={4}
           step={1}
-          className="w-32"
+          className="w-24"
         />
         <span className="text-sm font-medium w-16">
           {zoomLabels[zoomLevel - 1]}
