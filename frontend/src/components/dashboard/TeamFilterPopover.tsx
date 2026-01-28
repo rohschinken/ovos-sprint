@@ -41,7 +41,7 @@ export function TeamFilterPopover({
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button variant="outline" className="gap-2 h-12">
             <Filter className="h-4 w-4" />
-            Teams
+            <span className="hidden xl:inline">Teams</span>
             {selectedTeamIds.length > 0 && (
               <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                 {selectedTeamIds.length}

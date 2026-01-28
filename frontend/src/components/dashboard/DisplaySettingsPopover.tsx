@@ -45,7 +45,7 @@ export function DisplaySettingsPopover({
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button variant="outline" className="gap-2 h-12">
             <Eye className="h-4 w-4" />
-            Display
+            <span className="hidden xl:inline">Display</span>
           </Button>
         </motion.div>
       </PopoverTrigger>

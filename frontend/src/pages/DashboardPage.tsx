@@ -237,15 +237,15 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex justify-between items-center"
+          className="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
         >
         <div className="min-w-max mr-3">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Workload management timeline
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap md:flex-nowrap gap-2 md:gap-3">
           <DashboardControls
             viewMode={viewMode}
             onViewModeChange={setViewMode}

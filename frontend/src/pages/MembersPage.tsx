@@ -355,13 +355,14 @@ export default function MembersPage() {
                   currentSortOrder={sortOrder}
                   onSort={toggleSort}
                 />
-                <TableHead>Schedule</TableHead>
+                <TableHead className="hidden lg:table-cell">Schedule</TableHead>
                 <SortableTableHeader
                   label="Added"
                   sortKey="createdAt"
                   currentSortKey={sortKey}
                   currentSortOrder={sortOrder}
                   onSort={toggleSort}
+                  className="hidden lg:table-cell"
                 />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -394,10 +395,10 @@ export default function MembersPage() {
                     <TableCell className="text-muted-foreground">
                       {member.email || '-'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
                       {workDays || 'No schedule'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {new Date(member.createdAt).toLocaleDateString('de-AT')}
                     </TableCell>
                     <TableCell className="text-right">

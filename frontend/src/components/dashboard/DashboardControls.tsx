@@ -7,6 +7,8 @@ import {
   FoldVertical,
   Briefcase,
   UserCircle,
+  Minus,
+  Plus,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -35,19 +37,19 @@ export function DashboardControls({
   const zoomLabels = ['Narrow', 'Compact', 'Normal', 'Wide']
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2 xl:gap-3">
       {/* View Mode Toggle */}
       <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
         className={cn(
-          "flex items-center gap-3 px-4 h-12 rounded-md border bg-background",
+          "flex items-center gap-3 px-2 xl:px-4 h-12 rounded-md border bg-background",
           viewMode === 'by-project' ? 'border-mode-project' : 'border-mode-member'
         )}
       >
-        <span className="text-sm font-medium">Member</span>
-        <div className="relative">
+        <span className="hidden xl:inline text-sm font-medium">By Member</span>
+        <div className="relative -bottom-[2px]">
           <Switch
             checked={viewMode === 'by-project'}
             onCheckedChange={(checked) =>
@@ -73,7 +75,7 @@ export function DashboardControls({
             </div>
           </div>
         </div>
-        <span className="text-sm font-medium">Project</span>
+        <span className="hidden xl:inline text-sm font-medium">By Project</span>
       </motion.div>
 
       {/* Expand/Collapse All Button */}
@@ -85,14 +87,19 @@ export function DashboardControls({
         <Button
           variant="outline"
           onClick={onToggleExpandAll}
-          className="gap-2 h-12 min-w-[130px] transition-transform hover:scale-105 active:scale-95"
+          className="gap-2 h-12 transition-transform hover:scale-105 active:scale-95"
         >
           {isAllExpanded ? (
-            <FoldVertical className="h-4 w-4" />
+            <>
+              <FoldVertical className="h-4 w-4" />
+              <span className="hidden xl:inline">Collapse All</span>
+            </>
           ) : (
-            <UnfoldVertical className="h-4 w-4" />
+            <>
+              <UnfoldVertical className="h-4 w-4" />
+              <span className="hidden xl:inline">Expand All</span>
+            </>
           )}
-          {isAllExpanded ? 'Collapse All' : 'Expand All'}
         </Button>
       </motion.div>
 
@@ -101,20 +108,49 @@ export function DashboardControls({
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex items-center gap-3 px-4 h-12 rounded-md border bg-background"
+        className="flex items-center gap-2 xl:gap-3 px-2 xl:px-4 h-12 rounded-md border bg-background"
       >
-        <ZoomIn className="h-4 w-4" />
-        <Slider
-          value={[zoomLevel]}
-          onValueChange={([value]) => onZoomChange(value)}
-          min={1}
-          max={4}
-          step={1}
-          className="w-24"
-        />
-        <span className="text-sm font-medium w-16">
-          {zoomLabels[zoomLevel - 1]}
-        </span>
+        <ZoomIn className="h-4 w-4 text-muted-foreground" />
+
+        {/* Desktop: Show slider + label */}
+        <div className="hidden xl:flex items-center gap-3">
+          <Slider
+            value={[zoomLevel]}
+            onValueChange={([value]) => onZoomChange(value)}
+            min={1}
+            max={4}
+            step={1}
+            className="w-24"
+          />
+          <span className="text-sm font-medium w-16">
+            {zoomLabels[zoomLevel - 1]}
+          </span>
+        </div>
+
+        {/* Mobile: Show +/- buttons */}
+        <div className="flex xl:hidden items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onZoomChange(Math.max(1, zoomLevel - 1))}
+            disabled={zoomLevel === 1}
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+          <span className="text-xs text-muted-foreground w-12 text-center">
+            {zoomLabels[zoomLevel - 1]}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onZoomChange(Math.min(4, zoomLevel + 1))}
+            disabled={zoomLevel === 4}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
       </motion.div>
     </div>
   )

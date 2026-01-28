@@ -71,7 +71,7 @@ export default function Layout() {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-4 xl:space-x-8">
             <h1 className="text-2xl font-bold text-gradient-primary min-w-max">
               ovos Sprint 🏃‍♂️‍➡️
             </h1>
@@ -82,7 +82,7 @@ export default function Layout() {
                   className="gap-2"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  <span className="hidden xl:inline">Dashboard</span>
                 </Button>
               </Link>
               {user?.role === 'admin' && (
@@ -93,7 +93,7 @@ export default function Layout() {
                       className="gap-2"
                     >
                       <Mail className="h-4 w-4" />
-                      Users
+                      <span className="hidden xl:inline">Users</span>
                     </Button>
                   </Link>
                   <Link to="/teams">
@@ -102,7 +102,7 @@ export default function Layout() {
                       className="gap-2"
                     >
                       <Users className="h-4 w-4" />
-                      Teams
+                      <span className="hidden xl:inline">Teams</span>
                     </Button>
                   </Link>
                   <Link to="/members">
@@ -111,7 +111,7 @@ export default function Layout() {
                       className="gap-2"
                     >
                       <UserCircle className="h-4 w-4" />
-                      Members
+                      <span className="hidden xl:inline">Members</span>
                     </Button>
                   </Link>
                 </>
@@ -124,7 +124,7 @@ export default function Layout() {
                       className="gap-2"
                     >
                       <Building2 className="h-4 w-4" />
-                      Customers
+                      <span className="hidden xl:inline">Customers</span>
                     </Button>
                   </Link>
                   <Link to="/projects">
@@ -133,15 +133,15 @@ export default function Layout() {
                       className="gap-2"
                     >
                       <Briefcase className="h-4 w-4" />
-                      Projects
+                      <span className="hidden xl:inline">Projects</span>
                     </Button>
                   </Link>
                 </>
               )}
             </nav>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 xl:gap-4">
+            <span className="hidden md:inline text-sm text-muted-foreground">
               {user?.email} {user?.role === 'admin' && '(Admin)'}{user?.role === 'project_manager' && '(PM)'}
             </span>
             <Link to="/settings">

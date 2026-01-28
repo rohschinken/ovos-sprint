@@ -7,6 +7,7 @@
 ## Low Priority
 
 ### Feature: add a new toggle for abstract week view
+
 - [ ] TBD
 
 ### Google Authentication
@@ -37,6 +38,7 @@
 **Current State**: Single 712KB JavaScript bundle. Bundle size warning from Vite suggests splitting.
 
 **Expected Impact**:
+
 - Initial bundle: 712KB → ~400KB (main) + smaller route chunks
 - Faster Time to Interactive (TTI)
 - Better Lighthouse score
