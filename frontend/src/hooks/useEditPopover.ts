@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { format } from 'date-fns'
 import api from '@/api/client'
 import type { AssignmentGroup } from '@/types'
 import type { EditPopoverState } from '@/components/timeline/types'
@@ -33,8 +34,12 @@ export function useEditPopover(
     event.stopPropagation()
 
     try {
-      // Fetch the actual full date range from the backend (not limited by visible timeline)
-      const response = await api.get(`/assignments/projects/${assignmentId}/date-range`)
+      // Fetch the contiguous date range around the clicked date
+      // This handles both: dates outside visible range AND split assignments (with gaps)
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const response = await api.get(`/assignments/projects/${assignmentId}/date-range`, {
+        params: { date: dateStr }
+      })
       const range = response.data as { start: string; end: string }
 
       const group = getGroupForDate(assignmentId, date)

@@ -129,10 +129,13 @@ router.get('/members/:memberId', authenticate, async (req, res) => {
   }
 })
 
-// Get full date range for a project assignment (including dates outside visible timeline)
+// Get contiguous date range for a project assignment around a specific date
+// This returns only the continuous segment containing the specified date,
+// not the full range if there are gaps (deleted days)
 router.get('/projects/:id/date-range', authenticate, async (req, res) => {
   try {
     const projectAssignmentId = parseInt(req.params.id)
+    const dateParam = req.query.date as string | undefined
 
     const days = await db.query.dayAssignments.findMany({
       where: (dayAssignments, { eq }) => eq(dayAssignments.projectAssignmentId, projectAssignmentId),
@@ -143,9 +146,48 @@ router.get('/projects/:id/date-range', authenticate, async (req, res) => {
       return res.json({ start: null, end: null })
     }
 
+    // If no date specified, return full range (min to max)
+    if (!dateParam) {
+      return res.json({
+        start: days[0].date,
+        end: days[days.length - 1].date,
+      })
+    }
+
+    // Find contiguous range around the specified date
+    const allDates = days.map(d => d.date).sort()
+
+    // Check if the specified date exists in the assignments
+    if (!allDates.includes(dateParam)) {
+      return res.status(404).json({ error: 'Date not found in assignment' })
+    }
+
+    // Find the contiguous segment containing this date
+    const dateIndex = allDates.indexOf(dateParam)
+    let startIndex = dateIndex
+    let endIndex = dateIndex
+
+    // Helper to check if two dates are consecutive
+    const isNextDay = (date1: string, date2: string): boolean => {
+      const d1 = new Date(date1)
+      const d2 = new Date(date2)
+      const diff = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)
+      return Math.abs(diff) === 1
+    }
+
+    // Expand backwards to find start of contiguous range
+    while (startIndex > 0 && isNextDay(allDates[startIndex - 1], allDates[startIndex])) {
+      startIndex--
+    }
+
+    // Expand forwards to find end of contiguous range
+    while (endIndex < allDates.length - 1 && isNextDay(allDates[endIndex], allDates[endIndex + 1])) {
+      endIndex++
+    }
+
     res.json({
-      start: days[0].date,
-      end: days[days.length - 1].date,
+      start: allDates[startIndex],
+      end: allDates[endIndex],
     })
   } catch (error) {
     console.error('Get assignment date range error:', error)
