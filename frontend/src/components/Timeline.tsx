@@ -206,7 +206,6 @@ function TimelineInner({
 
   const { editPopover, setEditPopover, handleAssignmentClick } = useEditPopover(
     canEditAssignment,
-    dayAssignments,
     getGroupForDate
   )
 

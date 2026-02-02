@@ -129,6 +129,30 @@ router.get('/members/:memberId', authenticate, async (req, res) => {
   }
 })
 
+// Get full date range for a project assignment (including dates outside visible timeline)
+router.get('/projects/:id/date-range', authenticate, async (req, res) => {
+  try {
+    const projectAssignmentId = parseInt(req.params.id)
+
+    const days = await db.query.dayAssignments.findMany({
+      where: (dayAssignments, { eq }) => eq(dayAssignments.projectAssignmentId, projectAssignmentId),
+      orderBy: (dayAssignments, { asc }) => [asc(dayAssignments.date)],
+    })
+
+    if (days.length === 0) {
+      return res.json({ start: null, end: null })
+    }
+
+    res.json({
+      start: days[0].date,
+      end: days[days.length - 1].date,
+    })
+  } catch (error) {
+    console.error('Get assignment date range error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 // Batch assign multiple members to a project - MUST come before /projects/:id
 router.post('/projects/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {

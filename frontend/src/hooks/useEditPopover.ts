@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getContiguousRangeForDate } from '@/lib/timeline-helpers'
+import api from '@/api/client'
 import type { AssignmentGroup } from '@/types'
 import type { EditPopoverState } from '@/components/timeline/types'
 
@@ -10,13 +10,11 @@ import type { EditPopoverState } from '@/components/timeline/types'
  * assignment groups (priority and comments).
  *
  * @param canEditAssignment - Function to check if assignment can be edited
- * @param dayAssignments - Array of day assignments
  * @param getGroupForDate - Function to get assignment group for a specific date
  * @returns Object with popover state and handler functions
  */
 export function useEditPopover(
   canEditAssignment: (assignmentId: number) => boolean,
-  dayAssignments: any[],
   getGroupForDate: (assignmentId: number, date: Date) => AssignmentGroup | null
 ) {
   const [editPopover, setEditPopover] = useState<EditPopoverState | null>(null)
@@ -24,7 +22,7 @@ export function useEditPopover(
   /**
    * Handle click on assignment bar to open edit popover
    */
-  const handleAssignmentClick = (
+  const handleAssignmentClick = async (
     assignmentId: number,
     date: Date,
     event: React.MouseEvent
@@ -34,16 +32,23 @@ export function useEditPopover(
 
     event.stopPropagation()
 
-    const range = getContiguousRangeForDate(dayAssignments, assignmentId, date)
-    const group = getGroupForDate(assignmentId, date)
+    try {
+      // Fetch the actual full date range from the backend (not limited by visible timeline)
+      const response = await api.get(`/assignments/projects/${assignmentId}/date-range`)
+      const range = response.data as { start: string; end: string }
 
-    setEditPopover({
-      open: true,
-      position: { x: event.clientX, y: event.clientY },
-      projectAssignmentId: assignmentId,
-      dateRange: range,
-      group,
-    })
+      const group = getGroupForDate(assignmentId, date)
+
+      setEditPopover({
+        open: true,
+        position: { x: event.clientX, y: event.clientY },
+        projectAssignmentId: assignmentId,
+        dateRange: range,
+        group,
+      })
+    } catch (error) {
+      console.error('Failed to fetch assignment date range:', error)
+    }
   }
 
   /**

@@ -120,7 +120,7 @@ export function AssignmentEditPopover({
 
   // Calculate position to keep popover in viewport
   const calculatePosition = () => {
-    const popoverWidth = 420
+    const popoverWidth = 340
     const popoverHeight = 280
     const padding = 16
 
@@ -151,7 +151,7 @@ export function AssignmentEditPopover({
     <div
       ref={popoverRef}
       className={cn(
-        'fixed z-50 w-[420px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
+        'fixed z-50 w-[340px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
         'animate-in fade-in-0 zoom-in-95'
       )}
       style={{
