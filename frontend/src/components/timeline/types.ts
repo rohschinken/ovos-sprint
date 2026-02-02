@@ -61,6 +61,14 @@ export interface TimelineViewContentProps {
   getDragMode: () => 'create' | 'delete' | 'move' | null
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**
@@ -98,6 +106,14 @@ export interface AssignmentRowProps {
   canEditAssignment: (assignmentId: number) => boolean
   canEditProject: (projectId: number) => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**
@@ -170,12 +186,14 @@ export interface ExpandedAssignmentBarProps {
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   isHoliday: (date: Date) => boolean
-  dragState?: {
-    mode: 'move'
-    moveSource: { startDate: string; endDate: string }
-    moveOffset: number
-    assignmentId: number
-  } | null
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**

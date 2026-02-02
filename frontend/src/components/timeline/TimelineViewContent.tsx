@@ -97,6 +97,7 @@ export function TimelineViewContent({
   getDragMode,
   hasOverlap,
   getGroupPriority,
+  dragState,
 }: TimelineViewContentProps) {
   // Render by-project view
   if (viewMode === 'by-project') {
@@ -186,6 +187,7 @@ export function TimelineViewContent({
                         canEditAssignment={canEditAssignment}
                         canEditProject={canEditProject}
                         getGroupPriority={getGroupPriority}
+                        dragState={dragState}
                       />
                     )
                   })}
@@ -291,6 +293,7 @@ export function TimelineViewContent({
                       canEditAssignment={canEditAssignment}
                       canEditProject={canEditProject}
                       getGroupPriority={getGroupPriority}
+                      dragState={dragState}
                     />
                   )
                 })}

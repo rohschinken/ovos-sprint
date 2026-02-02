@@ -50,7 +50,12 @@ export interface AssignmentEditPopoverProps {
   group: AssignmentGroup | null
   projectAssignmentId: number
   dateRange: { start: string; end: string }
-  onSave: (data: { priority: AssignmentPriority; comment: string | null }) => void
+  onSave: (data: {
+    priority: AssignmentPriority
+    comment: string | null
+    startDate?: string
+    endDate?: string
+  }) => void
 }
 
 /**

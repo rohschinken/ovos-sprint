@@ -6,7 +6,7 @@ import { format, addDays, startOfDay, isSameDay } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
-import { DragProvider } from '@/contexts/DragContext'
+import { DragProvider, useDragContext } from '@/contexts/DragContext'
 import { useDragAssignment } from '@/hooks/useDragAssignment'
 import { useTimelineWarning } from '@/hooks/useTimelineWarning'
 import { useEditPopover } from '@/hooks/useEditPopover'
@@ -219,6 +219,7 @@ function TimelineInner({
     createDayOffMutation,
     deleteDayOffMutation,
     saveAssignmentGroupMutation,
+    moveAssignmentMutation,
   } = useTimelineMutations()
 
   const getDayAssignmentId = useCallback((assignmentId: number, date: Date) => {
@@ -237,8 +238,13 @@ function TimelineInner({
     setTimelineWarning,
     isNonWorkingDay,
     getDayAssignmentId,
-    deleteBatchDayAssignmentsMutation
+    deleteBatchDayAssignmentsMutation,
+    moveAssignmentMutation
   )
+
+  // Get drag state for visual feedback
+  const { getDragState } = useDragContext()
+  const dragState = getDragState()
 
   // Reset initialization flag when view mode changes
   useEffect(() => {
@@ -411,6 +417,7 @@ function TimelineInner({
       getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
+      dragState={dragState}
     />
   ) : (
     <TimelineViewContent
@@ -448,6 +455,7 @@ function TimelineInner({
       getDragMode={getDragMode}
       hasOverlap={hasOverlap}
       getGroupPriority={getGroupPriority}
+      dragState={dragState}
     />
   )
 
@@ -490,15 +498,34 @@ function TimelineInner({
           group={editPopover.group}
           projectAssignmentId={editPopover.projectAssignmentId}
           dateRange={editPopover.dateRange}
-          onSave={(data) => {
-            saveAssignmentGroupMutation.mutate({
-              groupId: editPopover.group?.id,
-              projectAssignmentId: editPopover.projectAssignmentId,
-              startDate: editPopover.dateRange.start,
-              endDate: editPopover.dateRange.end,
-              priority: data.priority,
-              comment: data.comment,
-            })
+          onSave={async (data) => {
+            // If dates changed, move the assignment first
+            if (data.startDate && data.endDate) {
+              await moveAssignmentMutation.mutateAsync({
+                projectAssignmentId: editPopover.projectAssignmentId,
+                newStartDate: data.startDate,
+                newEndDate: data.endDate,
+              })
+              // After move, save the group with new dates
+              saveAssignmentGroupMutation.mutate({
+                groupId: editPopover.group?.id,
+                projectAssignmentId: editPopover.projectAssignmentId,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                priority: data.priority,
+                comment: data.comment,
+              })
+            } else {
+              // No date change, just save priority/comment
+              saveAssignmentGroupMutation.mutate({
+                groupId: editPopover.group?.id,
+                projectAssignmentId: editPopover.projectAssignmentId,
+                startDate: editPopover.dateRange.start,
+                endDate: editPopover.dateRange.end,
+                priority: data.priority,
+                comment: data.comment,
+              })
+            }
             setEditPopover(null)
           }}
         />

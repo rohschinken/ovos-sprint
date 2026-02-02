@@ -98,6 +98,7 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   canEditAssignment: _canEditAssignment,
   canEditProject,
   getGroupPriority,
+  dragState,
 }) => {
   const today = new Date()
 
@@ -224,11 +225,12 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
                 getGroupPriority={getGroupPriority}
                 isNonWorkingDay={isNonWorkingDay}
                 isHoliday={isHoliday}
+                dragState={dragState}
               />
             </div>
           ))
           // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
+        }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick, dragState])}
         {/* Comment overlay rendered at row level to appear above all bar segments */}
         <AssignmentCommentOverlay
           assignmentId={assignment.id}
@@ -370,11 +372,12 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               getGroupPriority={getGroupPriority}
               isNonWorkingDay={isNonWorkingDay}
               isHoliday={isHoliday}
+              dragState={dragState}
             />
           </div>
         ))
         // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
+      }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick, dragState])}
       {/* Comment overlay rendered at row level to appear above all bar segments */}
       <AssignmentCommentOverlay
         assignmentId={assignment.id}

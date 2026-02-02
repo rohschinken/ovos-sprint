@@ -208,7 +208,75 @@ export function useDragAssignment(
           return
         }
 
-        // Call move mutation (backend will handle overlap detection and merging)
+        // Get the assignment to check member and warnings
+        const assignment = projectAssignments.find((pa: any) => pa.id === dragState.assignmentId)
+        const warnWeekend = settings.warnWeekendAssignments !== 'false'
+
+        // Check all dates in the new range for holidays and non-working days
+        if (warnWeekend && assignment) {
+          const holidays: string[] = []
+          const nonWorkingDays: string[] = []
+          const newStart = new Date(newStartDate)
+          const newEnd = new Date(newEndDate)
+          const newDaysDiff = Math.floor((newEnd.getTime() - newStart.getTime()) / (1000 * 60 * 60 * 24))
+
+          for (let i = 0; i <= newDaysDiff; i++) {
+            const date = addDays(newStart, i)
+
+            if (isHoliday(date)) {
+              const holidayName = getHolidayName(date)
+              holidays.push(holidayName || format(date, 'MMM d'))
+            } else if (isNonWorkingDay(assignment.teamMemberId, date)) {
+              nonWorkingDays.push(format(date, 'MMM d'))
+            }
+          }
+
+          // Show warning if there are holidays or non-working days
+          if (holidays.length > 0 || nonWorkingDays.length > 0) {
+            const member = members.find((m) => m.id === assignment.teamMemberId)
+            const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
+
+            const message = (
+              <>
+                {holidays.length > 0 && (
+                  <>
+                    The following dates are holidays: <strong>{holidays.join(', ')}</strong>.{' '}
+                  </>
+                )}
+                {nonWorkingDays.length > 0 && (
+                  <>
+                    The following dates are non-working days for {memberName}: <strong>{nonWorkingDays.join(', ')}</strong>.{' '}
+                  </>
+                )}
+                Are you sure you want to move this assignment to these days?
+              </>
+            )
+
+            setTimelineWarning({
+              type: holidays.length > 0 ? 'holiday' : 'non-working-day',
+              message,
+              onConfirm: () => {
+                // User confirmed, proceed with move
+                moveAssignmentMutation.mutate({
+                  projectAssignmentId: dragState.assignmentId!,
+                  newStartDate,
+                  newEndDate,
+                })
+                setTimelineWarning(null)
+              },
+              onSkip: () => {
+                // User cancelled, don't move
+                setTimelineWarning(null)
+              },
+            })
+
+            // Clear drag state but don't move yet (waiting for confirmation)
+            setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+            return
+          }
+        }
+
+        // No warnings needed, proceed with move
         moveAssignmentMutation.mutate({
           projectAssignmentId: dragState.assignmentId,
           newStartDate,
