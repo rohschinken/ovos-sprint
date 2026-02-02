@@ -120,8 +120,8 @@ export function AssignmentEditPopover({
 
   // Calculate position to keep popover in viewport
   const calculatePosition = () => {
-    const popoverWidth = 280
-    const popoverHeight = 340 // Increased for date inputs
+    const popoverWidth = 420
+    const popoverHeight = 280
     const padding = 16
 
     let x = position.x
@@ -151,7 +151,7 @@ export function AssignmentEditPopover({
     <div
       ref={popoverRef}
       className={cn(
-        'fixed z-50 w-[280px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
+        'fixed z-50 w-[420px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
         'animate-in fade-in-0 zoom-in-95'
       )}
       style={{
@@ -160,32 +160,34 @@ export function AssignmentEditPopover({
       }}
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="start-date">Start Date</Label>
-          <Input
-            id="start-date"
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value)
-              setDateError(null)
-            }}
-            className="h-9"
-          />
-        </div>
+        <div className="flex gap-3">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="start-date">Start Date</Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value)
+                setDateError(null)
+              }}
+              className="h-9"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="end-date">End Date</Label>
-          <Input
-            id="end-date"
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value)
-              setDateError(null)
-            }}
-            className="h-9"
-          />
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="end-date">End Date</Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value)
+                setDateError(null)
+              }}
+              className="h-9"
+            />
+          </div>
         </div>
 
         {dateError && (
