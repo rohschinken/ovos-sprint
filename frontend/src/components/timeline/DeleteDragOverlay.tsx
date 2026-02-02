@@ -31,7 +31,7 @@ interface DeleteDragOverlayProps {
   assignmentId: number
   dates: Date[]
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
-  getDragMode: () => 'create' | 'delete' | null
+  getDragMode: () => 'create' | 'delete' | 'move' | null
   zoomLevel: number
 }
 

@@ -242,6 +242,54 @@ export function useTimelineMutations() {
     },
   })
 
+  /**
+   * Move assignment block to new date range with merge support
+   */
+  const moveAssignmentMutation = useMutation({
+    mutationFn: async (data: {
+      projectAssignmentId: number
+      newStartDate: string
+      newEndDate: string
+    }) => {
+      const response = await api.post(
+        `/assignments/projects/${data.projectAssignmentId}/move`,
+        {
+          newStartDate: data.newStartDate,
+          newEndDate: data.newEndDate,
+        }
+      )
+      return response.data
+    },
+    onSuccess: async (data) => {
+      // Refetch day assignments and groups
+      await queryClient.refetchQueries({
+        queryKey: ['assignments', 'days'],
+        type: 'all'
+      })
+      await queryClient.refetchQueries({
+        queryKey: ['assignment-groups'],
+        type: 'all'
+      })
+
+      // Show toast with merge info
+      toast({
+        title: 'Assignment moved',
+        description:
+          data.mergedDays > 0
+            ? `Merged with ${data.mergedDays} overlapping day(s)`
+            : 'Assignment moved successfully',
+      })
+    },
+    onError: (error: any) => {
+      console.error('Failed to move assignment:', error)
+      toast({
+        title: 'Failed to move assignment',
+        description: error.response?.data?.error || 'Unknown error',
+        variant: 'destructive',
+      })
+    },
+  })
+
   return {
     createDayAssignmentMutation,
     deleteDayAssignmentMutation,
@@ -252,5 +300,6 @@ export function useTimelineMutations() {
     createDayOffMutation,
     deleteDayOffMutation,
     saveAssignmentGroupMutation,
+    moveAssignmentMutation,
   }
 }

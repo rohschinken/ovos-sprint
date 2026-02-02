@@ -16,7 +16,9 @@ interface DragState {
   assignmentId: number | null
   startDate: Date | null
   endDate: Date | null
-  mode: 'create' | 'delete' | null
+  mode: 'create' | 'delete' | 'move' | null
+  moveSource?: { startDate: string; endDate: string } // Original range when moving
+  moveOffset?: number // Number of days moved from original position
 }
 
 interface DragContextValue {

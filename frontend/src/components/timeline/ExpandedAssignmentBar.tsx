@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
 import {
   getAssignmentRoundedClass,
   getAssignmentBorderClass,
@@ -9,6 +10,7 @@ import {
   isNextDayAssigned,
   isLastDayOfRange,
   isDayAssigned,
+  addDaysToDateString,
 } from '@/lib/timeline-helpers'
 import type { ExpandedAssignmentBarProps } from './types'
 
@@ -60,11 +62,31 @@ export function ExpandedAssignmentBar({
   getGroupPriority,
   isNonWorkingDay,
   isHoliday,
+  dragState,
 }: ExpandedAssignmentBarProps) {
   // Check if this day is assigned
   const isAssigned = isDayAssigned(dayAssignments, assignmentId, date)
 
-  if (!isAssigned && !isDayInDragRange) {
+  // MOVE mode visual logic
+  const isBeingMoved =
+    dragState?.mode === 'move' &&
+    dragState.assignmentId === assignmentId &&
+    dragState.moveSource &&
+    format(date, 'yyyy-MM-dd') >= dragState.moveSource.startDate &&
+    format(date, 'yyyy-MM-dd') <= dragState.moveSource.endDate
+
+  const isMovePreview =
+    dragState?.mode === 'move' &&
+    dragState.assignmentId === assignmentId &&
+    dragState.moveSource &&
+    dragState.moveOffset !== undefined &&
+    dragState.moveOffset !== 0 &&
+    format(date, 'yyyy-MM-dd') >=
+      addDaysToDateString(dragState.moveSource.startDate, dragState.moveOffset) &&
+    format(date, 'yyyy-MM-dd') <=
+      addDaysToDateString(dragState.moveSource.endDate, dragState.moveOffset)
+
+  if (!isAssigned && !isDayInDragRange && !isMovePreview) {
     return null
   }
 
@@ -113,6 +135,9 @@ export function ExpandedAssignmentBar({
         colorClasses,
         project.status === 'tentative' && !hasOverlap && 'opacity-60',
         isDayInDragRange && dragMode === 'create' && 'opacity-50',
+        // MOVE mode visuals
+        isBeingMoved && 'opacity-40 border-dashed', // Ghost effect
+        isMovePreview && 'opacity-100 ring-2 ring-primary ring-offset-1', // Preview highlight
         // Don't show opacity on bars during delete mode - only red overlay shows
         isAdmin && 'cursor-pointer'
       )}

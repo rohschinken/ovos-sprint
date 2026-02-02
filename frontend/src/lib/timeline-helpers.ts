@@ -308,3 +308,56 @@ export function hasAssignmentInDateRange(
 ): boolean {
   return dates.some(date => isDayAssigned(dayAssignments, assignmentId, date))
 }
+
+/**
+ * Check if two date strings are consecutive days
+ */
+export function isConsecutiveDay(date1Str: string, date2Str: string): boolean {
+  const date1 = new Date(date1Str)
+  const date2 = new Date(date2Str)
+  const diffMs = date2.getTime() - date1.getTime()
+  const diffDays = diffMs / (1000 * 60 * 60 * 24)
+  return Math.abs(diffDays) === 1
+}
+
+/**
+ * Add days to a date string (YYYY-MM-DD format)
+ */
+export function addDaysToDateString(dateStr: string, days: number): string {
+  const date = new Date(dateStr)
+  const result = addDays(date, days)
+  return format(result, 'yyyy-MM-dd')
+}
+
+/**
+ * Find overlapping day assignments in a date range
+ * Excludes the specified project assignment ID (the one being moved)
+ */
+export function findOverlapsInRange(
+  dayAssignments: any[],
+  startDateStr: string,
+  endDateStr: string,
+  excludeAssignmentId: number,
+  projectId: number,
+  teamMemberId: number
+): any[] {
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  return dayAssignments.filter((da: any) => {
+    // Skip the assignment being moved
+    if (da.projectAssignmentId === excludeAssignmentId) return false
+
+    // Only check for same project + member combination
+    if (
+      da.projectAssignment?.projectId !== projectId ||
+      da.projectAssignment?.teamMemberId !== teamMemberId
+    ) {
+      return false
+    }
+
+    // Check if date is in range
+    const daDate = new Date(da.date)
+    return daDate >= start && daDate <= end
+  })
+}
