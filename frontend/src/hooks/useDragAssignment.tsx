@@ -39,7 +39,7 @@ export function useDragAssignment(
   isNonWorkingDay: (memberId: number, date: Date) => boolean,
   getDayAssignmentId: (assignmentId: number, date: Date) => number | undefined,
   deleteBatchDayAssignmentsMutation: UseMutationResult<any, unknown, number[], unknown>,
-  moveAssignmentMutation?: UseMutationResult<any, unknown, { projectAssignmentId: number; newStartDate: string; newEndDate: string }, unknown>
+  moveAssignmentMutation?: UseMutationResult<any, unknown, { projectAssignmentId: number; oldStartDate?: string; oldEndDate?: string; newStartDate: string; newEndDate: string }, unknown>
 ) {
   // Use DragContext instead of local state to prevent Timeline re-renders
   const { getDragState, setDragState: setContextDragState, isDayInDragRange } = useDragContext()
@@ -259,6 +259,8 @@ export function useDragAssignment(
                 // User confirmed, proceed with move
                 moveAssignmentMutation.mutate({
                   projectAssignmentId: dragState.assignmentId!,
+                  oldStartDate: dragState.moveSource!.startDate,
+                  oldEndDate: dragState.moveSource!.endDate,
                   newStartDate,
                   newEndDate,
                 })
@@ -279,6 +281,8 @@ export function useDragAssignment(
         // No warnings needed, proceed with move
         moveAssignmentMutation.mutate({
           projectAssignmentId: dragState.assignmentId,
+          oldStartDate: dragState.moveSource!.startDate,
+          oldEndDate: dragState.moveSource!.endDate,
           newStartDate,
           newEndDate,
         })

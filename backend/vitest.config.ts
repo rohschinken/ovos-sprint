@@ -6,6 +6,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/tests/setup.ts'],
+    env: {
+      // Set test database BEFORE any imports happen
+      NODE_ENV: 'test',
+      DATABASE_URL: './data/test-ovos-sprint.db',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

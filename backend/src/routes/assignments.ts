@@ -773,7 +773,7 @@ router.delete('/groups/:id', authenticate, requireAdminOrProjectManager, async (
 router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
     const projectAssignmentId = parseInt(req.params.id)
-    const { newStartDate, newEndDate } = req.body
+    const { oldStartDate: providedOldStartDate, oldEndDate: providedOldEndDate, newStartDate, newEndDate } = req.body
 
     // Validate dates
     if (!newStartDate || !newEndDate) {
@@ -799,10 +799,20 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
       return res.status(403).json({ error: 'You can only move assignments for your own projects' })
     }
 
-    // Get all existing day assignments for this project assignment
-    const existingDays = await db.query.dayAssignments.findMany({
-      where: (da, { eq }) => eq(da.projectAssignmentId, projectAssignmentId),
-    })
+    // Get existing day assignments for this project assignment
+    // If oldStartDate/oldEndDate are provided, only get days in that contiguous block
+    // Otherwise, get all days (for ALT+drag move operations)
+    const existingDays = providedOldStartDate && providedOldEndDate
+      ? await db.query.dayAssignments.findMany({
+          where: (da, { and, eq, gte, lte }) => and(
+            eq(da.projectAssignmentId, projectAssignmentId),
+            gte(da.date, providedOldStartDate),
+            lte(da.date, providedOldEndDate)
+          ),
+        })
+      : await db.query.dayAssignments.findMany({
+          where: (da, { eq }) => eq(da.projectAssignmentId, projectAssignmentId),
+        })
 
     if (existingDays.length === 0) {
       return res.status(400).json({ error: 'No day assignments to move' })
@@ -810,8 +820,8 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
 
     // Sort existing days and get old date range
     const sortedDays = existingDays.map(d => d.date).sort()
-    const oldStartDate = sortedDays[0]
-    const oldEndDate = sortedDays[sortedDays.length - 1]
+    const oldStartDate = providedOldStartDate || sortedDays[0]
+    const oldEndDate = providedOldEndDate || sortedDays[sortedDays.length - 1]
 
     // Generate date range for new position
     const generateDateRange = (start: string, end: string): string[] => {
@@ -828,36 +838,12 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
       return dates
     }
 
-    const newDates = generateDateRange(newStartDate, newEndDate)
     const oldDates = sortedDays
+    const newDates = generateDateRange(newStartDate, newEndDate)
 
-    // Find dates to add, remove, and keep
+    // Calculate what dates to add/remove
     const datesToAdd = newDates.filter(d => !oldDates.includes(d))
     const datesToRemove = oldDates.filter(d => !newDates.includes(d))
-
-    // Check for overlaps in new range with SAME member/project combo
-    const overlappingDays = await db.query.dayAssignments.findMany({
-      where: (da, { and, gte, lte, ne }) => and(
-        ne(da.projectAssignmentId, projectAssignmentId),
-        gte(da.date, newStartDate),
-        lte(da.date, newEndDate)
-      )
-    })
-
-    // Filter overlaps to only same project + member
-    const relevantOverlaps = await Promise.all(
-      overlappingDays.map(async (da) => {
-        const pa = await db.query.projectAssignments.findFirst({
-          where: (assignments, { eq }) => eq(assignments.id, da.projectAssignmentId)
-        })
-        return pa &&
-          pa.projectId === projectAssignment.projectId &&
-          pa.teamMemberId === projectAssignment.teamMemberId
-          ? da
-          : null
-      })
-    )
-    const actualOverlaps = relevantOverlaps.filter(Boolean)
 
     // Get assignment group metadata to preserve
     const assignmentGroup = await db.query.assignmentGroups.findFirst({
@@ -868,42 +854,17 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
       )
     })
 
-    // Perform move operation
-    // 1. Delete overlapping day assignments (merge strategy)
-    if (actualOverlaps.length > 0) {
-      await db.delete(dayAssignments).where(
-        inArray(dayAssignments.id, actualOverlaps.map(o => o!.id))
-      )
-
-      // Delete overlapping assignment groups
-      const overlapPAIds = [...new Set(actualOverlaps.map(o => o!.projectAssignmentId))]
-      for (const paId of overlapPAIds) {
-        const groups = await db.query.assignmentGroups.findMany({
-          where: (ag, { and, eq, gte, lte }) => and(
-            eq(ag.projectAssignmentId, paId),
-            gte(ag.startDate, newStartDate),
-            lte(ag.endDate, newEndDate)
-          )
-        })
-        if (groups.length > 0) {
-          await db.delete(assignmentGroups).where(
-            inArray(assignmentGroups.id, groups.map(g => g.id))
-          )
-        }
-      }
-    }
-
-    // 2. Delete removed dates
+    // STEP 1: Remove dates from old range
     if (datesToRemove.length > 0) {
       const idsToDelete = existingDays
         .filter(d => datesToRemove.includes(d.date))
         .map(d => d.id)
-      await db.delete(dayAssignments).where(
-        inArray(dayAssignments.id, idsToDelete)
-      )
+      if (idsToDelete.length > 0) {
+        await db.delete(dayAssignments).where(inArray(dayAssignments.id, idsToDelete))
+      }
     }
 
-    // 3. Add new dates
+    // STEP 2: Add dates to new range
     if (datesToAdd.length > 0) {
       await db.insert(dayAssignments).values(
         datesToAdd.map(date => ({
@@ -914,7 +875,7 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
       )
     }
 
-    // 4. Update assignment group dates
+    // STEP 3: Update assignment group to new range
     if (assignmentGroup) {
       await db
         .update(assignmentGroups)
@@ -925,7 +886,13 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
         .where(eq(assignmentGroups.id, assignmentGroup.id))
     }
 
-    // 5. Get updated day assignments
+    // STEP 4: Apply comprehensive merge logic (handles all edge cases)
+    const { handleAssignmentMerge } = await import('../utils/groupMerge.js')
+    await handleAssignmentMerge(projectAssignmentId, newDates, {
+      expandSearchForAdjacent: true // Look for adjacent blocks in other ProjectAssignments
+    })
+
+    // Get updated day assignments
     const updatedDays = await db.query.dayAssignments.findMany({
       where: (da, { eq }) => eq(da.projectAssignmentId, projectAssignmentId),
     })
@@ -933,7 +900,6 @@ router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, as
     res.json({
       projectAssignmentId,
       dayAssignments: updatedDays,
-      mergedDays: actualOverlaps.length,
     })
   } catch (error) {
     console.error('Move assignment error:', error)

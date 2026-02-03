@@ -206,9 +206,10 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
                 isAdmin={isAdmin}
                 hasOverlap={hasOverlap(member.id, props.date, 'member')}
                 onMouseDown={(e) => {
-                  // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                  // Allow delete triggers (right-click, Ctrl/Cmd+click) and move trigger (ALT+click) to bubble to cell handler
                   const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-                  if (!isDeleteTrigger) {
+                  const isMoveTrigger = e.altKey
+                  if (!isDeleteTrigger && !isMoveTrigger) {
                     e.stopPropagation() // Only stop for regular clicks
                   }
                 }}
@@ -353,9 +354,10 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               isAdmin={isAdmin}
               hasOverlap={false}
               onMouseDown={(e) => {
-                // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                // Allow delete triggers (right-click, Ctrl/Cmd+click) and move trigger (ALT+click) to bubble to cell handler
                 const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-                if (!isDeleteTrigger) {
+                const isMoveTrigger = e.altKey
+                if (!isDeleteTrigger && !isMoveTrigger) {
                   e.stopPropagation() // Only stop for regular clicks
                 }
               }}

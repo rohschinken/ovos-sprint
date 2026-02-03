@@ -81,6 +81,26 @@ export function DragProvider({ children }: DragProviderProps) {
       return false
     }
 
+    // For MOVE mode, calculate the target range based on offset
+    // Don't show intermediate days, only show where the block will land
+    if (state.mode === 'move' && state.moveSource && state.moveOffset !== undefined) {
+      const originalStart = new Date(state.moveSource.startDate)
+      const originalEnd = new Date(state.moveSource.endDate)
+
+      // Apply offset to get new range
+      const newStart = new Date(originalStart)
+      newStart.setDate(newStart.getDate() + state.moveOffset)
+      const newEnd = new Date(originalEnd)
+      newEnd.setDate(newEnd.getDate() + state.moveOffset)
+
+      // Normalize to ensure start <= end
+      const start = newStart < newEnd ? newStart : newEnd
+      const end = newStart > newEnd ? newStart : newEnd
+
+      return date >= start && date <= end
+    }
+
+    // For CREATE and DELETE modes, use the current drag range
     const start =
       state.startDate < state.endDate
         ? state.startDate

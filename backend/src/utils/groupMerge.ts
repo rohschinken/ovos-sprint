@@ -1,5 +1,5 @@
 import { db, assignmentGroups, dayAssignments } from '../db/index.js'
-import { eq, and, gte, lte } from 'drizzle-orm'
+import { eq, and, gte, lte, ne, inArray } from 'drizzle-orm'
 
 /**
  * Calculate the number of days in a date range (inclusive)
@@ -433,4 +433,202 @@ export async function cleanupOrphanedGroups(projectAssignmentId: number): Promis
   }
 
   return deletedIds
+}
+
+/**
+ * Comprehensive merge handler for assignment day modifications.
+ * Handles ALL edge cases:
+ * 1. Duplicate days within the same ProjectAssignment (from different groups)
+ * 2. Overlaps with different ProjectAssignments (same project+member)
+ * 3. Adjacent blocks that should merge
+ * 4. Contiguous group consolidation
+ *
+ * Call this after any operation that modifies day assignments.
+ */
+export async function handleAssignmentMerge(
+  projectAssignmentId: number,
+  modifiedDates: string[],
+  options?: {
+    expandSearchForAdjacent?: boolean // Look for adjacent blocks in other ProjectAssignments
+  }
+): Promise<void> {
+  // Get project assignment details
+  const projectAssignment = await db.query.projectAssignments.findFirst({
+    where: (pa, { eq }) => eq(pa.id, projectAssignmentId)
+  })
+
+  if (!projectAssignment) {
+    return
+  }
+
+  // STEP 1: Remove duplicate days within the same ProjectAssignment (from different groups)
+  await removeDuplicateDaysWithinPA(projectAssignmentId)
+
+  // STEP 2: Check for overlaps/adjacency with OTHER ProjectAssignments (same project+member)
+  if (options?.expandSearchForAdjacent) {
+    await mergeWithOtherProjectAssignments(projectAssignment, modifiedDates)
+  }
+
+  // STEP 3: Use existing merge logic for each modified date segment
+  await mergeGroupsForProjectAssignment(projectAssignmentId, modifiedDates)
+
+  // STEP 4: Clean up any orphaned groups
+  await cleanupOrphanedGroups(projectAssignmentId)
+}
+
+/**
+ * Remove duplicate day assignments within the same ProjectAssignment.
+ * Keeps only one day assignment per date (the oldest by ID).
+ */
+async function removeDuplicateDaysWithinPA(projectAssignmentId: number): Promise<void> {
+  const allDays = await db
+    .select()
+    .from(dayAssignments)
+    .where(eq(dayAssignments.projectAssignmentId, projectAssignmentId))
+
+  // Group by date
+  const daysByDate = new Map<string, typeof allDays>()
+  for (const day of allDays) {
+    if (!daysByDate.has(day.date)) {
+      daysByDate.set(day.date, [])
+    }
+    daysByDate.get(day.date)!.push(day)
+  }
+
+  // Find duplicates and delete extras
+  const toDelete: number[] = []
+  for (const [, days] of daysByDate.entries()) {
+    if (days.length > 1) {
+      // Sort by ID and keep the first (oldest), delete the rest
+      days.sort((a, b) => a.id - b.id)
+      for (let i = 1; i < days.length; i++) {
+        toDelete.push(days[i].id)
+      }
+    }
+  }
+
+  if (toDelete.length > 0) {
+    await db.delete(dayAssignments).where(
+      inArray(dayAssignments.id, toDelete)
+    )
+  }
+}
+
+/**
+ * Merge with other ProjectAssignments (same project+member) if they overlap or are adjacent.
+ */
+async function mergeWithOtherProjectAssignments(
+  projectAssignment: any,
+  modifiedDates: string[]
+): Promise<void> {
+  if (modifiedDates.length === 0) return
+
+  // Expand search range to catch adjacent blocks
+  const sortedDates = [...modifiedDates].sort()
+  const minDate = new Date(sortedDates[0])
+  minDate.setDate(minDate.getDate() - 1)
+  const maxDate = new Date(sortedDates[sortedDates.length - 1])
+  maxDate.setDate(maxDate.getDate() + 1)
+
+  const expandedStart = minDate.toISOString().split('T')[0]
+  const expandedEnd = maxDate.toISOString().split('T')[0]
+
+  // Find overlapping days from OTHER ProjectAssignments
+  const overlappingDays = await db
+    .select()
+    .from(dayAssignments)
+    .where(
+      and(
+        ne(dayAssignments.projectAssignmentId, projectAssignment.id),
+        gte(dayAssignments.date, expandedStart),
+        lte(dayAssignments.date, expandedEnd)
+      )
+    )
+
+  if (overlappingDays.length === 0) {
+    return
+  }
+
+  // Filter to only same project + member
+  const relevantOverlaps: typeof overlappingDays = []
+
+  for (const day of overlappingDays) {
+    const otherPA = await db.query.projectAssignments.findFirst({
+      where: (pa, { eq }) => eq(pa.id, day.projectAssignmentId)
+    })
+
+    if (
+      otherPA &&
+      otherPA.projectId === projectAssignment.projectId &&
+      otherPA.teamMemberId === projectAssignment.teamMemberId
+    ) {
+      relevantOverlaps.push(day)
+    }
+  }
+
+  if (relevantOverlaps.length === 0) {
+    return
+  }
+
+  // Get unique ProjectAssignment IDs to merge
+  const paIdsToMerge = [...new Set(relevantOverlaps.map(d => d.projectAssignmentId))]
+
+  // For each PA to merge, get ALL its days and transfer them
+  for (const paId of paIdsToMerge) {
+    const allDaysFromPA = await db
+      .select()
+      .from(dayAssignments)
+      .where(eq(dayAssignments.projectAssignmentId, paId))
+
+    // Delete all days from the other PA
+    await db.delete(dayAssignments).where(eq(dayAssignments.projectAssignmentId, paId))
+
+    // Delete all groups from the other PA
+    await db.delete(assignmentGroups).where(eq(assignmentGroups.projectAssignmentId, paId))
+
+    // Recreate days under the current PA (will be deduplicated in next step)
+    for (const day of allDaysFromPA) {
+      await db.insert(dayAssignments).values({
+        projectAssignmentId: projectAssignment.id,
+        date: day.date,
+        comment: day.comment
+      })
+    }
+  }
+}
+
+/**
+ * Apply group merge logic for all modified dates.
+ */
+async function mergeGroupsForProjectAssignment(
+  projectAssignmentId: number,
+  modifiedDates: string[]
+): Promise<void> {
+  // Sort dates to identify segments
+  const sortedDates = [...modifiedDates].sort()
+
+  // Find the start of each discontinuous segment
+  const segmentStarts: string[] = []
+  if (sortedDates.length > 0) {
+    segmentStarts.push(sortedDates[0])
+
+    for (let i = 1; i < sortedDates.length; i++) {
+      const prevDate = new Date(sortedDates[i - 1])
+      const currDate = new Date(sortedDates[i])
+      const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24))
+
+      // If gap > 1 day, this is a new segment
+      if (dayDiff > 1) {
+        segmentStarts.push(sortedDates[i])
+      }
+    }
+  }
+
+  // Run merge logic for each segment start
+  for (const segmentStart of segmentStarts) {
+    await handleGroupMergeOnDayAdd(projectAssignmentId, segmentStart)
+  }
+
+  // Final pass: merge any remaining adjacent groups
+  await mergeAdjacentGroups(projectAssignmentId)
 }

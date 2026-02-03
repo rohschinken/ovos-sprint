@@ -502,6 +502,8 @@ function TimelineInner({
             if (data.startDate && data.endDate) {
               await moveAssignmentMutation.mutateAsync({
                 projectAssignmentId: editPopover.projectAssignmentId,
+                oldStartDate: editPopover.dateRange.start,
+                oldEndDate: editPopover.dateRange.end,
                 newStartDate: data.startDate,
                 newEndDate: data.endDate,
               })

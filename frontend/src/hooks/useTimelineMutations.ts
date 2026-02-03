@@ -248,12 +248,16 @@ export function useTimelineMutations() {
   const moveAssignmentMutation = useMutation({
     mutationFn: async (data: {
       projectAssignmentId: number
+      oldStartDate?: string
+      oldEndDate?: string
       newStartDate: string
       newEndDate: string
     }) => {
       const response = await api.post(
         `/assignments/projects/${data.projectAssignmentId}/move`,
         {
+          oldStartDate: data.oldStartDate,
+          oldEndDate: data.oldEndDate,
           newStartDate: data.newStartDate,
           newEndDate: data.newEndDate,
         }

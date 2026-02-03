@@ -115,6 +115,44 @@ export function AssignmentCommentOverlay({
                   zoomLevel as ZoomLevel
                 ),
               }}
+              onMouseDown={(e) => {
+                // Allow ALT+click (move) and Ctrl/Cmd+click (delete) to pass through to assignment block
+                const shouldPassThrough = e.altKey || e.ctrlKey || e.metaKey || e.button === 2
+
+                if (shouldPassThrough) {
+                  // Stop this event from propagating
+                  e.preventDefault()
+                  e.stopPropagation()
+
+                  // Capture references
+                  const target = e.currentTarget as HTMLDivElement
+                  const { clientX, clientY, altKey, ctrlKey, metaKey, button } = e
+
+                  // Temporarily hide the overlay to access element beneath
+                  target.style.pointerEvents = 'none'
+
+                  // Find the element beneath at the same coordinates
+                  const elementBeneath = document.elementFromPoint(clientX, clientY)
+
+                  // Restore overlay pointer events
+                  target.style.pointerEvents = 'auto'
+
+                  // Dispatch a new mousedown event to the element beneath
+                  if (elementBeneath) {
+                    const newEvent = new MouseEvent('mousedown', {
+                      bubbles: true,
+                      cancelable: true,
+                      clientX,
+                      clientY,
+                      button,
+                      altKey,
+                      ctrlKey,
+                      metaKey,
+                    })
+                    elementBeneath.dispatchEvent(newEvent)
+                  }
+                }
+              }}
               onClick={(e) => {
                 // Find the actual date clicked based on X position
                 const row = e.currentTarget.closest('.relative') as HTMLElement
