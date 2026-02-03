@@ -4,6 +4,7 @@ import { format, addDays } from 'date-fns'
 import debounce from 'lodash.debounce'
 import { isHoliday, getHolidayName } from '@/lib/holidays'
 import { useDragContext } from '@/contexts/DragContext'
+import { getContiguousRangeForDate, addDaysToDateString } from '@/lib/timeline-helpers'
 import type { TimelineWarning } from '@/components/timeline/types'
 
 /**
@@ -31,13 +32,14 @@ export function useDragAssignment(
   projectAssignments: any[],
   members: any[],
   settings: Record<string, string>,
-  _dayAssignments: any[],
+  dayAssignments: any[],
   _dates: Date[],
   createBatchDayAssignmentsMutation: UseMutationResult<any, unknown, { projectAssignmentId: number; dates: string[] }, unknown>,
   setTimelineWarning: (warning: TimelineWarning | null) => void,
   isNonWorkingDay: (memberId: number, date: Date) => boolean,
   getDayAssignmentId: (assignmentId: number, date: Date) => number | undefined,
-  deleteBatchDayAssignmentsMutation: UseMutationResult<any, unknown, number[], unknown>
+  deleteBatchDayAssignmentsMutation: UseMutationResult<any, unknown, number[], unknown>,
+  moveAssignmentMutation?: UseMutationResult<any, unknown, { projectAssignmentId: number; oldStartDate?: string; oldEndDate?: string; newStartDate: string; newEndDate: string }, unknown>
 ) {
   // Use DragContext instead of local state to prevent Timeline re-renders
   const { getDragState, setDragState: setContextDragState, isDayInDragRange } = useDragContext()
@@ -46,7 +48,7 @@ export function useDragAssignment(
    * Debounced version of setDragState for smooth drag updates (~60fps)
    */
   const debouncedSetDragState = useMemo(
-    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null; mode: 'create' | 'delete' | null }) => {
+    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null; mode: 'create' | 'delete' | 'move' | null; moveSource?: { startDate: string; endDate: string }; moveOffset?: number }) => {
       setContextDragState(newState)
     }, 16), // ~60fps
     [setContextDragState]
@@ -79,9 +81,40 @@ export function useDragAssignment(
       return
     }
 
-    // Detect delete mode (right-click or CTRL/CMD+click)
+    // Detect mode based on modifier keys
+    const isAltPressed = event.altKey
     const isDeleteTrigger = event.button === 2 || event.ctrlKey || event.metaKey
 
+    // MOVE mode - ALT + click and drag
+    if (isAltPressed) {
+      // Find contiguous range at clicked date
+      const contiguousRange = getContiguousRangeForDate(dayAssignments, assignmentId, date)
+
+      if (!contiguousRange) {
+        // No assignment to move at this date
+        return
+      }
+
+      // Get the project assignment to get projectId and teamMemberId
+      const assignment = projectAssignments.find((pa: any) => pa.id === assignmentId)
+      if (!assignment) return
+
+      // Start MOVE drag
+      setContextDragState({
+        assignmentId,
+        startDate: date,
+        endDate: date,
+        mode: 'move',
+        moveSource: {
+          startDate: contiguousRange.start,
+          endDate: contiguousRange.end,
+        },
+        moveOffset: 0,
+      })
+      return
+    }
+
+    // DELETE mode - right-click or CTRL/CMD+click
     if (isDeleteTrigger) {
       // Start DELETE drag (from any cell - assigned or not)
       // Only assigned cells in the range will be deleted on mouseup
@@ -94,14 +127,14 @@ export function useDragAssignment(
       return
     }
 
-    // Start CREATE drag (existing behavior)
+    // CREATE mode - normal click and drag (existing behavior)
     setContextDragState({
       assignmentId,
       startDate: date,
       endDate: date,
       mode: 'create',
     })
-  }, [setContextDragState])
+  }, [setContextDragState, dayAssignments, projectAssignments])
 
   /**
    * Handle mouse enter on date cell during drag
@@ -109,10 +142,24 @@ export function useDragAssignment(
   const handleMouseEnter = useCallback((date: Date) => {
     const currentState = getDragState()
     if (currentState.assignmentId && currentState.startDate) {
-      debouncedSetDragState({
-        ...currentState,
-        endDate: date,
-      })
+      // MOVE mode - calculate offset from original start date
+      if (currentState.mode === 'move' && currentState.moveSource) {
+        const startDate = new Date(currentState.moveSource.startDate)
+        const currentDate = date
+        const offset = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        debouncedSetDragState({
+          ...currentState,
+          endDate: date,
+          moveOffset: offset,
+        })
+      } else {
+        // CREATE or DELETE mode - just update end date
+        debouncedSetDragState({
+          ...currentState,
+          endDate: date,
+        })
+      }
     }
   }, [getDragState, debouncedSetDragState])
 
@@ -139,6 +186,111 @@ export function useDragAssignment(
       const daysDiff = Math.floor(
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
       )
+
+      // Handle MOVE mode
+      if (dragState.mode === 'move' && dragState.moveSource && dragState.moveOffset !== undefined) {
+        const offset = dragState.moveOffset
+
+        // If offset is 0, no movement occurred - just clear drag state
+        if (offset === 0) {
+          setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+          return
+        }
+
+        // Calculate new date range
+        const newStartDate = addDaysToDateString(dragState.moveSource.startDate, offset)
+        const newEndDate = addDaysToDateString(dragState.moveSource.endDate, offset)
+
+        // Check if move mutation is available
+        if (!moveAssignmentMutation) {
+          console.error('Move mutation not provided to useDragAssignment')
+          setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+          return
+        }
+
+        // Get the assignment to check member and warnings
+        const assignment = projectAssignments.find((pa: any) => pa.id === dragState.assignmentId)
+        const warnWeekend = settings.warnWeekendAssignments !== 'false'
+
+        // Check all dates in the new range for holidays and non-working days
+        if (warnWeekend && assignment) {
+          const holidays: string[] = []
+          const nonWorkingDays: string[] = []
+          const newStart = new Date(newStartDate)
+          const newEnd = new Date(newEndDate)
+          const newDaysDiff = Math.floor((newEnd.getTime() - newStart.getTime()) / (1000 * 60 * 60 * 24))
+
+          for (let i = 0; i <= newDaysDiff; i++) {
+            const date = addDays(newStart, i)
+
+            if (isHoliday(date)) {
+              const holidayName = getHolidayName(date)
+              holidays.push(holidayName || format(date, 'MMM d'))
+            } else if (isNonWorkingDay(assignment.teamMemberId, date)) {
+              nonWorkingDays.push(format(date, 'MMM d'))
+            }
+          }
+
+          // Show warning if there are holidays or non-working days
+          if (holidays.length > 0 || nonWorkingDays.length > 0) {
+            const member = members.find((m) => m.id === assignment.teamMemberId)
+            const memberName = member ? `${member.firstName} ${member.lastName}` : 'this member'
+
+            const message = (
+              <>
+                {holidays.length > 0 && (
+                  <>
+                    The following dates are holidays: <strong>{holidays.join(', ')}</strong>.{' '}
+                  </>
+                )}
+                {nonWorkingDays.length > 0 && (
+                  <>
+                    The following dates are non-working days for {memberName}: <strong>{nonWorkingDays.join(', ')}</strong>.{' '}
+                  </>
+                )}
+                Are you sure you want to move this assignment to these days?
+              </>
+            )
+
+            setTimelineWarning({
+              type: holidays.length > 0 ? 'holiday' : 'non-working-day',
+              message,
+              onConfirm: () => {
+                // User confirmed, proceed with move
+                moveAssignmentMutation.mutate({
+                  projectAssignmentId: dragState.assignmentId!,
+                  oldStartDate: dragState.moveSource!.startDate,
+                  oldEndDate: dragState.moveSource!.endDate,
+                  newStartDate,
+                  newEndDate,
+                })
+                setTimelineWarning(null)
+              },
+              onSkip: () => {
+                // User cancelled, don't move
+                setTimelineWarning(null)
+              },
+            })
+
+            // Clear drag state but don't move yet (waiting for confirmation)
+            setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+            return
+          }
+        }
+
+        // No warnings needed, proceed with move
+        moveAssignmentMutation.mutate({
+          projectAssignmentId: dragState.assignmentId,
+          oldStartDate: dragState.moveSource!.startDate,
+          oldEndDate: dragState.moveSource!.endDate,
+          newStartDate,
+          newEndDate,
+        })
+
+        // Clear drag state
+        setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
+        return
+      }
 
       // Handle DELETE mode
       if (dragState.mode === 'delete') {
@@ -260,7 +412,7 @@ export function useDragAssignment(
     }
 
     setContextDragState({ assignmentId: null, startDate: null, endDate: null, mode: null })
-  }, [getDragState, setContextDragState, projectAssignments, members, settings, isNonWorkingDay, setTimelineWarning, createBatchDayAssignmentsMutation, getDayAssignmentId, deleteBatchDayAssignmentsMutation])
+  }, [getDragState, setContextDragState, projectAssignments, members, settings, isNonWorkingDay, setTimelineWarning, createBatchDayAssignmentsMutation, getDayAssignmentId, deleteBatchDayAssignmentsMutation, moveAssignmentMutation, dayAssignments])
 
   // Global mouseup listener to complete drag even if mouse leaves component
   useEffect(() => {

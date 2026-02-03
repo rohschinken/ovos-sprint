@@ -58,9 +58,17 @@ export interface TimelineViewContentProps {
   isDayOff: (memberId: number, date: Date) => boolean
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
-  getDragMode: () => 'create' | 'delete' | null
+  getDragMode: () => 'create' | 'delete' | 'move' | null
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**
@@ -91,13 +99,21 @@ export interface AssignmentRowProps {
   handleProjectCellClick: (projectId: number, date: Date, e: React.MouseEvent) => void
   // Helper functions
   isDayInDragRange: (assignmentId: number, date: Date) => boolean
-  getDragMode: () => 'create' | 'delete' | null
+  getDragMode: () => 'create' | 'delete' | 'move' | null
   isDayOff: (memberId: number, date: Date) => boolean
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   hasOverlap: (id: number, date: Date, mode: 'member' | 'project') => boolean
   canEditAssignment: (assignmentId: number) => boolean
   canEditProject: (projectId: number) => boolean
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**
@@ -161,7 +177,7 @@ export interface ExpandedAssignmentBarProps {
   project: any
   member: any
   isDayInDragRange: boolean
-  dragMode: 'create' | 'delete' | null
+  dragMode: 'create' | 'delete' | 'move' | null
   isAdmin: boolean
   hasOverlap: boolean
   onMouseDown: (e: React.MouseEvent) => void
@@ -170,6 +186,14 @@ export interface ExpandedAssignmentBarProps {
   getGroupPriority: (assignmentId: number, date: Date) => AssignmentPriority
   isNonWorkingDay: (memberId: number, date: Date) => boolean
   isHoliday: (date: Date) => boolean
+  dragState: {
+    mode: 'create' | 'delete' | 'move' | null
+    assignmentId: number | null
+    startDate: Date | null
+    endDate: Date | null
+    moveSource?: { startDate: string; endDate: string }
+    moveOffset?: number
+  }
 }
 
 /**

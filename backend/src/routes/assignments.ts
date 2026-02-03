@@ -129,6 +129,72 @@ router.get('/members/:memberId', authenticate, async (req, res) => {
   }
 })
 
+// Get contiguous date range for a project assignment around a specific date
+// This returns only the continuous segment containing the specified date,
+// not the full range if there are gaps (deleted days)
+router.get('/projects/:id/date-range', authenticate, async (req, res) => {
+  try {
+    const projectAssignmentId = parseInt(req.params.id)
+    const dateParam = req.query.date as string | undefined
+
+    const days = await db.query.dayAssignments.findMany({
+      where: (dayAssignments, { eq }) => eq(dayAssignments.projectAssignmentId, projectAssignmentId),
+      orderBy: (dayAssignments, { asc }) => [asc(dayAssignments.date)],
+    })
+
+    if (days.length === 0) {
+      return res.json({ start: null, end: null })
+    }
+
+    // If no date specified, return full range (min to max)
+    if (!dateParam) {
+      return res.json({
+        start: days[0].date,
+        end: days[days.length - 1].date,
+      })
+    }
+
+    // Find contiguous range around the specified date
+    const allDates = days.map(d => d.date).sort()
+
+    // Check if the specified date exists in the assignments
+    if (!allDates.includes(dateParam)) {
+      return res.status(404).json({ error: 'Date not found in assignment' })
+    }
+
+    // Find the contiguous segment containing this date
+    const dateIndex = allDates.indexOf(dateParam)
+    let startIndex = dateIndex
+    let endIndex = dateIndex
+
+    // Helper to check if two dates are consecutive
+    const isNextDay = (date1: string, date2: string): boolean => {
+      const d1 = new Date(date1)
+      const d2 = new Date(date2)
+      const diff = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)
+      return Math.abs(diff) === 1
+    }
+
+    // Expand backwards to find start of contiguous range
+    while (startIndex > 0 && isNextDay(allDates[startIndex - 1], allDates[startIndex])) {
+      startIndex--
+    }
+
+    // Expand forwards to find end of contiguous range
+    while (endIndex < allDates.length - 1 && isNextDay(allDates[endIndex], allDates[endIndex + 1])) {
+      endIndex++
+    }
+
+    res.json({
+      start: allDates[startIndex],
+      end: allDates[endIndex],
+    })
+  } catch (error) {
+    console.error('Get assignment date range error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 // Batch assign multiple members to a project - MUST come before /projects/:id
 router.post('/projects/batch', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
   try {
@@ -699,6 +765,144 @@ router.delete('/groups/:id', authenticate, requireAdminOrProjectManager, async (
     res.status(204).send()
   } catch (error) {
     console.error('Delete assignment group error:', error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// Move project assignment to new date range with merge support
+router.post('/projects/:id/move', authenticate, requireAdminOrProjectManager, async (req: AuthRequest, res) => {
+  try {
+    const projectAssignmentId = parseInt(req.params.id)
+    const { oldStartDate: providedOldStartDate, oldEndDate: providedOldEndDate, newStartDate, newEndDate } = req.body
+
+    // Validate dates
+    if (!newStartDate || !newEndDate) {
+      return res.status(400).json({ error: 'newStartDate and newEndDate are required' })
+    }
+
+    if (new Date(newStartDate) > new Date(newEndDate)) {
+      return res.status(400).json({ error: 'Invalid date range: start date must be before or equal to end date' })
+    }
+
+    // Get the project assignment
+    const projectAssignment = await db.query.projectAssignments.findFirst({
+      where: (pa, { eq }) => eq(pa.id, projectAssignmentId)
+    })
+
+    if (!projectAssignment) {
+      return res.status(404).json({ error: 'Assignment not found' })
+    }
+
+    // Check project ownership
+    const projectId = projectAssignment.projectId
+    if (!await canModifyProject(req.user!.userId, req.user!.role, projectId)) {
+      return res.status(403).json({ error: 'You can only move assignments for your own projects' })
+    }
+
+    // Get existing day assignments for this project assignment
+    // If oldStartDate/oldEndDate are provided, only get days in that contiguous block
+    // Otherwise, get all days (for ALT+drag move operations)
+    const existingDays = providedOldStartDate && providedOldEndDate
+      ? await db.query.dayAssignments.findMany({
+          where: (da, { and, eq, gte, lte }) => and(
+            eq(da.projectAssignmentId, projectAssignmentId),
+            gte(da.date, providedOldStartDate),
+            lte(da.date, providedOldEndDate)
+          ),
+        })
+      : await db.query.dayAssignments.findMany({
+          where: (da, { eq }) => eq(da.projectAssignmentId, projectAssignmentId),
+        })
+
+    if (existingDays.length === 0) {
+      return res.status(400).json({ error: 'No day assignments to move' })
+    }
+
+    // Sort existing days and get old date range
+    const sortedDays = existingDays.map(d => d.date).sort()
+    const oldStartDate = providedOldStartDate || sortedDays[0]
+    const oldEndDate = providedOldEndDate || sortedDays[sortedDays.length - 1]
+
+    // Generate date range for new position
+    const generateDateRange = (start: string, end: string): string[] => {
+      const dates: string[] = []
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+      const current = new Date(startDate)
+
+      while (current <= endDate) {
+        dates.push(current.toISOString().split('T')[0])
+        current.setDate(current.getDate() + 1)
+      }
+
+      return dates
+    }
+
+    const oldDates = sortedDays
+    const newDates = generateDateRange(newStartDate, newEndDate)
+
+    // Calculate what dates to add/remove
+    const datesToAdd = newDates.filter(d => !oldDates.includes(d))
+    const datesToRemove = oldDates.filter(d => !newDates.includes(d))
+
+    // Get assignment group metadata to preserve
+    const assignmentGroup = await db.query.assignmentGroups.findFirst({
+      where: (ag, { and, eq }) => and(
+        eq(ag.projectAssignmentId, projectAssignmentId),
+        eq(ag.startDate, oldStartDate),
+        eq(ag.endDate, oldEndDate)
+      )
+    })
+
+    // STEP 1: Remove dates from old range
+    if (datesToRemove.length > 0) {
+      const idsToDelete = existingDays
+        .filter(d => datesToRemove.includes(d.date))
+        .map(d => d.id)
+      if (idsToDelete.length > 0) {
+        await db.delete(dayAssignments).where(inArray(dayAssignments.id, idsToDelete))
+      }
+    }
+
+    // STEP 2: Add dates to new range
+    if (datesToAdd.length > 0) {
+      await db.insert(dayAssignments).values(
+        datesToAdd.map(date => ({
+          projectAssignmentId,
+          date,
+          comment: null
+        }))
+      )
+    }
+
+    // STEP 3: Update assignment group to new range
+    if (assignmentGroup) {
+      await db
+        .update(assignmentGroups)
+        .set({
+          startDate: newStartDate,
+          endDate: newEndDate
+        })
+        .where(eq(assignmentGroups.id, assignmentGroup.id))
+    }
+
+    // STEP 4: Apply comprehensive merge logic (handles all edge cases)
+    const { handleAssignmentMerge } = await import('../utils/groupMerge.js')
+    await handleAssignmentMerge(projectAssignmentId, newDates, {
+      expandSearchForAdjacent: true // Look for adjacent blocks in other ProjectAssignments
+    })
+
+    // Get updated day assignments
+    const updatedDays = await db.query.dayAssignments.findMany({
+      where: (da, { eq }) => eq(da.projectAssignmentId, projectAssignmentId),
+    })
+
+    res.json({
+      projectAssignmentId,
+      dayAssignments: updatedDays,
+    })
+  } catch (error) {
+    console.error('Move assignment error:', error)
     res.status(500).json({ error: 'Server error' })
   }
 })

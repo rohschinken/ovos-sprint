@@ -98,6 +98,7 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   canEditAssignment: _canEditAssignment,
   canEditProject,
   getGroupPriority,
+  dragState,
 }) => {
   const today = new Date()
 
@@ -205,9 +206,10 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
                 isAdmin={isAdmin}
                 hasOverlap={hasOverlap(member.id, props.date, 'member')}
                 onMouseDown={(e) => {
-                  // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                  // Allow delete triggers (right-click, Ctrl/Cmd+click) and move trigger (ALT+click) to bubble to cell handler
                   const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-                  if (!isDeleteTrigger) {
+                  const isMoveTrigger = e.altKey
+                  if (!isDeleteTrigger && !isMoveTrigger) {
                     e.stopPropagation() // Only stop for regular clicks
                   }
                 }}
@@ -224,11 +226,12 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
                 getGroupPriority={getGroupPriority}
                 isNonWorkingDay={isNonWorkingDay}
                 isHoliday={isHoliday}
+                dragState={dragState}
               />
             </div>
           ))
           // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
+        }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, hasOverlap, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick, dragState])}
         {/* Comment overlay rendered at row level to appear above all bar segments */}
         <AssignmentCommentOverlay
           assignmentId={assignment.id}
@@ -351,9 +354,10 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               isAdmin={isAdmin}
               hasOverlap={false}
               onMouseDown={(e) => {
-                // Allow delete triggers (right-click, Ctrl/Cmd+click) to bubble to cell handler
+                // Allow delete triggers (right-click, Ctrl/Cmd+click) and move trigger (ALT+click) to bubble to cell handler
                 const isDeleteTrigger = e.button === 2 || e.ctrlKey || e.metaKey
-                if (!isDeleteTrigger) {
+                const isMoveTrigger = e.altKey
+                if (!isDeleteTrigger && !isMoveTrigger) {
                   e.stopPropagation() // Only stop for regular clicks
                 }
               }}
@@ -370,11 +374,12 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
               getGroupPriority={getGroupPriority}
               isNonWorkingDay={isNonWorkingDay}
               isHoliday={isHoliday}
+              dragState={dragState}
             />
           </div>
         ))
         // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick])}
+      }, [dates, member.id, assignment.id, project.id, project.status, columnWidth, isAdmin, isDayOff, isWeekend, isHoliday, today, handleMouseDown, handleMouseEnter, handleDeleteDayAssignment, isDayAssigned, dayAssignments, handleAssignmentClick, isDayInDragRange, projectAssignments, getGroupPriority, milestones, canEditProject, handleProjectCellClick, dragState])}
       {/* Comment overlay rendered at row level to appear above all bar segments */}
       <AssignmentCommentOverlay
         assignmentId={assignment.id}

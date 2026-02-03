@@ -24,12 +24,18 @@ export function AssignmentEditPopover({
 }: AssignmentEditPopoverProps) {
   const [priority, setPriority] = useState<AssignmentPriority>(group?.priority ?? 'normal')
   const [comment, setComment] = useState(group?.comment ?? '')
+  const [startDate, setStartDate] = useState(dateRange.start)
+  const [endDate, setEndDate] = useState(dateRange.end)
+  const [dateError, setDateError] = useState<string | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
 
   // Reset form when group or date range changes
   useEffect(() => {
     setPriority(group?.priority ?? 'normal')
     setComment(group?.comment ?? '')
+    setStartDate(dateRange.start)
+    setEndDate(dateRange.end)
+    setDateError(null)
   }, [group, dateRange.start, dateRange.end])
 
   // Track if we should ignore the next outside click (for Select dropdown interactions)
@@ -86,17 +92,36 @@ export function AssignmentEditPopover({
 
   if (!open) return null
 
+  // Validate date range
+  const validateDates = () => {
+    if (new Date(startDate) > new Date(endDate)) {
+      setDateError('Start date must be before or equal to end date')
+      return false
+    }
+    setDateError(null)
+    return true
+  }
+
   const handleSave = () => {
+    if (!validateDates()) {
+      return
+    }
+
+    // Check if dates changed
+    const datesChanged = startDate !== dateRange.start || endDate !== dateRange.end
+
     onSave({
       priority,
       comment: comment.trim() || null,
+      startDate: datesChanged ? startDate : undefined,
+      endDate: datesChanged ? endDate : undefined,
     })
   }
 
   // Calculate position to keep popover in viewport
   const calculatePosition = () => {
-    const popoverWidth = 280
-    const popoverHeight = 220
+    const popoverWidth = 340
+    const popoverHeight = 280
     const padding = 16
 
     let x = position.x
@@ -122,19 +147,11 @@ export function AssignmentEditPopover({
 
   const pos = calculatePosition()
 
-  // Format date range for display
-  const formatDateRange = () => {
-    if (dateRange.start === dateRange.end) {
-      return dateRange.start
-    }
-    return `${dateRange.start} - ${dateRange.end}`
-  }
-
   return createPortal(
     <div
       ref={popoverRef}
       className={cn(
-        'fixed z-50 w-[280px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
+        'fixed z-50 w-[340px] rounded-md border bg-popover p-4 text-popover-foreground shadow-md',
         'animate-in fade-in-0 zoom-in-95'
       )}
       style={{
@@ -143,9 +160,39 @@ export function AssignmentEditPopover({
       }}
     >
       <div className="space-y-4">
-        <div className="text-xs text-muted-foreground">
-          {formatDateRange()}
+        <div className="flex gap-3">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="start-date">Start Date</Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value)
+                setDateError(null)
+              }}
+              className="h-9"
+            />
+          </div>
+
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="end-date">End Date</Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value)
+                setDateError(null)
+              }}
+              className="h-9"
+            />
+          </div>
         </div>
+
+        {dateError && (
+          <p className="text-sm text-destructive">{dateError}</p>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="priority">Priority</Label>
