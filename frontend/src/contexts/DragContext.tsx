@@ -1,4 +1,6 @@
 import { createContext, useContext, useRef, useState, useCallback, ReactNode } from 'react'
+import { format } from 'date-fns'
+import { addDaysToDateString, isDateInRange } from '@/lib/timeline-helpers'
 
 /**
  * DragContext - Isolated drag state management
@@ -82,36 +84,28 @@ export function DragProvider({ children }: DragProviderProps) {
       return false
     }
 
+    // Use string-based comparison to avoid timezone issues
+    const dateStr = format(date, 'yyyy-MM-dd')
+
     // For MOVE mode, calculate the target range based on offset
     // Don't show intermediate days, only show where the block will land
     if (state.mode === 'move' && state.moveSource && state.moveOffset !== undefined) {
-      const originalStart = new Date(state.moveSource.startDate)
-      const originalEnd = new Date(state.moveSource.endDate)
+      // Apply offset to get new range using string-based helper
+      const newStartStr = addDaysToDateString(state.moveSource.startDate, state.moveOffset)
+      const newEndStr = addDaysToDateString(state.moveSource.endDate, state.moveOffset)
 
-      // Apply offset to get new range
-      const newStart = new Date(originalStart)
-      newStart.setDate(newStart.getDate() + state.moveOffset)
-      const newEnd = new Date(originalEnd)
-      newEnd.setDate(newEnd.getDate() + state.moveOffset)
-
-      // Normalize to ensure start <= end
-      const start = newStart < newEnd ? newStart : newEnd
-      const end = newStart > newEnd ? newStart : newEnd
-
-      return date >= start && date <= end
+      return isDateInRange(dateStr, newStartStr, newEndStr)
     }
 
     // For CREATE and DELETE modes, use the current drag range
-    const start =
-      state.startDate < state.endDate
-        ? state.startDate
-        : state.endDate
-    const end =
-      state.startDate > state.endDate
-        ? state.startDate
-        : state.endDate
+    const startStr = format(state.startDate, 'yyyy-MM-dd')
+    const endStr = format(state.endDate, 'yyyy-MM-dd')
 
-    return date >= start && date <= end
+    // Normalize to ensure start <= end for comparison
+    const normalizedStart = startStr < endStr ? startStr : endStr
+    const normalizedEnd = startStr > endStr ? startStr : endStr
+
+    return isDateInRange(dateStr, normalizedStart, normalizedEnd)
   }, [])
 
   // Subscribe to drag updates

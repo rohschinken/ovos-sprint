@@ -4,7 +4,7 @@ import { format, addDays } from 'date-fns'
 import debounce from 'lodash.debounce'
 import { isHoliday, getHolidayName } from '@/lib/holidays'
 import { useDragContext } from '@/contexts/DragContext'
-import { getContiguousRangeForDate, addDaysToDateString } from '@/lib/timeline-helpers'
+import { getContiguousRangeForDate, addDaysToDateString, daysDifference } from '@/lib/timeline-helpers'
 import type { TimelineWarning } from '@/components/timeline/types'
 
 /**
@@ -146,9 +146,8 @@ export function useDragAssignment(
     if (currentState.assignmentId && currentState.startDate) {
       // MOVE mode - calculate offset from anchor date (where user clicked)
       if (currentState.mode === 'move' && currentState.moveSource && currentState.moveAnchor) {
-        const anchorDate = new Date(currentState.moveAnchor)
-        const currentDate = date
-        const offset = Math.floor((currentDate.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24))
+        // Use daysDifference to avoid timezone issues
+        const offset = daysDifference(currentState.moveAnchor, date)
 
         debouncedSetDragState({
           ...currentState,

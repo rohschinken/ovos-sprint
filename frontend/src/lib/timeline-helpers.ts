@@ -322,11 +322,37 @@ export function isConsecutiveDay(date1Str: string, date2Str: string): boolean {
 
 /**
  * Add days to a date string (YYYY-MM-DD format)
+ * Uses UTC noon to avoid timezone boundary issues
  */
 export function addDaysToDateString(dateStr: string, days: number): string {
-  const date = new Date(dateStr)
+  // Parse as UTC noon to avoid timezone issues
+  const date = new Date(dateStr + 'T12:00:00Z')
   const result = addDays(date, days)
   return format(result, 'yyyy-MM-dd')
+}
+
+/**
+ * Calculate the number of days between two dates (as Date objects or strings)
+ * Uses UTC to avoid timezone issues
+ */
+export function daysDifference(date1: Date | string, date2: Date | string): number {
+  // Convert to strings first if needed, then parse as UTC noon to avoid timezone issues
+  const str1 = typeof date1 === 'string' ? date1 : format(date1, 'yyyy-MM-dd')
+  const str2 = typeof date2 === 'string' ? date2 : format(date2, 'yyyy-MM-dd')
+
+  // Parse as UTC noon to avoid DST and timezone boundary issues
+  const d1 = new Date(str1 + 'T12:00:00Z')
+  const d2 = new Date(str2 + 'T12:00:00Z')
+
+  return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Compare if date is within a range (inclusive), using string comparison to avoid timezone issues
+ */
+export function isDateInRange(date: Date | string, startStr: string, endStr: string): boolean {
+  const dateStr = typeof date === 'string' ? date : format(date, 'yyyy-MM-dd')
+  return dateStr >= startStr && dateStr <= endStr
 }
 
 /**
