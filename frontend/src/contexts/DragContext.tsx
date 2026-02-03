@@ -18,7 +18,8 @@ interface DragState {
   endDate: Date | null
   mode: 'create' | 'delete' | 'move' | null
   moveSource?: { startDate: string; endDate: string } // Original range when moving
-  moveOffset?: number // Number of days moved from original position
+  moveAnchor?: string // The date where the user clicked (anchor point for movement)
+  moveOffset?: number // Number of days moved from anchor position
 }
 
 interface DragContextValue {

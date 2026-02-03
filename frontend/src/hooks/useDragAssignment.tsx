@@ -48,7 +48,7 @@ export function useDragAssignment(
    * Debounced version of setDragState for smooth drag updates (~60fps)
    */
   const debouncedSetDragState = useMemo(
-    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null; mode: 'create' | 'delete' | 'move' | null; moveSource?: { startDate: string; endDate: string }; moveOffset?: number }) => {
+    () => debounce((newState: { assignmentId: number | null; startDate: Date | null; endDate: Date | null; mode: 'create' | 'delete' | 'move' | null; moveSource?: { startDate: string; endDate: string }; moveAnchor?: string; moveOffset?: number }) => {
       setContextDragState(newState)
     }, 16), // ~60fps
     [setContextDragState]
@@ -99,7 +99,8 @@ export function useDragAssignment(
       const assignment = projectAssignments.find((pa: any) => pa.id === assignmentId)
       if (!assignment) return
 
-      // Start MOVE drag
+      // Start MOVE drag - store the clicked date as anchor point
+      const clickedDateStr = format(date, 'yyyy-MM-dd')
       setContextDragState({
         assignmentId,
         startDate: date,
@@ -109,6 +110,7 @@ export function useDragAssignment(
           startDate: contiguousRange.start,
           endDate: contiguousRange.end,
         },
+        moveAnchor: clickedDateStr, // Anchor point for calculating offset
         moveOffset: 0,
       })
       return
@@ -142,11 +144,11 @@ export function useDragAssignment(
   const handleMouseEnter = useCallback((date: Date) => {
     const currentState = getDragState()
     if (currentState.assignmentId && currentState.startDate) {
-      // MOVE mode - calculate offset from original start date
-      if (currentState.mode === 'move' && currentState.moveSource) {
-        const startDate = new Date(currentState.moveSource.startDate)
+      // MOVE mode - calculate offset from anchor date (where user clicked)
+      if (currentState.mode === 'move' && currentState.moveSource && currentState.moveAnchor) {
+        const anchorDate = new Date(currentState.moveAnchor)
         const currentDate = date
-        const offset = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        const offset = Math.floor((currentDate.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24))
 
         debouncedSetDragState({
           ...currentState,
