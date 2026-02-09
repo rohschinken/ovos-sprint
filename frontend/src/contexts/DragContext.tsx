@@ -65,6 +65,14 @@ export function DragProvider({ children }: DragProviderProps) {
   const setDragState = useCallback((newState: DragState) => {
     dragStateRef.current = newState
 
+    // Synchronously toggle body class so CSS disables comment overlay pointer events
+    // immediately, without waiting for React's render cycle
+    if (newState.assignmentId) {
+      document.body.classList.add('timeline-dragging')
+    } else {
+      document.body.classList.remove('timeline-dragging')
+    }
+
     // Notify all subscribers (individual cells)
     subscribersRef.current.forEach(callback => callback())
 

@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import {
   handleAssignmentMerge,
   handleGroupMergeOnDayAdd,
+  handleBatchGroupMerge,
   cleanupOrphanedGroups
 } from '../utils/groupMerge.js'
 
@@ -240,6 +241,112 @@ describe('Group Merge Logic', () => {
       expect(groups.length).toBe(1)
       expect(groups[0].startDate).toBe('2026-02-01')
       expect(groups[0].endDate).toBe('2026-02-05')
+    })
+  })
+
+  describe('Batch Group Merge', () => {
+    it('should merge new days created adjacent to existing group with comment/priority', async () => {
+      // Scenario: Day 5 has assignment with comment and priority
+      // User drags from day 4 to day 3 to create new assignment
+      // Expected: Days 3-5 should all be in one group with the original comment/priority
+
+      // Existing day 5 with group
+      await db.insert(dayAssignments).values({
+        projectAssignmentId: testPAId,
+        date: '2026-02-05',
+      })
+      await db.insert(assignmentGroups).values({
+        projectAssignmentId: testPAId,
+        startDate: '2026-02-05',
+        endDate: '2026-02-05',
+        priority: 'high',
+        comment: 'Important task',
+      })
+
+      // User creates days 3-4 via drag
+      await db.insert(dayAssignments).values([
+        { projectAssignmentId: testPAId, date: '2026-02-03' },
+        { projectAssignmentId: testPAId, date: '2026-02-04' },
+      ])
+
+      // Run batch merge (this is what the batch endpoint calls)
+      await handleBatchGroupMerge(testPAId)
+
+      // Should have only 1 group spanning days 3-5
+      const groups = await db.query.assignmentGroups.findMany({
+        where: (ag, { eq }) => eq(ag.projectAssignmentId, testPAId),
+      })
+      expect(groups.length).toBe(1)
+      expect(groups[0].startDate).toBe('2026-02-03')
+      expect(groups[0].endDate).toBe('2026-02-05')
+      // The existing group (day 5) had the comment and priority - it should survive
+      expect(groups[0].priority).toBe('high')
+      expect(groups[0].comment).toBe('Important task')
+    })
+
+    it('should create default group for orphan days with no adjacent groups', async () => {
+      // Create days with no existing groups
+      await db.insert(dayAssignments).values([
+        { projectAssignmentId: testPAId, date: '2026-02-10' },
+        { projectAssignmentId: testPAId, date: '2026-02-11' },
+        { projectAssignmentId: testPAId, date: '2026-02-12' },
+      ])
+
+      await handleBatchGroupMerge(testPAId)
+
+      const groups = await db.query.assignmentGroups.findMany({
+        where: (ag, { eq }) => eq(ag.projectAssignmentId, testPAId),
+      })
+      expect(groups.length).toBe(1)
+      expect(groups[0].startDate).toBe('2026-02-10')
+      expect(groups[0].endDate).toBe('2026-02-12')
+      expect(groups[0].priority).toBe('normal')
+    })
+
+    it('should merge multiple touching groups into the largest one', async () => {
+      // Group A: days 1-3 (normal priority)
+      await db.insert(dayAssignments).values([
+        { projectAssignmentId: testPAId, date: '2026-02-01' },
+        { projectAssignmentId: testPAId, date: '2026-02-02' },
+        { projectAssignmentId: testPAId, date: '2026-02-03' },
+      ])
+      await db.insert(assignmentGroups).values({
+        projectAssignmentId: testPAId,
+        startDate: '2026-02-01',
+        endDate: '2026-02-03',
+        priority: 'normal',
+      })
+
+      // Group B: days 5-7 (high priority, has comment)
+      await db.insert(dayAssignments).values([
+        { projectAssignmentId: testPAId, date: '2026-02-05' },
+        { projectAssignmentId: testPAId, date: '2026-02-06' },
+        { projectAssignmentId: testPAId, date: '2026-02-07' },
+      ])
+      await db.insert(assignmentGroups).values({
+        projectAssignmentId: testPAId,
+        startDate: '2026-02-05',
+        endDate: '2026-02-07',
+        priority: 'high',
+        comment: 'Sprint goal',
+      })
+
+      // Fill gap with day 4 (connecting both groups)
+      await db.insert(dayAssignments).values({
+        projectAssignmentId: testPAId,
+        date: '2026-02-04',
+      })
+
+      await handleBatchGroupMerge(testPAId)
+
+      const groups = await db.query.assignmentGroups.findMany({
+        where: (ag, { eq }) => eq(ag.projectAssignmentId, testPAId),
+      })
+      expect(groups.length).toBe(1)
+      expect(groups[0].startDate).toBe('2026-02-01')
+      expect(groups[0].endDate).toBe('2026-02-07')
+      // Both groups are same size (3 days), so the first one (by sort order of dayCount desc, then whatever) survives
+      // The important thing is that ONE group survives with the full range
     })
   })
 

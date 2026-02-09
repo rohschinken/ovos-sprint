@@ -99,10 +99,12 @@ export function AssignmentCommentOverlay({
           <TooltipTrigger asChild>
             <div
               className={cn(
+                'comment-overlay',
                 'absolute top-1/2 -translate-y-1/2',
                 'flex items-center gap-0.5',
                 'text-[9px] leading-none',
-                'pointer-events-auto cursor-pointer overflow-hidden',
+                'pointer-events-auto cursor-pointer',
+                'overflow-hidden',
                 'z-20'
               )}
               style={{

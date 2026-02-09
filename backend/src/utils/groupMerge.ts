@@ -632,3 +632,134 @@ async function mergeGroupsForProjectAssignment(
   // Final pass: merge any remaining adjacent groups
   await mergeAdjacentGroups(projectAssignmentId)
 }
+
+/**
+ * Comprehensive batch merge handler.
+ * After creating new day assignments, finds ALL contiguous ranges of day assignments
+ * and ensures each range is covered by exactly one group.
+ * Groups that touch or overlap the same contiguous range are merged (largest survives).
+ * Orphan ranges (no existing group) get a new default group.
+ */
+export async function handleBatchGroupMerge(
+  projectAssignmentId: number
+): Promise<void> {
+  // Get ALL day assignments for this PA, sorted by date
+  const allDays = await db
+    .select()
+    .from(dayAssignments)
+    .where(eq(dayAssignments.projectAssignmentId, projectAssignmentId))
+
+  if (allDays.length === 0) {
+    // No days at all - clean up any orphaned groups
+    await cleanupOrphanedGroups(projectAssignmentId)
+    return
+  }
+
+  // Sort by date
+  allDays.sort((a, b) => a.date.localeCompare(b.date))
+
+  // Build contiguous ranges from actual day assignments
+  const contiguousRanges: { start: string; end: string }[] = []
+  let rangeStart = allDays[0].date
+  let rangeEnd = allDays[0].date
+
+  for (let i = 1; i < allDays.length; i++) {
+    const expectedNext = addDay(rangeEnd)
+    if (allDays[i].date === expectedNext) {
+      // Contiguous - extend range
+      rangeEnd = allDays[i].date
+    } else {
+      // Gap - save current range and start new one
+      contiguousRanges.push({ start: rangeStart, end: rangeEnd })
+      rangeStart = allDays[i].date
+      rangeEnd = allDays[i].date
+    }
+  }
+  // Don't forget the last range
+  contiguousRanges.push({ start: rangeStart, end: rangeEnd })
+
+  // Get all existing groups for this PA
+  let groups = await db
+    .select()
+    .from(assignmentGroups)
+    .where(eq(assignmentGroups.projectAssignmentId, projectAssignmentId))
+
+  // For each contiguous range, find all groups that touch or overlap it
+  for (const range of contiguousRanges) {
+    // A group "touches" the range if:
+    // - It overlaps: group.start <= range.end && group.end >= range.start
+    // - It's adjacent: group.end === dayBefore(range.start) or group.start === dayAfter(range.end)
+    const dayBeforeRange = subtractDay(range.start)
+    const dayAfterRange = addDay(range.end)
+
+    const touchingGroups = groups.filter(g =>
+      // Overlapping
+      (g.startDate <= range.end && g.endDate >= range.start) ||
+      // Adjacent before
+      g.endDate === dayBeforeRange ||
+      // Adjacent after
+      g.startDate === dayAfterRange
+    )
+
+    if (touchingGroups.length === 0) {
+      // No existing group covers this range - create a new default group
+      await db.insert(assignmentGroups).values({
+        projectAssignmentId,
+        startDate: range.start,
+        endDate: range.end,
+        priority: 'normal',
+        comment: null,
+      })
+    } else if (touchingGroups.length === 1) {
+      // One group touches - expand it to cover the full range
+      const group = touchingGroups[0]
+      const newStart = group.startDate < range.start ? group.startDate : range.start
+      const newEnd = group.endDate > range.end ? group.endDate : range.end
+
+      if (newStart !== group.startDate || newEnd !== group.endDate) {
+        await db
+          .update(assignmentGroups)
+          .set({ startDate: newStart, endDate: newEnd })
+          .where(eq(assignmentGroups.id, group.id))
+      }
+    } else {
+      // Multiple groups touch this range - merge them all
+      // Survivor is the largest group (by day count)
+      touchingGroups.sort((a, b) => dayCount(b.startDate, b.endDate) - dayCount(a.startDate, a.endDate))
+      const survivor = touchingGroups[0]
+      const losers = touchingGroups.slice(1)
+
+      // Calculate the merged range (covers all groups + the contiguous range)
+      let mergedStart = range.start
+      let mergedEnd = range.end
+      for (const g of touchingGroups) {
+        if (g.startDate < mergedStart) mergedStart = g.startDate
+        if (g.endDate > mergedEnd) mergedEnd = g.endDate
+      }
+
+      // Update survivor to span the full merged range
+      await db
+        .update(assignmentGroups)
+        .set({ startDate: mergedStart, endDate: mergedEnd })
+        .where(eq(assignmentGroups.id, survivor.id))
+
+      // Delete losers
+      for (const loser of losers) {
+        await db.delete(assignmentGroups).where(eq(assignmentGroups.id, loser.id))
+      }
+
+      // Remove losers from the groups array so they don't match subsequent ranges
+      const loserIds = new Set(losers.map(l => l.id))
+      groups = groups.filter(g => !loserIds.has(g.id))
+
+      // Update survivor in groups array
+      const survivorIdx = groups.findIndex(g => g.id === survivor.id)
+      if (survivorIdx >= 0) {
+        groups[survivorIdx] = { ...groups[survivorIdx], startDate: mergedStart, endDate: mergedEnd }
+      }
+    }
+  }
+
+  // Final cleanup: remove any groups with no actual day assignments
+  await cleanupOrphanedGroups(projectAssignmentId)
+}

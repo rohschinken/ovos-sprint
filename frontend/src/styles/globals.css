@@ -210,3 +210,11 @@
     border-color: hsl(var(--mode-project) / 0.6);
   }
 }
+
+/* Disable comment overlay pointer events during drag operations.
+   Uses body class toggled synchronously by DragContext to avoid
+   React render cycle delays that cause missed mouseenter events. */
+body.timeline-dragging .comment-overlay {
+  pointer-events: none !important;
+  cursor: default !important;
+}
