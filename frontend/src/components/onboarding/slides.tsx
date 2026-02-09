@@ -1,4 +1,4 @@
-import { Plus, MessageSquareText, Flag, Palmtree, Sparkles, Flame, Pencil, Trash, MoveHorizontal } from 'lucide-react'
+import { Plus, MessageSquareText, Flag, Palmtree, Sparkles, Flame, Trash, MoveHorizontal } from 'lucide-react'
 import { OnboardingSlide } from './types'
 
 export const WelcomeSlide = () => (
