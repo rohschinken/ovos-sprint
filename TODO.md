@@ -4,14 +4,6 @@
 
 ## Medium Priority
 
-### Feature: moving assignment blocks and changing start/end date of block
-
-- [ ] it must be possible to move assignment blocks with the mouse. Moving an assignment block should work when clicking and draggin the mouse while holding the ALT key down. Moving an assignment block must only work horizontally, ➡️ in the same row.
-- [ ] Change start and end date of an assignment block. The assignment block edit popover already shows the start and end date. Allow changing the dates individually in this edit popover.
-- [ ] A block must NEVER have an invalid state (e.g. negative date range or the same day being assigned to multiple assignment blocks)
-- [ ] if by moving the block or by changing it's dates the block will overlap with other blocks, apply the same merge rules we already have in place when creating new blocks.
-- [ ] all of the above described operations must work in per-member and in per-project mode.
-
 ## Low Priority
 
 ### Feature: add a new toggle for abstract week view
