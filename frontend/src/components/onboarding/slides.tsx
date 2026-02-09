@@ -1,4 +1,4 @@
-import { Plus, MessageSquareText, Flag, Palmtree, Sparkles, Flame } from 'lucide-react'
+import { Plus, MessageSquareText, Flag, Palmtree, Sparkles, Flame, Pencil, Trash, MoveHorizontal } from 'lucide-react'
 import { OnboardingSlide } from './types'
 
 export const WelcomeSlide = () => (
@@ -30,11 +30,37 @@ export const AssignmentsSlide = () => (
         <span className="text-primary font-bold">3.</span>
         <span>Drag across multiple dates to create a range of assignments</span>
       </li>
-      <li className="flex items-start gap-3">
-        <span className="text-primary font-bold">4.</span>
-        <span>Right-click on an existing assignment to delete it</span>
-      </li>
     </ul>
+  </div>
+)
+
+export const ModifyingAssignmentsSlide = () => (
+  <div className="space-y-6">
+    <p className="text-muted-foreground">
+      You can modify assignments in the following ways:
+    </p>
+    {/* Deleting */}
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 font-semibold">
+        <Trash className="h-5 w-5 text-primary" />
+        <span>Deleting Assignments</span>
+      </div>
+      <ul className="space-y-2 text-sm text-muted-foreground ml-7">
+        <li>• Right-click or CTRL/CMD+click on an existing assignment to delete it</li>
+        <li>• Right-click or CTRL/CMD+click while dragging to delete multiple assignments at once</li>
+      </ul>
+    </div>
+
+    {/* Moving */}
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 font-semibold">
+        <MoveHorizontal className="h-5 w-5 text-primary" />
+        <span>Moving Assignments</span>
+      </div>
+      <ul className="space-y-2 text-sm text-muted-foreground ml-7">
+        <li>• ALT+click on an existing assignment and drag horizontally to move it across days</li>
+      </ul>
+    </div>
   </div>
 )
 
@@ -128,14 +154,14 @@ export const onboardingSlides: OnboardingSlide[] = [
     content: <AssignmentsSlide />,
   },
   {
-    title: 'Milestones & Days Off',
+    title: 'Modifying Assignments',
     icon: (
       <div className="flex gap-2">
-        <Flag className="h-10 w-10 text-primary" />
-        <Palmtree className="h-10 w-10 text-primary" />
+        <Trash className="h-10 w-10 text-primary" />
+        <MoveHorizontal className="h-10 w-10 text-primary" />
       </div>
     ),
-    content: <MilestonesAndDaysOffSlide />,
+    content: <ModifyingAssignmentsSlide />,
   },
   {
     title: 'Comments & Priority',
@@ -146,6 +172,16 @@ export const onboardingSlides: OnboardingSlide[] = [
       </div>
     ),
     content: <CommentsAndPrioritySlide />,
+  },
+  {
+    title: 'Milestones & Days Off',
+    icon: (
+      <div className="flex gap-2">
+        <Flag className="h-10 w-10 text-primary" />
+        <Palmtree className="h-10 w-10 text-primary" />
+      </div>
+    ),
+    content: <MilestonesAndDaysOffSlide />,
   },
   {
     title: "You're All Set! 🎉",
