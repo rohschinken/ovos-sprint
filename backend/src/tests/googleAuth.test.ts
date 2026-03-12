@@ -25,9 +25,6 @@ describe('Google Auth - POST /api/auth/google', () => {
     hd: 'example.com',
   }
 
-  // Store original env value loaded from .env to restore after domain tests
-  const originalAllowedDomain = process.env.GOOGLE_ALLOWED_DOMAIN
-
   beforeAll(async () => {
     // Clean up any leftover test data
     await db.delete(users).where(eq(users.email, GOOGLE_USER.email))
