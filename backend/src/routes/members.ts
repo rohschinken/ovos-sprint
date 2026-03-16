@@ -49,7 +49,39 @@ router.get('/', authenticate, async (_req, res) => {
     const members = await db.query.teamMembers.findMany({
       orderBy: (teamMembers, { asc }) => [asc(teamMembers.lastName), asc(teamMembers.firstName)],
     })
-    res.json(members)
+
+    // Auto-link unlinked members to existing users by email
+    const unlinkedWithEmail = members.filter(m => m.userId == null && m.email)
+    if (unlinkedWithEmail.length > 0) {
+      const allUsers = await db.query.users.findMany()
+      const usersByEmail = new Map(allUsers.map(u => [u.email.toLowerCase(), u]))
+
+      for (const member of unlinkedWithEmail) {
+        const matchingUser = usersByEmail.get(member.email!.toLowerCase())
+        if (matchingUser) {
+          await db.update(teamMembers)
+            .set({ userId: matchingUser.id })
+            .where(eq(teamMembers.id, member.id))
+          member.userId = matchingUser.id
+        }
+      }
+    }
+
+    // Enrich with Google auth status for linked users
+    const userIds = members.map(m => m.userId).filter((id): id is number => id != null)
+    const linkedUsers = userIds.length > 0
+      ? await db.query.users.findMany({
+          where: (users, { inArray }) => inArray(users.id, userIds),
+        })
+      : []
+    const googleUserIds = new Set(linkedUsers.filter(u => u.googleId).map(u => u.id))
+
+    const enrichedMembers = members.map(m => ({
+      ...m,
+      hasGoogleAuth: m.userId != null && googleUserIds.has(m.userId),
+    }))
+
+    res.json(enrichedMembers)
   } catch (error) {
     console.error('Get members error:', error)
     res.status(500).json({ error: 'Server error' })

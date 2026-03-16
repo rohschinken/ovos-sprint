@@ -30,6 +30,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useAuthStore } from '@/store/auth'
 import { UserPlus, Copy, Mail, Trash2, Shield, Briefcase } from 'lucide-react'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { motion } from 'framer-motion'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import type { User } from '@/types'
@@ -221,7 +222,12 @@ export default function UsersPage() {
                       className="flex items-center justify-between p-3 border rounded-lg"
                     >
                       <div>
-                        <div className="font-medium">{user.email}</div>
+                        <div className="font-medium flex items-center gap-1.5">
+                          {user.email}
+                          {user.googleId && (
+                            <GoogleIcon className="h-4 w-4 shrink-0" />
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           Joined{' '}
                           {new Date(user.createdAt).toLocaleDateString('de-AT')}

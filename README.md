@@ -18,7 +18,7 @@ ovos Sprint 🏃‍♂️‍➡️
 - Team members with customizable avatars
 - Resource allocation across projects
 
-![ovos sprint Member View Screenshot](https://github.com/rohschinken/ovos-sprint/blob/main/assets/ovos_sprint_members.png?raw=true&v=1.1.0)
+![ovos sprint Member View Screenshot](https://github.com/rohschinken/ovos-sprint/blob/main/assets/ovos_sprint_members.png?raw=true&v=1.2.0)
 
 ### Project Management
 
@@ -26,7 +26,7 @@ ovos Sprint 🏃‍♂️‍➡️
 - Confirmed and tentative status types
 - Many-to-many relationships between team members and projects
 
-![ovos sprint Project View Screenshot](https://github.com/rohschinken/ovos-sprint/blob/main/assets/ovos_sprint_projects.png?raw=true&v=1.1.0)
+![ovos sprint Project View Screenshot](https://github.com/rohschinken/ovos-sprint/blob/main/assets/ovos_sprint_projects.png?raw=true&v=1.2.0)
 
 ### Timeline View
 

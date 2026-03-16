@@ -20,6 +20,7 @@ export type UserRole = 'admin' | 'project_manager' | 'user'
 export interface User {
   id: number
   email: string
+  googleId?: string | null
   role: UserRole
   createdAt: string
   // Optional fields for team filter auto-initialization
@@ -70,6 +71,7 @@ export interface TeamMember {
   avatarUrl: string | null
   workSchedule: string
   createdAt: string
+  hasGoogleAuth?: boolean
 }
 
 // ============================================================================

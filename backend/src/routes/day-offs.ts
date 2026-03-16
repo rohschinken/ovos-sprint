@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { db, dayOffs, dayAssignments, projectAssignments } from '../db/index.js'
-import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js'
+import { db, dayOffs, dayAssignments, projectAssignments, teamMembers } from '../db/index.js'
+import { authenticate, AuthRequest } from '../middleware/auth.js'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -38,10 +38,20 @@ router.get('/', authenticate, async (req, res) => {
   }
 })
 
-// Create day-off (admin only)
-router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Create day-off (admin or own member)
+router.post('/', authenticate, async (req: AuthRequest, res) => {
   try {
     const data = dayOffSchema.parse(req.body)
+
+    // Non-admins can only create day-offs for their own linked member
+    if (req.user!.role !== 'admin') {
+      const member = await db.query.teamMembers.findFirst({
+        where: and(eq(teamMembers.id, data.teamMemberId), eq(teamMembers.userId, req.user!.userId)),
+      })
+      if (!member) {
+        return res.status(403).json({ error: 'You can only manage your own day-offs' })
+      }
+    }
 
     // First, delete all day assignments for this member on this date
     // Get all project assignments for this member
@@ -75,10 +85,27 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   }
 })
 
-// Delete day-off (admin only)
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Delete day-off (admin or own member)
+router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const dayOffId = parseInt(req.params.id)
+
+    // Non-admins can only delete their own day-offs
+    if (req.user!.role !== 'admin') {
+      const dayOff = await db.query.dayOffs.findFirst({
+        where: eq(dayOffs.id, dayOffId),
+      })
+      if (!dayOff) {
+        return res.status(404).json({ error: 'Day-off not found' })
+      }
+      const member = await db.query.teamMembers.findFirst({
+        where: and(eq(teamMembers.id, dayOff.teamMemberId), eq(teamMembers.userId, req.user!.userId)),
+      })
+      if (!member) {
+        return res.status(403).json({ error: 'You can only manage your own day-offs' })
+      }
+    }
+
     await db.delete(dayOffs).where(eq(dayOffs.id, dayOffId))
     res.status(204).send()
   } catch (error) {

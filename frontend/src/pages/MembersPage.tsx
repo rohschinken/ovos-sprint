@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Pencil, Trash2, Upload, Camera, MailPlus, UserPlus, Users, X } from 'lucide-react'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { getInitials, generateAvatarUrl, getAvatarColor } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { WarningDialog } from '@/components/ui/warning-dialog'
@@ -393,7 +394,12 @@ export default function MembersPage() {
                       {member.firstName} {member.lastName}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {member.email || '-'}
+                      <span className="flex items-center gap-1.5">
+                        {member.email || '-'}
+                        {member.hasGoogleAuth && (
+                          <GoogleIcon className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                      </span>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
                       {workDays || 'No schedule'}
