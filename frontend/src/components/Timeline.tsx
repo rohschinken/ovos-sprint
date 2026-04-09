@@ -44,8 +44,8 @@ function TimelineInner({
   // Track if initial expansion has been done to prevent re-expanding when user collapses all
   const hasInitializedExpansion = useRef(false)
 
-  // Convert expandedItems array to Set for easier manipulation
-  const expandedItemsSet = new Set(expandedItemsProp)
+  // Convert expandedItems array to Set for easier manipulation (memoized to preserve reference stability)
+  const expandedItemsSet = useMemo(() => new Set(expandedItemsProp), [expandedItemsProp])
 
   // Column width based on zoom level (1=extra narrow, 2=compact, 3=narrow, 4=normal)
   const columnWidth = ZOOM_COLUMN_WIDTHS[zoomLevel as ZoomLevel] || DEFAULT_COLUMN_WIDTH

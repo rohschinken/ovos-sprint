@@ -100,7 +100,10 @@ const AssignmentRowComponent: React.FC<AssignmentRowProps> = ({
   getGroupPriority,
   dragState,
 }) => {
-  const today = new Date()
+  // Memoize today to keep a stable reference -- prevents the useMemo dependency
+  // array below from invalidating on every render (new Date() is a new object each time)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const today = useMemo(() => new Date(), [])
 
   /**
    * Week separator helper - checks if a date should show a week boundary

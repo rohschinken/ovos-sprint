@@ -12,11 +12,11 @@
 
 ### Performance: Memoize `expandedItemsSet` in Timeline
 
-- [ ] `Timeline.tsx:48` creates `new Set(expandedItemsProp)` on every render, producing a new reference that prevents child components from skipping re-renders via shallow comparison. Wrap in `useMemo`.
+- [x] `Timeline.tsx:48` creates `new Set(expandedItemsProp)` on every render, producing a new reference that prevents child components from skipping re-renders via shallow comparison. Wrap in `useMemo`.
 
 ### Performance: Fix `new Date()` in AssignmentRow breaking memoization
 
-- [ ] `AssignmentRow.tsx:103` creates `const today = new Date()` on every render. Since `today` is used in a `useMemo` dependency array, the expensive date property computation is rerun every render. Use `useMemo(() => new Date(), [])` or pass a stable `today` prop from the parent.
+- [x] `AssignmentRow.tsx:103` creates `const today = new Date()` on every render. Since `today` is used in a `useMemo` dependency array, the expensive date property computation is rerun every render. Use `useMemo(() => new Date(), [])` or pass a stable `today` prop from the parent.
 
 ### Bug: `CustomerTable` and `ProjectTable` defined inside parent render function
 
@@ -24,7 +24,7 @@
 
 ### Security: Add rate limiting to login and registration endpoints
 
-- [ ] `auth.ts` applies `rateLimiter` only to `/forgot-password` but not to `POST /login` or `POST /register`. Add `rateLimiter(10, 15 * 60 * 1000)` to both endpoints to defend against brute-force/credential-stuffing attacks.
+- [x] `auth.ts` applies `rateLimiter` only to `/forgot-password` but not to `POST /login` or `POST /register`. Add `rateLimiter(10, 15 * 60 * 1000)` to both endpoints to defend against brute-force/credential-stuffing attacks.
 
 ### Security: Stop logging password reset tokens in production
 

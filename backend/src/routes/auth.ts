@@ -18,7 +18,7 @@ import { verifyGoogleToken } from '../utils/googleAuth.js'
 const router = Router()
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', rateLimiter(10, 15 * 60 * 1000), async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body)
 
@@ -138,7 +138,7 @@ router.post('/google', async (req, res) => {
 })
 
 // Register (complete invitation)
-router.post('/register', async (req, res) => {
+router.post('/register', rateLimiter(10, 15 * 60 * 1000), async (req, res) => {
   try {
     const { email, password, token } = registerSchema.parse(req.body)
 
