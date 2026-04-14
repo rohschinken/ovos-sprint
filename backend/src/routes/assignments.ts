@@ -4,19 +4,9 @@ import { projectAssignmentSchema, dayAssignmentSchema, assignmentGroupSchema, up
 import { authenticate, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
 import { eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { handleGroupMergeOnDayAdd, handleGroupSplitOnDayDelete, cleanupOrphanedGroups, handleBatchGroupMerge } from '../utils/groupMerge.js'
+import { canModifyProject } from '../utils/authorization.js'
 
 const router = Router()
-
-// Helper to check if user can modify a project (admin or project owner)
-async function canModifyProject(userId: number, userRole: string, projectId: number): Promise<boolean> {
-  if (userRole === 'admin') return true
-
-  const project = await db.query.projects.findFirst({
-    where: (projects, { eq }) => eq(projects.id, projectId),
-  })
-
-  return project?.managerId === userId
-}
 
 // Helper to get projectId from a project assignment
 async function getProjectIdFromAssignment(projectAssignmentId: number): Promise<number | null> {

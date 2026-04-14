@@ -1,27 +1,11 @@
 import { Router } from 'express'
 import { db, milestones } from '../db/index.js'
 import { authenticate, requireAdminOrProjectManager, AuthRequest } from '../middleware/auth.js'
-import { eq } from 'drizzle-orm'
-import { z } from 'zod'
+import { eq, and, gte, lte, asc } from 'drizzle-orm'
+import { milestoneSchema } from '../utils/validation.js'
+import { canModifyProject } from '../utils/authorization.js'
 
 const router = Router()
-
-// Helper to check if user can modify a project (admin or project owner)
-async function canModifyProject(userId: number, userRole: string, projectId: number): Promise<boolean> {
-  if (userRole === 'admin') return true
-
-  const project = await db.query.projects.findFirst({
-    where: (projects, { eq }) => eq(projects.id, projectId),
-  })
-
-  return project?.managerId === userId
-}
-
-const milestoneSchema = z.object({
-  projectId: z.number(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  name: z.string().optional(),
-})
 
 // Get all milestones (optionally filtered by project and date range)
 router.get('/', authenticate, async (req, res) => {
@@ -30,29 +14,24 @@ router.get('/', authenticate, async (req, res) => {
     const startDate = req.query.startDate as string | undefined
     const endDate = req.query.endDate as string | undefined
 
-    let query = db.query.milestones.findMany({
-      orderBy: (milestones, { asc }) => [asc(milestones.date)],
-    })
-
-    // Note: For filtering, we'll use the base query since Drizzle's query API
-    // is more limited. We'll filter in-memory for now as this is simpler.
-    const allMilestones = await query
-
-    let filtered = allMilestones
-
+    const conditions = []
     if (projectId !== undefined) {
-      filtered = filtered.filter(m => m.projectId === projectId)
+      conditions.push(eq(milestones.projectId, projectId))
     }
-
     if (startDate) {
-      filtered = filtered.filter(m => m.date >= startDate)
+      conditions.push(gte(milestones.date, startDate))
     }
-
     if (endDate) {
-      filtered = filtered.filter(m => m.date <= endDate)
+      conditions.push(lte(milestones.date, endDate))
     }
 
-    res.json(filtered)
+    const result = await db
+      .select()
+      .from(milestones)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(asc(milestones.date))
+
+    res.json(result)
   } catch (error) {
     console.error('Get milestones error:', error)
     res.status(500).json({ error: 'Server error' })

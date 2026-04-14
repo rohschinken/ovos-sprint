@@ -1,15 +1,10 @@
 import { Router } from 'express'
 import { db, dayOffs, dayAssignments, projectAssignments, teamMembers } from '../db/index.js'
 import { authenticate, AuthRequest } from '../middleware/auth.js'
-import { eq, and } from 'drizzle-orm'
-import { z } from 'zod'
+import { eq, and, gte, lte, asc } from 'drizzle-orm'
+import { dayOffSchema } from '../utils/validation.js'
 
 const router = Router()
-
-const dayOffSchema = z.object({
-  teamMemberId: z.number(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-})
 
 // Get all day-offs (filtered by date range)
 router.get('/', authenticate, async (req, res) => {
@@ -17,21 +12,21 @@ router.get('/', authenticate, async (req, res) => {
     const startDate = req.query.startDate as string | undefined
     const endDate = req.query.endDate as string | undefined
 
-    const allDayOffs = await db.query.dayOffs.findMany({
-      orderBy: (dayOffs, { asc }) => [asc(dayOffs.date)],
-    })
-
-    let filtered = allDayOffs
-
+    const conditions = []
     if (startDate) {
-      filtered = filtered.filter(d => d.date >= startDate)
+      conditions.push(gte(dayOffs.date, startDate))
     }
-
     if (endDate) {
-      filtered = filtered.filter(d => d.date <= endDate)
+      conditions.push(lte(dayOffs.date, endDate))
     }
 
-    res.json(filtered)
+    const result = await db
+      .select()
+      .from(dayOffs)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(asc(dayOffs.date))
+
+    res.json(result)
   } catch (error) {
     console.error('Get day-offs error:', error)
     res.status(500).json({ error: 'Server error' })

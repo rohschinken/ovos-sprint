@@ -109,3 +109,14 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8),
 })
+
+export const milestoneSchema = z.object({
+  projectId: z.number().int().positive(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  name: z.string().optional(),
+})
+
+export const dayOffSchema = z.object({
+  teamMemberId: z.number().int().positive(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+})

@@ -52,7 +52,7 @@ none
 
 ### Performance: Move milestone/day-off filtering from JS to SQL
 
-- [ ] `milestones.ts:33-53` and `day-offs.ts:20-33` fetch all rows and filter in JavaScript. Use Drizzle `where` clauses with `and(gte, lte, eq)` to push filtering to SQLite, as already done in the assignments routes.
+- [x] `milestones.ts:33-53` and `day-offs.ts:20-33` fetch all rows and filter in JavaScript. Use Drizzle `where` clauses with `and(gte, lte, eq)` to push filtering to SQLite, as already done in the assignments routes.
 
 ### Performance: Optimize `isDayAssigned` helper in timeline-helpers.ts
 
@@ -68,11 +68,11 @@ none
 
 ### DX: Extract duplicated `canModifyProject` to shared utility
 
-- [ ] `canModifyProject` is identically defined in `assignments.ts:11-19` and `milestones.ts:10-18`. Extract to a shared `utils/authorization.ts` to avoid divergent authorization logic.
+- [x] `canModifyProject` is identically defined in `assignments.ts:11-19` and `milestones.ts:10-18`. Extract to a shared `utils/authorization.ts` to avoid divergent authorization logic.
 
 ### DX: Move inline Zod schemas to centralized validation.ts
 
-- [ ] `milestones.ts` and `day-offs.ts` define schemas inline instead of in `utils/validation.ts` where all other schemas live. Centralize for discoverability and consistency.
+- [x] `milestones.ts` and `day-offs.ts` define schemas inline instead of in `utils/validation.ts` where all other schemas live. Centralize for discoverability and consistency.
 
 ### DX: Consistent `parseInt` validation on route params
 
