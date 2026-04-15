@@ -10,17 +10,20 @@ import { ZOOM_PIXEL_WIDTHS, SIDEBAR_WIDTH, PRIORITY_INDICATOR_WIDTH } from './ti
 import type { ZoomLevel } from './timeline-constants'
 
 /**
- * Check if a specific assignment exists on a given date
+ * Check if a specific assignment exists on a given date.
+ * Uses string comparison (O(1) per element) instead of Date construction
+ * to avoid creating new Date objects for every element in the array.
  */
 export function isDayAssigned(
   dayAssignments: any[],
   assignmentId: number,
   date: Date
 ): boolean {
+  const dateStr = format(date, 'yyyy-MM-dd')
   return dayAssignments.some(
     (da: any) =>
       da.projectAssignment?.id === assignmentId &&
-      isSameDay(new Date(da.date), date)
+      da.date === dateStr
   )
 }
 

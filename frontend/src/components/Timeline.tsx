@@ -2,7 +2,7 @@ import { useRef, useEffect, useMemo, useCallback } from 'react'
 import type { Milestone, AssignmentGroup, AssignmentPriority } from '@/types'
 import { isWeekend } from '@/lib/holidays'
 import { TooltipProvider } from './ui/tooltip'
-import { format, addDays, startOfDay, isSameDay } from 'date-fns'
+import { format, addDays, startOfDay } from 'date-fns'
 import { enGB } from 'date-fns/locale'
 import { WarningDialog } from './ui/warning-dialog'
 import { AssignmentEditPopover } from './AssignmentEditPopover'
@@ -179,7 +179,7 @@ function TimelineInner({
   }, [memberIndex, isDayOff, workScheduleCache])
 
   // Helper function to check if current user can edit an assignment (by project assignment ID)
-  const canEditAssignment = (projectAssignmentId: number): boolean => {
+  const canEditAssignment = useCallback((projectAssignmentId: number): boolean => {
     if (!isAdmin) return false
     if (currentUserRole === 'admin') return true
     if (currentUserRole === 'project_manager' && currentUserId) {
@@ -189,17 +189,17 @@ function TimelineInner({
       return project?.managerId === currentUserId
     }
     return false
-  }
+  }, [isAdmin, currentUserRole, currentUserId, projectAssignments, projects])
 
   // Get the assignment group for a specific date within an assignment
-  const getGroupForDate = (assignmentId: number, date: Date): AssignmentGroup | null => {
+  const getGroupForDate = useCallback((assignmentId: number, date: Date): AssignmentGroup | null => {
     const dateStr = format(date, 'yyyy-MM-dd')
     return assignmentGroups.find(g =>
       g.projectAssignmentId === assignmentId &&
       dateStr >= g.startDate &&
       dateStr <= g.endDate
     ) ?? null
-  }
+  }, [assignmentGroups])
 
   // Use custom hooks for state management
   const { timelineWarning, setTimelineWarning } = useTimelineWarning()
@@ -262,7 +262,7 @@ function TimelineInner({
     }
   }, [filteredProjects, filteredMembersWithProjects, viewMode]) // Only run when data loads or view mode changes
 
-  const toggleExpand = (id: number) => {
+  const toggleExpand = useCallback((id: number) => {
     const newExpandedSet = new Set(expandedItemsProp)
     if (newExpandedSet.has(id)) {
       newExpandedSet.delete(id)
@@ -270,11 +270,11 @@ function TimelineInner({
       newExpandedSet.add(id)
     }
     onExpandedItemsChange(Array.from(newExpandedSet))
-  }
+  }, [expandedItemsProp, onExpandedItemsChange])
 
   // Helper function to check if current user can edit a specific project
   // Admins can edit all projects, PMs can only edit their own projects
-  const canEditProject = (projectId: number): boolean => {
+  const canEditProject = useCallback((projectId: number): boolean => {
     if (!isAdmin) return false
     if (currentUserRole === 'admin') return true
     if (currentUserRole === 'project_manager' && currentUserId) {
@@ -282,9 +282,9 @@ function TimelineInner({
       return project?.managerId === currentUserId
     }
     return false
-  }
+  }, [isAdmin, currentUserRole, currentUserId, projects])
 
-  const handleDeleteDayAssignment = (assignmentId: number, date: Date, event: React.MouseEvent) => {
+  const handleDeleteDayAssignment = useCallback((assignmentId: number, date: Date, event: React.MouseEvent) => {
     if (!canEditAssignment(assignmentId)) return
 
     event.preventDefault()
@@ -294,25 +294,24 @@ function TimelineInner({
     if (!dayAssignmentId) return
 
     deleteDayAssignmentMutation.mutate(dayAssignmentId)
-  }
+  }, [canEditAssignment, getDayAssignmentId, deleteDayAssignmentMutation])
 
   // Get priority for a specific date within an assignment
-  const getGroupPriority = (assignmentId: number, date: Date): AssignmentPriority => {
+  const getGroupPriority = useCallback((assignmentId: number, date: Date): AssignmentPriority => {
     const group = getGroupForDate(assignmentId, date)
     return group?.priority ?? 'normal'
-  }
+  }, [getGroupForDate])
 
   // Milestone helper functions
-  const getMilestoneId = (projectId: number, date: Date) => {
+  const getMilestoneId = useCallback((projectId: number, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
     const milestone = milestones.find(
-      (m: Milestone) =>
-        m.projectId === projectId &&
-        isSameDay(new Date(m.date), date)
+      (m: Milestone) => m.projectId === projectId && m.date === dateStr
     )
     return milestone?.id
-  }
+  }, [milestones])
 
-  const handleProjectCellClick = (projectId: number, date: Date, _e: React.MouseEvent) => {
+  const handleProjectCellClick = useCallback((projectId: number, date: Date, _e: React.MouseEvent) => {
     if (!canEditProject(projectId) || viewMode !== 'by-project') return
 
     _e.preventDefault()
@@ -334,19 +333,19 @@ function TimelineInner({
         })
       }
     }
-  }
+  }, [canEditProject, viewMode, getMilestoneId, deleteMilestoneMutation, createMilestoneMutation])
 
   // Helper function to get day-off ID for deletion
-  const getDayOffId = (memberId: number, date: Date) => {
+  const getDayOffId = useCallback((memberId: number, date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd')
     const dayOff = dayOffs.find(
       (d) => d.teamMemberId === memberId && d.date === dateStr
     )
     return dayOff?.id
-  }
+  }, [dayOffs])
 
   // Handle member cell click for day-off management
-  const handleMemberCellClick = (memberId: number, date: Date, _e: React.MouseEvent) => {
+  const handleMemberCellClick = useCallback((memberId: number, date: Date, _e: React.MouseEvent) => {
     if (!isAdmin || viewMode !== 'by-member') return
 
     _e.preventDefault()
@@ -368,9 +367,9 @@ function TimelineInner({
         })
       }
     }
-  }
+  }, [isAdmin, viewMode, getDayOffId, deleteDayOffMutation, createDayOffMutation])
 
-  const hasOverlap = (id: number, date: Date, mode: 'member' | 'project') => {
+  const hasOverlap = useCallback((id: number, date: Date, mode: 'member' | 'project') => {
     if (!showOverlaps) return false
 
     const count = mode === 'member'
@@ -378,7 +377,7 @@ function TimelineInner({
       : getProjectMembersOnDate(projectAssignments, dayAssignments, id, date)
 
     return count > 1
-  }
+  }, [showOverlaps, projectAssignments, dayAssignments])
 
   const content = viewMode === 'by-project' ? (
     <TimelineViewContent

@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { format, isFirstDayOfMonth, getDay } from 'date-fns'
 import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
@@ -40,7 +41,7 @@ import type { TimelineItemHeaderProps } from './types'
  * @param milestones - Array of milestones (only for projects)
  * @param onMilestoneToggle - Callback to toggle milestones (only for projects)
  */
-export function TimelineItemHeader({
+const TimelineItemHeaderComponent = function TimelineItemHeader({
   type,
   item,
   isExpanded,
@@ -135,15 +136,23 @@ export function TimelineItemHeader({
     }
   }
 
-  /**
-   * Check if a date is a day-off for the member
-   */
+  // Pre-compute a Set of day-off date strings for O(1) lookup per date cell
+  // instead of O(n) Array.some() scan per date cell
+  const dayOffDates = useMemo(() => {
+    if (type !== 'member' || !dayOffs) return new Set<string>()
+    const memberId = (item as TeamMember).id
+    const set = new Set<string>()
+    for (const dayOff of dayOffs) {
+      if (dayOff.teamMemberId === memberId) {
+        set.add(dayOff.date)
+      }
+    }
+    return set
+  }, [type, item, dayOffs])
+
   const isDayOff = (date: Date): boolean => {
-    if (type !== 'member' || !dayOffs) return false
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return dayOffs.some(
-      (dayOff) => dayOff.teamMemberId === (item as TeamMember).id && dayOff.date === dateStr
-    )
+    if (dayOffDates.size === 0) return false
+    return dayOffDates.has(format(date, 'yyyy-MM-dd'))
   }
 
   /**
@@ -262,3 +271,5 @@ export function TimelineItemHeader({
     </div>
   )
 }
+
+export const TimelineItemHeader = memo(TimelineItemHeaderComponent)

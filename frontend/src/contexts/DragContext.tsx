@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useRef, useCallback, useMemo, ReactNode } from 'react'
 import { format } from 'date-fns'
 import { addDaysToDateString, isDateInRange } from '@/lib/timeline-helpers'
 
@@ -53,8 +53,7 @@ export function DragProvider({ children }: DragProviderProps) {
   // Subscribers that want to be notified of drag updates
   const subscribersRef = useRef<Set<() => void>>(new Set())
 
-  // Force update for this component only (not children)
-  const [, forceUpdate] = useState({})
+
 
   // Get current drag state (stable reference)
   const getDragState = useCallback(() => {
@@ -73,11 +72,9 @@ export function DragProvider({ children }: DragProviderProps) {
       document.body.classList.remove('timeline-dragging')
     }
 
-    // Notify all subscribers (individual cells)
+    // Notify all subscribers (individual cells) -- no forceUpdate needed,
+    // the subscriber pattern directly notifies cells that need re-rendering
     subscribersRef.current.forEach(callback => callback())
-
-    // Force update this component to trigger re-render of cells
-    forceUpdate({})
   }, [])
 
   // Check if date is in drag range (stable reference)
@@ -126,12 +123,14 @@ export function DragProvider({ children }: DragProviderProps) {
     }
   }, [])
 
-  const value: DragContextValue = {
+  // Memoize the context value -- all four functions are stable (useCallback with [] deps),
+  // so this object reference never changes, preventing consumer re-renders from context
+  const value: DragContextValue = useMemo(() => ({
     getDragState,
     setDragState,
     isDayInDragRange,
     subscribe,
-  }
+  }), [getDragState, setDragState, isDayInDragRange, subscribe])
 
   return <DragContext.Provider value={value}>{children}</DragContext.Provider>
 }
