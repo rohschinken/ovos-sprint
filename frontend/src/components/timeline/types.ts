@@ -256,6 +256,34 @@ export interface DayOffIndicatorProps {
 }
 
 /**
+ * Virtualization Types
+ */
+
+/**
+ * A flattened row for the virtual list.
+ * Parent rows are project/member headers; child rows are assignment rows.
+ * Built by `buildFlatRows` from the nested item → assignment hierarchy.
+ */
+export type FlatRow =
+  | { type: 'parent'; key: string; item: Project | TeamMember }
+  | {
+      type: 'child'
+      key: string
+      parentItem: Project | TeamMember
+      childItem: TeamMember | Project
+      assignment: ProjectAssignment
+    }
+
+/**
+ * Row height estimates for the virtualizer, per view mode.
+ * These are fixed pixel values measured from the actual rendered CSS.
+ */
+export const ROW_HEIGHTS = {
+  'by-project': { parent: 60, child: 44 },
+  'by-member':  { parent: 56, child: 52 },
+} as const
+
+/**
  * Timeline Hook Types
  */
 

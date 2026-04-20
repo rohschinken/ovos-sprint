@@ -1,66 +1,29 @@
+import { useRef, useMemo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { TimelineHeader } from './TimelineHeader'
 import { TimelineItemHeader } from './TimelineItemHeader'
 import { AssignmentRow } from './AssignmentRow'
-import { hasAssignmentInDateRange } from '@/lib/timeline-helpers'
-import type { Project, TeamMember, ProjectAssignment } from '@/types'
-import type { TimelineViewContentProps } from './types'
+import { buildFlatRows } from './buildFlatRows'
+import type { Project, TeamMember } from '@/types'
+import type { TimelineViewContentProps, FlatRow } from './types'
+import { ROW_HEIGHTS } from './types'
 
 /**
  * TimelineViewContent Component
  *
- * Renders the main timeline content with header and all rows for either by-project or by-member view.
- * Handles the layout and iteration of items (projects or members) and their expanded assignment rows.
+ * Renders the main timeline content with a sticky header and virtualized rows.
+ * Uses @tanstack/react-virtual to only render rows visible in the viewport,
+ * plus an overscan buffer for smooth scrolling.
  *
- * In by-project view:
- * - Shows projects with TimelineItemHeader
- * - When expanded, shows member rows (AssignmentRow) for each project assignment
- * - When collapsed, shows milestone indicators in the header row
+ * The row list is a flat array built by `buildFlatRows`, which handles:
+ * - Expanding/collapsing groups
+ * - hideEmptyRows filtering
+ * - showTentative filtering (by-member view)
+ * - Orphan assignment skipping
  *
- * In by-member view:
- * - Shows members with TimelineItemHeader
- * - When expanded, shows project rows (AssignmentRow) for each member's assignments
- * - When collapsed, shows day-off indicators in the header row
- *
- * Features:
- * - Renders TimelineHeader component for date labels
- * - Loops over items (projects or members)
- * - For each item:
- *   - Renders TimelineItemHeader
- *   - If expanded: loops over assignments and renders AssignmentRow for each
- * - Handles both by-project and by-member views with conditional logic
- * - Proper overflow and scrolling
- * - Min-width styling for horizontal scroll
- *
- * @param viewMode - Current view mode ('by-project' or 'by-member')
- * @param items - Array of items to display (projects or members)
- * @param projects - All projects
- * @param members - All members
- * @param projectAssignments - All project assignments
- * @param dayAssignments - All day assignments
- * @param milestones - All milestones
- * @param dayOffs - All day-off records
- * @param settings - User settings
- * @param assignmentGroups - All assignment groups
- * @param dates - Array of dates to display
- * @param monthGroups - Month grouping data for header
- * @param columnWidth - Width class for date columns
- * @param zoomLevel - Current zoom level
- * @param expandedItems - Set of expanded item IDs
- * @param onToggleExpand - Handler for expand/collapse toggle
- * @param isAdmin - Whether current user has admin permissions
- * @param showOverlaps - Whether to show overlap visualization
- * @param showTentative - Whether to show tentative projects
- * @param handleMouseDown - Handler for mouse down (drag start)
- * @param handleMouseEnter - Handler for mouse enter (drag continue)
- * @param handleAssignmentClick - Handler for assignment click
- * @param handleDeleteDayAssignment - Handler for delete assignment
- * @param handleProjectCellClick - Handler for project cell click (milestone toggle)
- * @param canEditProject - Check if project can be edited
- * @param canEditAssignment - Check if assignment can be edited
- * @param isDayOff - Check if date is a day off for member
- * @param isDayInDragRange - Check if date is in drag range
- * @param hasOverlap - Check if date has overlap
- * @param getGroupPriority - Get priority for assignment on date
+ * The virtualizer attaches to the existing scroll container (overflow-auto div)
+ * and only manages vertical scrolling. Horizontal scrolling (date columns)
+ * works naturally since each row renders the full date range.
  */
 export function TimelineViewContent({
   viewMode,
@@ -101,203 +64,157 @@ export function TimelineViewContent({
   getGroupPriority,
   dragState,
 }: TimelineViewContentProps) {
-  // Render by-project view
-  if (viewMode === 'by-project') {
-    const filteredProjects = items as Project[]
+  const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Flatten the nested item → assignment hierarchy into a single array
+  const flatRows = useMemo(() => buildFlatRows({
+    viewMode,
+    items,
+    projectAssignments,
+    dayAssignments,
+    dates,
+    expandedItems,
+    hideEmptyRows,
+    showTentative,
+    memberById,
+    projectById,
+  }), [viewMode, items, projectAssignments, dayAssignments, dates, expandedItems, hideEmptyRows, showTentative, memberById, projectById])
+
+  const heights = ROW_HEIGHTS[viewMode]
+
+  const rowVirtualizer = useVirtualizer({
+    count: flatRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      flatRows[index].type === 'parent' ? heights.parent : heights.child,
+    getItemKey: (index) => flatRows[index].key,
+    overscan: 10,
+  })
+
+  // Render a parent row (TimelineItemHeader)
+  const renderParentRow = (row: FlatRow & { type: 'parent' }) => {
+    const item = row.item
+
+    if (viewMode === 'by-project') {
+      const project = item as Project
+      return (
+        <TimelineItemHeader
+          type="project"
+          item={project}
+          isExpanded={expandedItems.has(project.id)}
+          canEdit={canEditProject(project.id)}
+          onToggleExpand={onToggleExpand}
+          dates={dates}
+          columnWidth={columnWidth}
+          milestones={milestones}
+          onMilestoneToggle={handleProjectCellClick}
+          showOverlaps={showOverlaps}
+          projectAssignments={projectAssignments}
+          dayAssignments={dayAssignments}
+        />
+      )
+    }
+
+    // by-member
+    const member = item as TeamMember
     return (
-      <div className="overflow-auto max-h-full">
-        <div className="min-w-max">
-          {/* Header */}
-          <TimelineHeader
-            dates={dates}
-            monthGroups={monthGroups}
-            columnWidth={columnWidth}
-            zoomLevel={zoomLevel}
-          />
-
-          {/* Projects */}
-          {filteredProjects.map((project) => {
-            const assignments = projectAssignments.filter(
-              (pa: ProjectAssignment) => pa.projectId === project.id
-            )
-
-            // Filter assignments based on hideEmptyRows setting
-            const visibleAssignments = hideEmptyRows
-              ? assignments.filter((assignment: ProjectAssignment) =>
-                  hasAssignmentInDateRange(dayAssignments, assignment.id, dates)
-                )
-              : assignments
-
-            // Hide parent row if all children are filtered out
-            if (hideEmptyRows && visibleAssignments.length === 0) {
-              return null
-            }
-
-            return (
-              <div key={project.id}>
-                <TimelineItemHeader
-                  type="project"
-                  item={project}
-                  isExpanded={expandedItems.has(project.id)}
-                  canEdit={canEditProject(project.id)}
-                  onToggleExpand={onToggleExpand}
-                  dates={dates}
-                  columnWidth={columnWidth}
-                  milestones={milestones}
-                  onMilestoneToggle={handleProjectCellClick}
-                  showOverlaps={showOverlaps}
-                  projectAssignments={projectAssignments}
-                  dayAssignments={dayAssignments}
-                />
-
-                {expandedItems.has(project.id) &&
-                  visibleAssignments.map((assignment: ProjectAssignment) => {
-                      const member = memberById.get(assignment.teamMemberId)
-                      if (!member) return null
-
-                      return (
-                        <AssignmentRow
-                        key={assignment.id}
-                        viewMode={viewMode}
-                        assignment={assignment}
-                        parentItem={project}
-                        childItem={member}
-                        dates={dates}
-                        columnWidth={columnWidth}
-                        zoomLevel={zoomLevel}
-                        isAdmin={isAdmin}
-                        showOverlaps={showOverlaps}
-                        dayAssignments={dayAssignments}
-                        assignmentGroups={assignmentGroups}
-                        projectAssignments={projectAssignments}
-                        projects={projects}
-                        dayOffs={dayOffs}
-                        milestones={milestones}
-                        handleMouseDown={handleMouseDown}
-                        handleMouseEnter={handleMouseEnter}
-                        handleAssignmentClick={handleAssignmentClick}
-                        handleDeleteDayAssignment={handleDeleteDayAssignment}
-                        handleProjectCellClick={handleProjectCellClick}
-                        isDayInDragRange={isDayInDragRange}
-                        getDragMode={getDragMode}
-                        isDayOff={isDayOff}
-                        isNonWorkingDay={isNonWorkingDay}
-                        hasOverlap={hasOverlap}
-                        canEditAssignment={canEditAssignment}
-                        canEditProject={canEditProject}
-                        getGroupPriority={getGroupPriority}
-                        dragState={dragState}
-                      />
-                    )
-                  })}
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <TimelineItemHeader
+        type="member"
+        item={member}
+        isExpanded={expandedItems.has(member.id)}
+        canEdit={isAdmin}
+        onToggleExpand={onToggleExpand}
+        dates={dates}
+        columnWidth={columnWidth}
+        dayOffs={dayOffs}
+        onDayOffToggle={handleMemberCellClick}
+        showOverlaps={showOverlaps}
+        projectAssignments={projectAssignments}
+        dayAssignments={dayAssignments}
+        projects={projects}
+        hasOverlap={hasOverlap}
+        isNonWorkingDay={isNonWorkingDay}
+      />
     )
   }
 
-  // Render by-member view
-  const filteredMembers = items as TeamMember[]
+  // Render a child row (AssignmentRow)
+  const renderChildRow = (row: FlatRow & { type: 'child' }) => (
+    <AssignmentRow
+      viewMode={viewMode}
+      assignment={row.assignment}
+      parentItem={row.parentItem}
+      childItem={row.childItem}
+      dates={dates}
+      columnWidth={columnWidth}
+      zoomLevel={zoomLevel}
+      isAdmin={isAdmin}
+      showOverlaps={showOverlaps}
+      dayAssignments={dayAssignments}
+      assignmentGroups={assignmentGroups}
+      projectAssignments={projectAssignments}
+      projects={projects}
+      dayOffs={dayOffs}
+      milestones={milestones}
+      handleMouseDown={handleMouseDown}
+      handleMouseEnter={handleMouseEnter}
+      handleAssignmentClick={handleAssignmentClick}
+      handleDeleteDayAssignment={handleDeleteDayAssignment}
+      handleProjectCellClick={handleProjectCellClick}
+      isDayInDragRange={isDayInDragRange}
+      getDragMode={getDragMode}
+      isDayOff={isDayOff}
+      isNonWorkingDay={isNonWorkingDay}
+      hasOverlap={hasOverlap}
+      canEditAssignment={canEditAssignment}
+      canEditProject={canEditProject}
+      getGroupPriority={getGroupPriority}
+      dragState={dragState}
+    />
+  )
 
   return (
-    <div className="overflow-auto max-h-full">
+    <div ref={scrollRef} className="overflow-auto max-h-full">
       <div className="min-w-max">
-        {/* Header */}
+        {/* Sticky header — outside the virtualized list, shares the scroll container */}
         <TimelineHeader
           dates={dates}
           monthGroups={monthGroups}
           columnWidth={columnWidth}
           zoomLevel={zoomLevel}
-          label="Team Members"
+          label={viewMode === 'by-member' ? 'Team Members' : undefined}
         />
 
-        {/* Members */}
-        {filteredMembers.map((member) => {
-          const assignments = projectAssignments.filter(
-            (pa: ProjectAssignment) => pa.teamMemberId === member.id
-          )
-
-          // Filter assignments based on hideEmptyRows setting
-          const visibleAssignments = hideEmptyRows
-            ? assignments.filter((assignment: ProjectAssignment) =>
-                hasAssignmentInDateRange(dayAssignments, assignment.id, dates)
-              )
-            : assignments
-
-          // Hide parent row if all children are filtered out
-          if (hideEmptyRows && visibleAssignments.length === 0) {
-            return null
-          }
-
-          return (
-            <div key={member.id}>
-              <TimelineItemHeader
-                type="member"
-                item={member}
-                isExpanded={expandedItems.has(member.id)}
-                canEdit={isAdmin}
-                onToggleExpand={onToggleExpand}
-                dates={dates}
-                columnWidth={columnWidth}
-                dayOffs={dayOffs}
-                onDayOffToggle={handleMemberCellClick}
-                showOverlaps={showOverlaps}
-                projectAssignments={projectAssignments}
-                dayAssignments={dayAssignments}
-                projects={projects}
-                hasOverlap={hasOverlap}
-                isNonWorkingDay={isNonWorkingDay}
-              />
-
-              {expandedItems.has(member.id) &&
-                visibleAssignments.map((assignment: ProjectAssignment) => {
-                    const project = projectById.get(assignment.projectId)
-                    if (!project) return null
-
-                    // Hide tentative projects if showTentative is disabled
-                    if (!showTentative && project.status === 'tentative') return null
-
-                    return (
-                      <AssignmentRow
-                      key={assignment.id}
-                      viewMode={viewMode}
-                      assignment={assignment}
-                      parentItem={member}
-                      childItem={project}
-                      dates={dates}
-                      columnWidth={columnWidth}
-                      zoomLevel={zoomLevel}
-                      isAdmin={isAdmin}
-                      showOverlaps={showOverlaps}
-                      dayAssignments={dayAssignments}
-                      assignmentGroups={assignmentGroups}
-                      projectAssignments={projectAssignments}
-                      projects={projects}
-                      dayOffs={dayOffs}
-                      milestones={milestones}
-                      handleMouseDown={handleMouseDown}
-                      handleMouseEnter={handleMouseEnter}
-                      handleAssignmentClick={handleAssignmentClick}
-                      handleDeleteDayAssignment={handleDeleteDayAssignment}
-                      handleProjectCellClick={handleProjectCellClick}
-                      isDayInDragRange={isDayInDragRange}
-                      getDragMode={getDragMode}
-                      isDayOff={isDayOff}
-                      isNonWorkingDay={isNonWorkingDay}
-                      hasOverlap={hasOverlap}
-                      canEditAssignment={canEditAssignment}
-                      canEditProject={canEditProject}
-                      getGroupPriority={getGroupPriority}
-                      dragState={dragState}
-                    />
-                  )
-                })}
-            </div>
-          )
-        })}
+        {/* Virtualized rows */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = flatRows[virtualRow.index]
+            return (
+              <div
+                key={row.key}
+                data-index={virtualRow.index}
+                className="bg-background"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {row.type === 'parent'
+                  ? renderParentRow(row as FlatRow & { type: 'parent' })
+                  : renderChildRow(row as FlatRow & { type: 'child' })}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
