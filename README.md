@@ -157,7 +157,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For issues, questions, or suggestions:
 
-- **Email**: [rohschinken@gmail.com](mailto:rohschinken@gmail.com)
-- **GitHub Issues**: [https://github.com/rohschinken/ovos-sprint/issues](https://github.com/rohschinken/ovos-sprint/issues)
-
-_Last Updated: March 2026_
+- **Email**: [af@ovos.at](mailto:af@ovos.at)
+- **GitHub Issues**: [https://github.com/ovos/ovos-sprint/issues](https://github.com/ovos/ovos-sprint/issues)
